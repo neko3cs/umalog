@@ -77,7 +77,7 @@ struct BalanceSummaryView: View {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
                                     HStack(spacing: 4) {
-                                        Text(race.date.formatted(date: .abbreviated, time: .omitted))
+                                        Text(race.date.formatted(Date.FormatStyle(date: .long, time: .omitted).locale(Locale(identifier: "ja_JP"))))
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                         if let venue = race.venue {

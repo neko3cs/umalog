@@ -38,7 +38,7 @@ struct RaceListView: View {
                             }
                         }
                     } header: {
-                        Text(date.formatted(date: .long, time: .omitted))
+                        Text(date.formatted(Date.FormatStyle(date: .long, time: .omitted).locale(Locale(identifier: "ja_JP"))))
                     }
                 }
             }
