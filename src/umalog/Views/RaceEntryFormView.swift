@@ -27,14 +27,14 @@ struct RaceEntryFormView: View {
     private var isEditing: Bool { entry != nil }
 
     private var horseNameSuggestions: [String] {
-        let names = Set(allEntries.map { $0.horseName }.filter { !$0.isEmpty })
         guard !horseName.isEmpty else { return [] }
+        let names = Set(allEntries.map { $0.horseName }.filter { !$0.isEmpty })
         return names.filter { $0.localizedStandardContains(horseName) && $0 != horseName }.sorted()
     }
 
     private var jockeyNameSuggestions: [String] {
-        let names = Set(allEntries.map { $0.jockeyName }.filter { !$0.isEmpty })
         guard !jockeyName.isEmpty else { return [] }
+        let names = Set(allEntries.map { $0.jockeyName }.filter { !$0.isEmpty })
         return names.filter { $0.localizedStandardContains(jockeyName) && $0 != jockeyName }.sorted()
     }
 
@@ -50,33 +50,43 @@ struct RaceEntryFormView: View {
                             .multilineTextAlignment(.trailing)
                             .frame(width: 60)
                     }
+
                     TextField("馬名", text: $horseName)
+                        .autocorrectionDisabled()
+
                     if !horseNameSuggestions.isEmpty {
                         ScrollView(.horizontal, showsIndicators: false) {
-                            HStack {
+                            HStack(spacing: 8) {
                                 ForEach(horseNameSuggestions, id: \.self) { name in
                                     Button(name) { horseName = name }
                                         .buttonStyle(.bordered)
                                         .font(.caption)
+                                        .tint(.secondary)
                                 }
                             }
                             .padding(.vertical, 2)
                         }
                     }
+
                     TextField("騎手名", text: $jockeyName)
+                        .autocorrectionDisabled()
+
                     if !jockeyNameSuggestions.isEmpty {
                         ScrollView(.horizontal, showsIndicators: false) {
-                            HStack {
+                            HStack(spacing: 8) {
                                 ForEach(jockeyNameSuggestions, id: \.self) { name in
                                     Button(name) { jockeyName = name }
                                         .buttonStyle(.bordered)
                                         .font(.caption)
+                                        .tint(.secondary)
                                 }
                             }
                             .padding(.vertical, 2)
                         }
                     }
+
                     TextField("調教師名（任意）", text: $trainerName)
+                        .autocorrectionDisabled()
                 }
 
                 Section("予想印") {
@@ -89,7 +99,11 @@ struct RaceEntryFormView: View {
                                     .font(.title2)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 10)
-                                    .background(selectedMark == mark ? Color.accentColor.opacity(0.25) : Color.secondary.opacity(0.1))
+                                    .background(
+                                        selectedMark == mark
+                                            ? Color.accentColor.opacity(0.25)
+                                            : Color.secondary.opacity(0.1)
+                                    )
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
                             .buttonStyle(.plain)
@@ -153,13 +167,12 @@ struct RaceEntryFormView: View {
             entry.finishPosition = pos
         } else {
             let sortIndex = (race.entries ?? []).count
-            let newEntry = RaceEntry(
+            modelContext.insert(RaceEntry(
                 race: race, horseNumber: horseNumber, horseName: horseName,
                 jockeyName: jockeyName, trainerName: trainerName,
                 predictionMark: selectedMark?.rawValue, finishPosition: pos,
                 sortIndex: sortIndex
-            )
-            modelContext.insert(newEntry)
+            ))
         }
     }
 }
