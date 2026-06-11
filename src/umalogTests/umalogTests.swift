@@ -8,10 +8,10 @@
 import Testing
 @testable import umalog
 
-struct umalogTests {
-
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
-    }
-
-}
+// テストスイートは各ファイルに分割されています:
+//
+// - RaceModelTests.swift    : Race モデルの収支計算ロジック
+// - BetModelTests.swift     : Bet モデルの収支・券種名ロジック
+// - RaceEntryModelTests.swift: RaceEntry モデルの予想印変換ロジック
+// - PredictionMarkTests.swift: PredictionMark enum の rawValue・Codable
+// - CSVExporterTests.swift  : CSV エクスポートのフォーマット・エスケープ
