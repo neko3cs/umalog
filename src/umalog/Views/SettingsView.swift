@@ -14,37 +14,22 @@ struct SettingsView: View {
     @Query(sort: \TicketType.sortIndex) private var ticketTypes: [TicketType]
     @Query private var races: [Race]
 
-    @State private var showingAddVenue = false
-    @State private var newVenueName = ""
-    @State private var showingAddTicketType = false
-    @State private var newTicketTypeName = ""
     @State private var csvContent: String? = nil
     @State private var showingShareSheet = false
 
     var body: some View {
         NavigationStack {
             List {
-                Section("競馬場") {
-                    ForEach(venues) { venue in
-                        Text(venue.name)
-                    }
-                    .onDelete(perform: deleteVenues)
-                    Button {
-                        showingAddVenue = true
+                Section("管理") {
+                    NavigationLink {
+                        VenueManagementView()
                     } label: {
-                        Label("競馬場を追加", systemImage: "plus")
+                        LabeledContent("競馬場", value: "\(venues.count)件")
                     }
-                }
-
-                Section("券種") {
-                    ForEach(ticketTypes) { tt in
-                        Text(tt.name)
-                    }
-                    .onDelete(perform: deleteTicketTypes)
-                    Button {
-                        showingAddTicketType = true
+                    NavigationLink {
+                        TicketTypeManagementView()
                     } label: {
-                        Label("券種を追加", systemImage: "plus")
+                        LabeledContent("券種", value: "\(ticketTypes.count)件")
                     }
                 }
 
@@ -81,24 +66,6 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("設定")
-            .alert("競馬場を追加", isPresented: $showingAddVenue) {
-                TextField("競馬場名", text: $newVenueName)
-                Button("追加") {
-                    guard !newVenueName.isEmpty else { return }
-                    modelContext.insert(Venue(name: newVenueName, isPreset: false, sortIndex: venues.count))
-                    newVenueName = ""
-                }
-                Button("キャンセル", role: .cancel) { newVenueName = "" }
-            }
-            .alert("券種を追加", isPresented: $showingAddTicketType) {
-                TextField("券種名", text: $newTicketTypeName)
-                Button("追加") {
-                    guard !newTicketTypeName.isEmpty else { return }
-                    modelContext.insert(TicketType(name: newTicketTypeName, sortIndex: ticketTypes.count))
-                    newTicketTypeName = ""
-                }
-                Button("キャンセル", role: .cancel) { newTicketTypeName = "" }
-            }
             .sheet(isPresented: $showingShareSheet) {
                 if let csv = csvContent {
                     ShareSheet(content: csv, filename: "umalog_export.csv")
@@ -106,13 +73,77 @@ struct SettingsView: View {
             }
         }
     }
+}
 
-    private func deleteVenues(offsets: IndexSet) {
-        for i in offsets { modelContext.delete(venues[i]) }
+private struct VenueManagementView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Venue.sortIndex) private var venues: [Venue]
+
+    @State private var showingAdd = false
+    @State private var newName = ""
+
+    var body: some View {
+        List {
+            ForEach(venues) { venue in
+                Text(venue.name)
+            }
+            .onDelete { indexSet in
+                for i in indexSet { modelContext.delete(venues[i]) }
+            }
+            Button {
+                showingAdd = true
+            } label: {
+                Label("競馬場を追加", systemImage: "plus")
+            }
+        }
+        .navigationTitle("競馬場")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar { EditButton() }
+        .alert("競馬場を追加", isPresented: $showingAdd) {
+            TextField("競馬場名", text: $newName)
+            Button("追加") {
+                guard !newName.isEmpty else { return }
+                modelContext.insert(Venue(name: newName, isPreset: false, sortIndex: venues.count))
+                newName = ""
+            }
+            Button("キャンセル", role: .cancel) { newName = "" }
+        }
     }
+}
 
-    private func deleteTicketTypes(offsets: IndexSet) {
-        for i in offsets { modelContext.delete(ticketTypes[i]) }
+private struct TicketTypeManagementView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \TicketType.sortIndex) private var ticketTypes: [TicketType]
+
+    @State private var showingAdd = false
+    @State private var newName = ""
+
+    var body: some View {
+        List {
+            ForEach(ticketTypes) { tt in
+                Text(tt.name)
+            }
+            .onDelete { indexSet in
+                for i in indexSet { modelContext.delete(ticketTypes[i]) }
+            }
+            Button {
+                showingAdd = true
+            } label: {
+                Label("券種を追加", systemImage: "plus")
+            }
+        }
+        .navigationTitle("券種")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar { EditButton() }
+        .alert("券種を追加", isPresented: $showingAdd) {
+            TextField("券種名", text: $newName)
+            Button("追加") {
+                guard !newName.isEmpty else { return }
+                modelContext.insert(TicketType(name: newName, sortIndex: ticketTypes.count))
+                newName = ""
+            }
+            Button("キャンセル", role: .cancel) { newName = "" }
+        }
     }
 }
 
