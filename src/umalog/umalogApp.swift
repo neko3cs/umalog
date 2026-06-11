@@ -10,14 +10,17 @@ import SwiftData
 
 @main
 struct umalogApp: App {
-    var sharedModelContainer: ModelContainer = {
+    let sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Venue.self,
+            TicketType.self,
+            Race.self,
+            RaceEntry.self,
+            Bet.self,
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try ModelContainer(for: schema, configurations: [config])
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
@@ -26,7 +29,22 @@ struct umalogApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .task { await seedInitialDataIfNeeded() }
         }
         .modelContainer(sharedModelContainer)
+    }
+
+    @MainActor
+    private func seedInitialDataIfNeeded() async {
+        let context = sharedModelContainer.mainContext
+        let venueCount = (try? context.fetchCount(FetchDescriptor<Venue>())) ?? 0
+        guard venueCount == 0 else { return }
+
+        for preset in venuePresets {
+            context.insert(Venue(name: preset.name, isPreset: true, sortIndex: preset.sortIndex))
+        }
+        for (name, index) in defaultTicketTypeNames {
+            context.insert(TicketType(name: name, sortIndex: index))
+        }
     }
 }
