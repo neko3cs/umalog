@@ -1,0 +1,66 @@
+//
+//  Race.swift
+//  umalog
+//
+//  Created by neko3cs on 2026/06/11.
+//
+
+import Foundation
+import SwiftData
+
+@Model
+final class Race {
+    var date: Date = Date()
+    var venue: Venue? = nil
+    var raceNumber: Int = 1
+    var raceName: String = ""
+    var distance: Int = 1600
+    var trackType: String = "turf"      // "turf" | "dirt"
+    var trackCondition: String = "良"   // 良・稍重・重・不良
+    var category: String = "central"    // "central" | "local"
+    var memo: String = ""
+    var sortIndex: Int = 0
+    var entries: [RaceEntry]? = nil
+    var bets: [Bet]? = nil
+
+    init(
+        date: Date = Date(),
+        venue: Venue? = nil,
+        raceNumber: Int = 1,
+        raceName: String = "",
+        distance: Int = 1600,
+        trackType: String = "turf",
+        trackCondition: String = "良",
+        category: String = "central",
+        memo: String = "",
+        sortIndex: Int = 0
+    ) {
+        self.date = date
+        self.venue = venue
+        self.raceNumber = raceNumber
+        self.raceName = raceName
+        self.distance = distance
+        self.trackType = trackType
+        self.trackCondition = trackCondition
+        self.category = category
+        self.memo = memo
+        self.sortIndex = sortIndex
+    }
+
+    var totalPurchase: Int {
+        (bets ?? []).reduce(0) { $0 + $1.purchaseAmount }
+    }
+
+    var totalPayout: Int {
+        (bets ?? []).reduce(0) { $0 + $1.payoutAmount }
+    }
+
+    var balance: Int {
+        totalPayout - totalPurchase
+    }
+
+    var returnRate: Double? {
+        guard totalPurchase > 0 else { return nil }
+        return Double(totalPayout) / Double(totalPurchase)
+    }
+}
