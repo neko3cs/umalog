@@ -1,57 +1,57 @@
 # Umalog — CLAUDE.md
 
-競馬の予想・収支を記録する個人用iOSアプリ。馬券購入・賭けの仲介・送金機能は一切持たない自己完結型の記録ツール。
+A personal iOS app for recording horse racing predictions and balance tracking. No betting, brokerage, or payment features — purely a self-contained record-keeping tool.
 
-## プロジェクト構成
+## Project Structure
 
-- `src/umalog.xcodeproj` — Xcodeプロジェクト
-- `src/umalog/` — アプリ本体（SwiftUI）
-- `Design.md` — 設計書（要件・方針の原典）
+- `src/umalog.xcodeproj` — Xcode project
+- `src/umalog/` — App source (SwiftUI)
+- `Design.md` — Design document (source of truth for requirements and policies)
 
-## 開発ルール
+## Development Rules
 
-### ファイル操作
-- **`.pbxproj` は編集しない**（破損リスクがあるため）
-- **新規Swiftファイルの追加はXcodeのGUIから手動で行う**。Claude Codeはコードの記述のみ担当する
+### File Operations
+- **Never edit `.pbxproj`** (risk of corruption)
+- **New Swift files must be added manually via Xcode GUI** — Claude Code only writes the code content
 
-### アーキテクチャ
+### Architecture
 - UI: SwiftUI
-- データ永続化: SwiftData
-- 最小deployment target: **iOS 18**
+- Persistence: SwiftData
+- Minimum deployment target: **iOS 18**
 
-## データモデルの制約（CloudKit互換）
+## Data Model Constraints (CloudKit Compatibility)
 
-iCloud同期（任意機能）を後付けできるよう、最初からCloudKit互換で設計する。
+Design for CloudKit compatibility from the start so iCloud sync can be added later without pain.
 
-1. `@Attribute(.unique)` を使わない
-2. 全プロパティはオプショナルまたはデフォルト値を持つ
-3. 全リレーションシップはオプショナル（`?`）
-4. 並び順は順序付きリレーションではなく、数値フィールド（`sortIndex: Int = 0` 等）で管理する
-5. CloudKit有効化後のスキーマ変更は軽量マイグレーションの範囲に収める
+1. Never use `@Attribute(.unique)`
+2. All properties must be optional or have default values
+3. All relationships must be optional (`?`)
+4. Use a numeric field (e.g. `sortIndex: Int = 0`) for ordering — never use ordered relationships
+5. Keep schema changes within lightweight migration scope after CloudKit is enabled
 
-## 機能仕様のポイント
+## Feature Specs
 
-### 予想印
-- 8種固定: ◎ ○ ▲ △ ☆ 注 押 消
-- 1頭につき1つだけ（複数付与不可）
-- 印は「馬」ではなく「出走（RaceEntry）」に紐づける（同じ馬でもレースごとに印が変わるため）
+### Prediction Marks
+- 8 fixed marks: ◎ ○ ▲ △ ☆ 注 押 消
+- One mark per horse per race (no multiple marks)
+- Marks belong to `RaceEntry`, not `Horse` (same horse can have different marks in different races)
 
-### 収支
-- レース1 — 馬券n（1レースに複数馬券を記録可）
-- 収支集計の基準: **レース日**
-- 未確定（結果待ち）の馬券: **払戻金0円**として扱う
-- 回収率 = 払戻合計 ÷ 購入合計
-- 集計単位: 日間・月間・年間
+### Balance Tracking
+- One race has many bets (Race 1 — Bet n)
+- Balance aggregation is based on **race date**
+- Unsettled bets (awaiting results): treat payout as **¥0**
+- Return rate = total payout ÷ total purchase
+- Aggregation periods: daily / monthly / yearly
 
-### iCloud同期
-- **デフォルトOFF**
-- ユーザーが設定で明示的にオンにしたときだけ有効化
-- 同期先はユーザー自身のプライベートiCloudのみ（公開／共有DBは使わない）
-- 現時点ではApple Developer Account未契約のため未実装
+### iCloud Sync
+- **Default OFF**
+- Enable only when the user explicitly turns it on in settings
+- Sync target is the user's own private iCloud only (no public/shared DB)
+- Not yet implemented — Apple Developer Account not yet subscribed
 
-## 配信・審査方針
+## Distribution and Review Policy
 
-- 配信地域: **日本のみ**
-- 年齢レーティング: 高め（18+相当）想定
-- 馬券購入サイト（即PAT/IPAT等）へのリンク・ボタンを置かない
-- アプリ説明文と審査メモに「賭け機能のない記録アプリ」と明記する
+- Distribution region: **Japan only**
+- Age rating: high (18+ equivalent)
+- No links or buttons to betting sites (e.g. 即PAT/IPAT)
+- App description and App Review Notes must state: "This is a record-keeping app with no betting features"
