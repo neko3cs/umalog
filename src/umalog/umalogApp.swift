@@ -10,6 +10,11 @@ import SwiftUI
 
 @main
 struct umalogApp: App {
+    private var isUnitTesting: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            && !CommandLine.arguments.contains("--UITesting")
+    }
+
     let sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Venue.self,
@@ -19,7 +24,9 @@ struct umalogApp: App {
             Bet.self,
         ])
         let isUITesting = CommandLine.arguments.contains("--UITesting")
-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: isUITesting)
+        let isUnitTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            && !CommandLine.arguments.contains("--UITesting")
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: isUITesting || isUnitTesting)
         do {
             return try ModelContainer(for: schema, configurations: [config])
         } catch {
@@ -29,8 +36,12 @@ struct umalogApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .task { await seedInitialDataIfNeeded() }
+            if isUnitTesting {
+                EmptyView()
+            } else {
+                ContentView()
+                    .task { await seedInitialDataIfNeeded() }
+            }
         }
         .modelContainer(sharedModelContainer)
     }
