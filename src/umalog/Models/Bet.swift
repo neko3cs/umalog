@@ -100,51 +100,63 @@ final class Bet {
         guard legs.count >= 2 else { return 0 }
         switch ticketTypeName {
         case "枠連", "馬連", "ワイド":
-            // 2 軸・順不同
-            guard legs.count == 2 else { return 0 }
-            var pairs = Set<Set<Int>>()
-            for a in legs[0] {
-                for b in legs[1] where a != b {
-                    pairs.insert(Set([a, b]))
-                }
-            }
-            return pairs.count
+            return formationTwoLegUnordered(legs: legs)
         case "馬単":
-            // 2 軸・順序あり
-            guard legs.count == 2 else { return 0 }
-            var count = 0
-            for a in legs[0] {
-                for b in legs[1] where a != b {
-                    count += 1
-                }
-            }
-            return count
+            return formationTwoLegOrdered(legs: legs)
         case "三連複":
-            // 3 軸・順不同
-            guard legs.count == 3 else { return 0 }
-            var triples = Set<Set<Int>>()
-            for a in legs[0] {
-                for b in legs[1] {
-                    for c in legs[2] where a != b && b != c && a != c {
-                        triples.insert(Set([a, b, c]))
-                    }
-                }
-            }
-            return triples.count
+            return formationThreeLegUnordered(legs: legs)
         case "三連単":
-            // 3 軸・順序あり
-            guard legs.count == 3 else { return 0 }
-            var count = 0
-            for a in legs[0] {
-                for b in legs[1] {
-                    for c in legs[2] where a != b && b != c && a != c {
-                        count += 1
-                    }
-                }
-            }
-            return count
+            return formationThreeLegOrdered(legs: legs)
         default:
             return legs.map(\.count).reduce(1, *)
         }
+    }
+
+    private static func formationTwoLegUnordered(legs: [[Int]]) -> Int {
+        guard legs.count == 2 else { return 0 }
+        var pairs = Set<Set<Int>>()
+        for a in legs[0] {
+            for b in legs[1] where a != b {
+                pairs.insert(Set([a, b]))
+            }
+        }
+        return pairs.count
+    }
+
+    private static func formationTwoLegOrdered(legs: [[Int]]) -> Int {
+        guard legs.count == 2 else { return 0 }
+        var count = 0
+        for a in legs[0] {
+            for b in legs[1] where a != b {
+                count += 1
+            }
+        }
+        return count
+    }
+
+    private static func formationThreeLegUnordered(legs: [[Int]]) -> Int {
+        guard legs.count == 3 else { return 0 }
+        var triples = Set<Set<Int>>()
+        for a in legs[0] {
+            for b in legs[1] {
+                for c in legs[2] where a != b && b != c && a != c {
+                    triples.insert(Set([a, b, c]))
+                }
+            }
+        }
+        return triples.count
+    }
+
+    private static func formationThreeLegOrdered(legs: [[Int]]) -> Int {
+        guard legs.count == 3 else { return 0 }
+        var count = 0
+        for a in legs[0] {
+            for b in legs[1] {
+                for c in legs[2] where a != b && b != c && a != c {
+                    count += 1
+                }
+            }
+        }
+        return count
     }
 }

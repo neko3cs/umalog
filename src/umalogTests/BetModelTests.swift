@@ -190,4 +190,22 @@ struct BetModelTests {
         container.mainContext.insert(bet)
         #expect(bet.combinationCount == 4)
     }
+
+    // MARK: - Venue init coverage
+
+    @Test func venue_defaultInit_hasEmptyName() {
+        let venue = Venue(name: "東京")
+        container.mainContext.insert(venue)
+        #expect(venue.name == "東京")
+        #expect(venue.isPreset == false)
+        #expect(venue.sortIndex == 0)
+    }
+
+    @Test func venue_initWithPresetAndSortIndex() {
+        let venue = Venue(name: "中山", isPreset: true, sortIndex: 5)
+        container.mainContext.insert(venue)
+        #expect(venue.name == "中山")
+        #expect(venue.isPreset == true)
+        #expect(venue.sortIndex == 5)
+    }
 }
