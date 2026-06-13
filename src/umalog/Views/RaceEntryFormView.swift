@@ -36,8 +36,20 @@ struct RaceEntryFormView: View {
 
     private var jockeyNameSuggestions: [String] {
         guard !jockeyName.isEmpty else { return [] }
-        let names = Set(allEntries.map { $0.jockeyName }.filter { !$0.isEmpty })
-        return names.filter { $0.localizedStandardContains(jockeyName) && $0 != jockeyName }.sorted()
+        let pastNames = Set(allEntries.map { $0.jockeyName }.filter { !$0.isEmpty })
+        let combined = pastNames.union(jockeyPresets)
+        return combined
+            .filter { $0.localizedStandardContains(jockeyName) && $0 != jockeyName }
+            .sorted()
+    }
+
+    private var trainerNameSuggestions: [String] {
+        guard !trainerName.isEmpty else { return [] }
+        let pastNames = Set(allEntries.map { $0.trainerName }.filter { !$0.isEmpty })
+        let combined = pastNames.union(trainerPresets)
+        return combined
+            .filter { $0.localizedStandardContains(trainerName) && $0 != trainerName }
+            .sorted()
     }
 
     var body: some View {
@@ -89,6 +101,20 @@ struct RaceEntryFormView: View {
 
                     TextField("調教師名（任意）", text: $trainerName)
                         .autocorrectionDisabled()
+
+                    if !trainerNameSuggestions.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(trainerNameSuggestions, id: \.self) { name in
+                                    Button(name) { trainerName = name }
+                                        .buttonStyle(.bordered)
+                                        .font(.caption)
+                                        .tint(.secondary)
+                                }
+                            }
+                            .padding(.vertical, 2)
+                        }
+                    }
                 }
 
                 Section("予想印") {
@@ -139,9 +165,20 @@ struct RaceEntryFormView: View {
                     }
                     .disabled(horseName.isEmpty)
                 }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("完了") { dismissKeyboard() }
+                }
             }
             .onAppear { loadIfEditing() }
         }
+    }
+
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder),
+            to: nil, from: nil, for: nil
+        )
     }
 
     private func loadIfEditing() {
