@@ -35,8 +35,17 @@ struct RaceFormView: View {
         NavigationStack {
             Form {
                 Section("レース情報") {
-                    DatePicker("日付", selection: $date, displayedComponents: .date)
-                        .environment(\.locale, Locale(identifier: "ja_JP"))
+                    HStack {
+                        Text("日付")
+                        Spacer()
+                        Text(date.formatted(Date.FormatStyle().locale(Locale(identifier: "ja_JP")).year(.defaultDigits).month(.twoDigits).day(.twoDigits)))
+                            .foregroundStyle(.blue)
+                            .overlay {
+                                DatePicker("", selection: $date, displayedComponents: .date)
+                                    .labelsHidden()
+                                    .colorMultiply(.clear)
+                            }
+                    }
                     Picker("競馬場", selection: $selectedVenue) {
                         Text("未選択").tag(nil as Venue?)
                         ForEach(venues) { venue in

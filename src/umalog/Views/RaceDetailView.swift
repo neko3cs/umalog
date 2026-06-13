@@ -29,7 +29,7 @@ struct RaceDetailView: View {
         List {
             Section("レース情報") {
                 LabeledContent("日付") {
-                    Text(race.date.formatted(Date.FormatStyle(date: .long, time: .omitted).locale(Locale(identifier: "ja_JP"))))
+                    Text(race.date.formatted(Date.FormatStyle().locale(Locale(identifier: "ja_JP")).year(.defaultDigits).month(.twoDigits).day(.twoDigits)))
                 }
                 if let venue = race.venue {
                     LabeledContent("競馬場", value: venue.name)
