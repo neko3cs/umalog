@@ -14,8 +14,8 @@ struct SettingsView: View {
     @Query(sort: \TicketType.sortIndex) private var ticketTypes: [TicketType]
     @Query private var races: [Race]
 
-    @State private var csvContent: String? = nil
-    @State private var showingShareSheet = false
+    @State private var showingDocumentPicker = false
+    @State private var zipFileURL: URL? = nil
 
     var body: some View {
         NavigationStack {
@@ -35,10 +35,9 @@ struct SettingsView: View {
 
                 Section("データ") {
                     Button {
-                        csvContent = CSVExporter.export(races: races)
-                        showingShareSheet = true
+                        exportZip()
                     } label: {
-                        Label("CSVエクスポート", systemImage: "square.and.arrow.up")
+                        Label("ZIPバックアップ", systemImage: "archivebox")
                     }
                 }
 
@@ -66,12 +65,24 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("設定")
-            .sheet(isPresented: $showingShareSheet) {
-                if let csv = csvContent {
-                    ShareSheet(content: csv, filename: "umalog_export.csv")
+            .sheet(isPresented: $showingDocumentPicker) {
+                if let url = zipFileURL {
+                    DocumentPicker(fileURL: url)
                 }
             }
         }
+    }
+
+    private func exportZip() {
+        let data = ZipExporter.export(races: races)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd"
+        let dateStr = formatter.string(from: Date())
+        let filename = "umalog_backup_\(dateStr).zip"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+        try? data.write(to: url)
+        zipFileURL = url
+        showingDocumentPicker = true
     }
 }
 
@@ -199,15 +210,18 @@ private struct TicketTypeManagementView: View {
     }
 }
 
-struct ShareSheet: UIViewControllerRepresentable {
-    let content: String
-    let filename: String
+struct DocumentPicker: UIViewControllerRepresentable {
+    let fileURL: URL
 
-    func makeUIViewController(context _: Context) -> UIActivityViewController {
-        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
-        try? content.write(to: tempURL, atomically: true, encoding: .utf8)
-        return UIActivityViewController(activityItems: [tempURL], applicationActivities: nil)
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let picker = UIDocumentPickerViewController(forExporting: [fileURL], asCopy: true)
+        picker.delegate = context.coordinator
+        return picker
     }
 
-    func updateUIViewController(_: UIActivityViewController, context _: Context) {}
+    func updateUIViewController(_: UIDocumentPickerViewController, context _: Context) {}
+
+    class Coordinator: NSObject, UIDocumentPickerDelegate {}
 }

@@ -24,7 +24,6 @@ struct RaceFormView: View {
     @State private var trackType: String = "turf"
     @State private var trackCondition: String = "良"
     @State private var category: String = "central"
-    @State private var memo: String = ""
 
     private let trackConditions = ["良", "稍重", "重", "不良"]
     private var isEditing: Bool {
@@ -86,11 +85,6 @@ struct RaceFormView: View {
                     }
                     .pickerStyle(.segmented)
                 }
-
-                Section("メモ") {
-                    TextEditor(text: $memo)
-                        .frame(minHeight: 80)
-                }
             }
             .navigationTitle(isEditing ? "レースを編集" : "レースを追加")
             .navigationBarTitleDisplayMode(.inline)
@@ -119,7 +113,6 @@ struct RaceFormView: View {
         trackType = race.trackType
         trackCondition = race.trackCondition
         category = race.category
-        memo = race.memo
     }
 
     private func save() {
@@ -132,12 +125,11 @@ struct RaceFormView: View {
             race.trackType = trackType
             race.trackCondition = trackCondition
             race.category = category
-            race.memo = memo
         } else {
             let newRace = Race(
                 date: date, venue: selectedVenue, raceNumber: raceNumber,
                 raceName: raceName, distance: distance, trackType: trackType,
-                trackCondition: trackCondition, category: category, memo: memo
+                trackCondition: trackCondition, category: category
             )
             modelContext.insert(newRace)
         }
