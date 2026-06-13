@@ -98,6 +98,15 @@ struct RaceFormView: View {
                         dismiss()
                     }
                 }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("完了") {
+                        UIApplication.shared.sendAction(
+                            #selector(UIResponder.resignFirstResponder),
+                            to: nil, from: nil, for: nil
+                        )
+                    }
+                }
             }
             .onAppear { loadIfEditing() }
         }

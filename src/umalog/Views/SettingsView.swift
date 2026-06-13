@@ -22,6 +22,11 @@ struct SettingsView: View {
     @State private var importError: String? = nil
     @State private var showingImportError = false
     @State private var showingImportSuccess = false
+    @State private var isExporting = false
+    @State private var isImporting = false
+    @State private var showingExportSuccess = false
+    @State private var exportError: String? = nil
+    @State private var showingExportError = false
 
     var body: some View {
         NavigationStack {
@@ -43,14 +48,25 @@ struct SettingsView: View {
                     Button {
                         exportZip()
                     } label: {
-                        Label("ZIPバックアップ", systemImage: "archivebox")
+                        HStack {
+                            Label("ZIPバックアップ", systemImage: "archivebox")
+                            Spacer()
+                            if isExporting { ProgressView() }
+                        }
                     }
+                    .disabled(isExporting || isImporting)
+
                     Button {
                         showingImportPicker = true
                     } label: {
-                        Label("ZIPから復元", systemImage: "archivebox.fill")
-                            .foregroundStyle(.orange)
+                        HStack {
+                            Label("ZIPから復元", systemImage: "archivebox.fill")
+                                .foregroundStyle(.orange)
+                            Spacer()
+                            if isImporting { ProgressView() }
+                        }
                     }
+                    .disabled(isExporting || isImporting)
                 }
 
                 Section {
@@ -78,7 +94,9 @@ struct SettingsView: View {
             }
             .navigationTitle("設定")
             .sheet(item: $exportURL) { item in
-                ExportDocumentPicker(fileURL: item.url)
+                ExportDocumentPicker(fileURL: item.url) {
+                    showingExportSuccess = true
+                }
             }
             .sheet(isPresented: $showingImportPicker) {
                 ImportDocumentPicker { url in
@@ -104,21 +122,48 @@ struct SettingsView: View {
             } message: {
                 Text("ZIPファイルからデータを復元しました。")
             }
+            .alert("バックアップ完了", isPresented: $showingExportSuccess) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("ZIPファイルを保存しました。")
+            }
+            .alert("バックアップエラー", isPresented: $showingExportError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(exportError ?? "不明なエラーが発生しました")
+            }
         }
     }
 
     private func exportZip() {
-        guard let url = try? ZipExporter.export(races: races) else { return }
-        exportURL = ExportURL(url: url)
+        isExporting = true
+        Task { @MainActor in
+            // SwiftUIにProgressView描画の機会を与える
+            await Task.yield()
+            do {
+                let url = try ZipExporter.export(races: races)
+                isExporting = false
+                exportURL = ExportURL(url: url)
+            } catch {
+                isExporting = false
+                exportError = error.localizedDescription
+                showingExportError = true
+            }
+        }
     }
 
     private func performImport(from url: URL) {
-        do {
-            try ZipImporter.importZip(from: url, context: modelContext)
-            showingImportSuccess = true
-        } catch {
-            importError = error.localizedDescription
-            showingImportError = true
+        isImporting = true
+        Task { @MainActor in
+            await Task.yield()
+            defer { isImporting = false }
+            do {
+                try ZipImporter.importZip(from: url, context: modelContext)
+                showingImportSuccess = true
+            } catch {
+                importError = error.localizedDescription
+                showingImportError = true
+            }
         }
     }
 }
@@ -277,16 +322,28 @@ struct ImportDocumentPicker: UIViewControllerRepresentable {
             guard let url = urls.first else { return }
             let accessing = url.startAccessingSecurityScopedResource()
             defer { if accessing { url.stopAccessingSecurityScopedResource() } }
-            onPicked(url)
+
+            // セキュリティスコープが解放されると元URLを後で読めなくなるため、
+            // 取得直後にアプリのtmpへコピーする
+            let tmpURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent("import_\(UUID().uuidString).zip")
+            do {
+                try? FileManager.default.removeItem(at: tmpURL)
+                try FileManager.default.copyItem(at: url, to: tmpURL)
+                onPicked(tmpURL)
+            } catch {
+                onPicked(url) // フォールバック（おそらく失敗するがエラーをユーザーに伝えるため）
+            }
         }
     }
 }
 
 struct ExportDocumentPicker: UIViewControllerRepresentable {
     let fileURL: URL
+    let onSaved: () -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator()
+        Coordinator(onSaved: onSaved)
     }
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
@@ -297,5 +354,14 @@ struct ExportDocumentPicker: UIViewControllerRepresentable {
 
     func updateUIViewController(_: UIDocumentPickerViewController, context _: Context) {}
 
-    class Coordinator: NSObject, UIDocumentPickerDelegate {}
+    class Coordinator: NSObject, UIDocumentPickerDelegate {
+        let onSaved: () -> Void
+        init(onSaved: @escaping () -> Void) {
+            self.onSaved = onSaved
+        }
+
+        func documentPicker(_: UIDocumentPickerViewController, didPickDocumentsAt _: [URL]) {
+            onSaved()
+        }
+    }
 }

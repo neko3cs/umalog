@@ -153,6 +153,15 @@ struct BetFormView: View {
             }
             .disabled(selection.isEmpty || purchaseAmount <= 0)
         }
+        ToolbarItemGroup(placement: .keyboard) {
+            Spacer()
+            Button("完了") {
+                UIApplication.shared.sendAction(
+                    #selector(UIResponder.resignFirstResponder),
+                    to: nil, from: nil, for: nil
+                )
+            }
+        }
     }
 
     // MARK: - Ticket Type Section
