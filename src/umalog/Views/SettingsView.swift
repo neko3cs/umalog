@@ -7,6 +7,7 @@
 
 import SwiftData
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -14,8 +15,13 @@ struct SettingsView: View {
     @Query(sort: \TicketType.sortIndex) private var ticketTypes: [TicketType]
     @Query private var races: [Race]
 
-    @State private var showingDocumentPicker = false
-    @State private var zipFileURL: URL? = nil
+    @State private var exportURL: ExportURL? = nil
+    @State private var showingImportPicker = false
+    @State private var showingImportConfirm = false
+    @State private var pendingImportURL: URL? = nil
+    @State private var importError: String? = nil
+    @State private var showingImportError = false
+    @State private var showingImportSuccess = false
 
     var body: some View {
         NavigationStack {
@@ -38,6 +44,12 @@ struct SettingsView: View {
                         exportZip()
                     } label: {
                         Label("ZIPバックアップ", systemImage: "archivebox")
+                    }
+                    Button {
+                        showingImportPicker = true
+                    } label: {
+                        Label("ZIPから復元", systemImage: "archivebox.fill")
+                            .foregroundStyle(.orange)
                     }
                 }
 
@@ -65,24 +77,49 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("設定")
-            .sheet(isPresented: $showingDocumentPicker) {
-                if let url = zipFileURL {
-                    DocumentPicker(fileURL: url)
+            .sheet(item: $exportURL) { item in
+                ExportDocumentPicker(fileURL: item.url)
+            }
+            .sheet(isPresented: $showingImportPicker) {
+                ImportDocumentPicker { url in
+                    pendingImportURL = url
+                    showingImportConfirm = true
                 }
+            }
+            .alert("データを復元", isPresented: $showingImportConfirm) {
+                Button("復元", role: .destructive) {
+                    if let url = pendingImportURL { performImport(from: url) }
+                }
+                Button("キャンセル", role: .cancel) { pendingImportURL = nil }
+            } message: {
+                Text("現在のレースデータをすべて削除してZIPから復元します。競馬場・券種データは変更されません。この操作は元に戻せません。")
+            }
+            .alert("復元エラー", isPresented: $showingImportError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(importError ?? "不明なエラーが発生しました")
+            }
+            .alert("復元完了", isPresented: $showingImportSuccess) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("ZIPファイルからデータを復元しました。")
             }
         }
     }
 
     private func exportZip() {
-        let data = ZipExporter.export(races: races)
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd"
-        let dateStr = formatter.string(from: Date())
-        let filename = "umalog_backup_\(dateStr).zip"
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
-        try? data.write(to: url)
-        zipFileURL = url
-        showingDocumentPicker = true
+        guard let url = try? ZipExporter.export(races: races) else { return }
+        exportURL = ExportURL(url: url)
+    }
+
+    private func performImport(from url: URL) {
+        do {
+            try ZipImporter.importZip(from: url, context: modelContext)
+            showingImportSuccess = true
+        } catch {
+            importError = error.localizedDescription
+            showingImportError = true
+        }
     }
 }
 
@@ -210,7 +247,38 @@ private struct TicketTypeManagementView: View {
     }
 }
 
-struct DocumentPicker: UIViewControllerRepresentable {
+private struct ExportURL: Identifiable {
+    let id = UUID()
+    let url: URL
+}
+
+struct ImportDocumentPicker: UIViewControllerRepresentable {
+    let onPicked: (URL) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(onPicked: onPicked) }
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.zip])
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_: UIDocumentPickerViewController, context _: Context) {}
+
+    class Coordinator: NSObject, UIDocumentPickerDelegate {
+        let onPicked: (URL) -> Void
+        init(onPicked: @escaping (URL) -> Void) { self.onPicked = onPicked }
+
+        func documentPicker(_: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            guard let url = urls.first else { return }
+            let accessing = url.startAccessingSecurityScopedResource()
+            defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+            onPicked(url)
+        }
+    }
+}
+
+struct ExportDocumentPicker: UIViewControllerRepresentable {
     let fileURL: URL
 
     func makeCoordinator() -> Coordinator { Coordinator() }
