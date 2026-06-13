@@ -36,6 +36,7 @@ struct RaceFormView: View {
             Form {
                 Section("レース情報") {
                     DatePicker("日付", selection: $date, displayedComponents: .date)
+                        .environment(\.locale, Locale(identifier: "ja_JP"))
                     Picker("競馬場", selection: $selectedVenue) {
                         Text("未選択").tag(nil as Venue?)
                         ForEach(venues) { venue in

@@ -64,6 +64,7 @@ struct BalanceSummaryView: View {
                     .pickerStyle(.segmented)
 
                     DatePicker("対象", selection: $selectedDate, displayedComponents: .date)
+                        .environment(\.locale, Locale(identifier: "ja_JP"))
                 }
 
                 Section("集計") {
