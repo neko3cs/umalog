@@ -63,8 +63,17 @@ struct BalanceSummaryView: View {
                     }
                     .pickerStyle(.segmented)
 
-                    DatePicker("対象", selection: $selectedDate, displayedComponents: .date)
-                        .environment(\.locale, Locale(identifier: "ja_JP"))
+                    HStack {
+                        Text("対象")
+                        Spacer()
+                        Text(selectedDate.formatted(Date.FormatStyle().locale(Locale(identifier: "ja_JP")).year(.defaultDigits).month(.twoDigits).day(.twoDigits)))
+                            .foregroundStyle(.blue)
+                            .overlay {
+                                DatePicker("", selection: $selectedDate, displayedComponents: .date)
+                                    .labelsHidden()
+                                    .colorMultiply(.clear)
+                            }
+                    }
                 }
 
                 Section("集計") {
@@ -87,7 +96,7 @@ struct BalanceSummaryView: View {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
                                     HStack(spacing: 4) {
-                                        Text(race.date.formatted(Date.FormatStyle(date: .long, time: .omitted).locale(Locale(identifier: "ja_JP"))))
+                                        Text(race.date.formatted(Date.FormatStyle().locale(Locale(identifier: "ja_JP")).year(.defaultDigits).month(.twoDigits).day(.twoDigits)))
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                         if let venue = race.venue {
