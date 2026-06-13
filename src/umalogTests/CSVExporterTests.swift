@@ -228,4 +228,132 @@ struct CSVExporterTests {
         let idx2 = lines.firstIndex { $0.contains(formatDate(today)) } ?? Int.max
         #expect(idx1 < idx2)
     }
+
+    // MARK: - escape / formatDate / formatFilenameDate
+
+    @Test func escape_normalString_isNotQuoted() {
+        #expect(CSVExporter.escape("普通の文字") == "普通の文字")
+    }
+
+    @Test func escape_stringWithComma_isQuoted() {
+        #expect(CSVExporter.escape("a,b") == "\"a,b\"")
+    }
+
+    @Test func escape_stringWithDoubleQuote_isEscapedAndQuoted() {
+        #expect(CSVExporter.escape("a\"b") == "\"a\"\"b\"")
+    }
+
+    @Test func escape_stringWithNewline_isQuoted() {
+        #expect(CSVExporter.escape("a\nb") == "\"a\nb\"")
+    }
+
+    @Test func formatDate_returnsSlashFormat() throws {
+        let calendar = Calendar(identifier: .gregorian)
+        let date = try #require(calendar.date(from: DateComponents(year: 2026, month: 6, day: 13)))
+        #expect(CSVExporter.formatDate(date) == "2026/06/13")
+    }
+
+    @Test func formatFilenameDate_returnsCompactFormat() throws {
+        let calendar = Calendar(identifier: .gregorian)
+        let date = try #require(calendar.date(from: DateComponents(year: 2026, month: 6, day: 13)))
+        #expect(CSVExporter.formatFilenameDate(date) == "20260613")
+    }
+
+    // MARK: - ZipExporter / ZipImporter round-trip
+
+    @Test func zipExporter_producesZipFileAtTemporaryDirectory() throws {
+        let ctx = container.mainContext
+        let race = Race(raceNumber: 7); ctx.insert(race)
+        let url = try ZipExporter.export(races: [race])
+        defer { try? FileManager.default.removeItem(at: url) }
+        #expect(url.pathExtension == "zip")
+        #expect(FileManager.default.fileExists(atPath: url.path))
+    }
+
+    @Test func zipExporter_zipImporter_roundTrip_preservesData() throws {
+        let exportCtx = container.mainContext
+        let venue = Venue(name: "東京"); exportCtx.insert(venue)
+        let race = Race(
+            date: makeDate(2026, 6, 13),
+            venue: venue,
+            raceNumber: 11,
+            raceName: "テストレース",
+            distance: 1600,
+            trackType: "turf",
+            trackCondition: "良",
+            category: "central",
+            memo: "テストメモ"
+        )
+        exportCtx.insert(race)
+        let entry = RaceEntry(race: race, horseNumber: 5, horseName: "テスト馬", predictionMark: "◎")
+        exportCtx.insert(entry)
+        race.entries = [entry]
+        let bet = Bet(race: race, ticketTypeName: "馬連", selection: "1,2,3[BOX]", unitPrice: 100, purchaseAmount: 300, payoutAmount: 800)
+        exportCtx.insert(bet)
+        race.bets = [bet]
+
+        let url = try ZipExporter.export(races: [race])
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        // Import into a fresh container
+        let schema = Schema([Race.self, Bet.self, RaceEntry.self, Venue.self, TicketType.self])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let importContainer = try ModelContainer(for: schema, configurations: [config])
+        let importCtx = importContainer.mainContext
+        importCtx.insert(Venue(name: "東京")) // 復元時に競馬場参照を解決するため先にシード
+
+        try ZipImporter.importZip(from: url, context: importCtx)
+
+        let races = try importCtx.fetch(FetchDescriptor<Race>())
+        #expect(races.count == 1)
+        let restored = try #require(races.first)
+        #expect(restored.raceName == "テストレース")
+        #expect(restored.raceNumber == 11)
+        #expect(restored.distance == 1600)
+        #expect(restored.trackType == "turf")
+        #expect(restored.category == "central")
+        #expect(restored.memo == "テストメモ")
+        #expect(restored.venue?.name == "東京")
+
+        let entries = try importCtx.fetch(FetchDescriptor<RaceEntry>())
+        #expect(entries.count == 1)
+        #expect(entries.first?.horseName == "テスト馬")
+        #expect(entries.first?.predictionMark == "◎")
+
+        let bets = try importCtx.fetch(FetchDescriptor<Bet>())
+        #expect(bets.count == 1)
+        let restoredBet = try #require(bets.first)
+        #expect(restoredBet.unitPrice == 100)
+        #expect(restoredBet.purchaseAmount == 300)
+        #expect(restoredBet.payoutAmount == 800)
+        #expect(restoredBet.selection == "1,2,3[BOX]")
+        #expect(restoredBet.ticketTypeName == "馬連")
+    }
+
+    @Test func zipImporter_replacesExistingRaceData() throws {
+        // 既存レースを 1 件投入
+        let pre = Race(raceNumber: 99); container.mainContext.insert(pre)
+        try container.mainContext.save()
+
+        // 別レースを ZIP 化
+        let exportSchema = Schema([Race.self, Bet.self, RaceEntry.self, Venue.self, TicketType.self])
+        let exportConfig = ModelConfiguration(schema: exportSchema, isStoredInMemoryOnly: true)
+        let exportContainer = try ModelContainer(for: exportSchema, configurations: [exportConfig])
+        let exportCtx = exportContainer.mainContext
+        let newRace = Race(raceNumber: 1, raceName: "新規")
+        exportCtx.insert(newRace)
+        let url = try ZipExporter.export(races: [newRace])
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        try ZipImporter.importZip(from: url, context: container.mainContext)
+
+        let races = try container.mainContext.fetch(FetchDescriptor<Race>())
+        #expect(races.count == 1)
+        #expect(races.first?.raceName == "新規")
+    }
+
+    private func makeDate(_ year: Int, _ month: Int, _ day: Int) -> Date {
+        let calendar = Calendar(identifier: .gregorian)
+        return calendar.date(from: DateComponents(year: year, month: month, day: day)) ?? Date()
+    }
 }
