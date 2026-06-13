@@ -5,8 +5,8 @@
 //  Created by neko3cs on 2026/06/11.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 enum BetStyle: String, CaseIterable {
     case normal = "通常"
@@ -32,7 +32,7 @@ struct BetFormView: View {
     @State private var horse1: Int = -1
     @State private var horse2: Int = -1
     @State private var horse3: Int = -1
-    // ボックス
+    /// ボックス
     @State private var boxHorses: Set<Int> = []
     // フォーメーション
     @State private var formLeg1: Set<Int> = []
@@ -43,25 +43,31 @@ struct BetFormView: View {
     @State private var purchaseAmount: Int = 100
     @State private var payoutAmount: Int = 0
 
-    private var isEditing: Bool { bet != nil }
+    private var isEditing: Bool {
+        bet != nil
+    }
 
     private var sortedEntries: [RaceEntry] {
         (race.entries ?? []).sorted { $0.horseNumber < $1.horseNumber }
     }
 
-    private var hasEntries: Bool { !sortedEntries.isEmpty }
+    private var hasEntries: Bool {
+        !sortedEntries.isEmpty
+    }
 
     private var autoHorseCount: Int? {
         let name = useCustom ? customTicketTypeName : (selectedTicketType?.name ?? "")
         switch name {
-        case "単勝", "複勝":                    return 1
-        case "枠連", "馬連", "ワイド", "馬単":  return 2
-        case "三連複", "三連単":               return 3
-        default:                              return nil
+        case "単勝", "複勝": return 1
+        case "枠連", "馬連", "ワイド", "馬単": return 2
+        case "三連複", "三連単": return 3
+        default: return nil
         }
     }
 
-    private var effectiveHorseCount: Int { autoHorseCount ?? manualHorseCount }
+    private var effectiveHorseCount: Int {
+        autoHorseCount ?? manualHorseCount
+    }
 
     private var effectiveBetStyle: BetStyle {
         effectiveHorseCount == 1 ? .normal : betStyle
@@ -264,7 +270,6 @@ struct BetFormView: View {
 
     // MARK: - Helpers
 
-    @ViewBuilder
     private func horsePicker(label: String, selection: Binding<Int>) -> some View {
         Picker(label, selection: selection) {
             Text("未選択").tag(-1)
@@ -322,7 +327,7 @@ struct BetFormView: View {
                 betStyle = .normal
                 let nums = sel.split(separator: "-").compactMap { Int($0) }
                 manualHorseCount = max(1, min(3, nums.isEmpty ? 1 : nums.count))
-                horse1 = nums.count > 0 ? nums[0] : -1
+                horse1 = nums.isEmpty ? -1 : nums[0]
                 horse2 = nums.count > 1 ? nums[1] : -1
                 horse3 = nums.count > 2 ? nums[2] : -1
             }

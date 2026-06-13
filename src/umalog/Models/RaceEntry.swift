@@ -10,13 +10,13 @@ import SwiftData
 
 @Model
 final class RaceEntry {
-    var race: Race? = nil
+    var race: Race?
     var horseNumber: Int = 0
     var horseName: String = ""
     var jockeyName: String = ""
     var trainerName: String = ""
-    var predictionMark: String? = nil   // PredictionMark.rawValue
-    var finishPosition: Int? = nil
+    var predictionMark: String? // PredictionMark.rawValue
+    var finishPosition: Int?
     var sortIndex: Int = 0
 
     init(

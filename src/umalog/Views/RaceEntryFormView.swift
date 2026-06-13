@@ -5,8 +5,8 @@
 //  Created by neko3cs on 2026/06/11.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct RaceEntryFormView: View {
     @Environment(\.modelContext) private var modelContext
@@ -24,7 +24,9 @@ struct RaceEntryFormView: View {
     @State private var selectedMark: PredictionMark? = nil
     @State private var finishPositionText: String = ""
 
-    private var isEditing: Bool { entry != nil }
+    private var isEditing: Bool {
+        entry != nil
+    }
 
     private var horseNameSuggestions: [String] {
         guard !horseName.isEmpty else { return [] }

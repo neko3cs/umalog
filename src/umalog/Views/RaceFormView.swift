@@ -5,8 +5,8 @@
 //  Created by neko3cs on 2026/06/11.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct RaceFormView: View {
     @Environment(\.modelContext) private var modelContext
@@ -16,7 +16,7 @@ struct RaceFormView: View {
 
     @Query(sort: \Venue.sortIndex) private var venues: [Venue]
 
-    @State private var date: Date = Date()
+    @State private var date: Date = .init()
     @State private var selectedVenue: Venue? = nil
     @State private var raceNumber: Int = 1
     @State private var raceName: String = ""
@@ -27,7 +27,9 @@ struct RaceFormView: View {
     @State private var memo: String = ""
 
     private let trackConditions = ["良", "稍重", "重", "不良"]
-    private var isEditing: Bool { race != nil }
+    private var isEditing: Bool {
+        race != nil
+    }
 
     var body: some View {
         NavigationStack {
@@ -40,7 +42,7 @@ struct RaceFormView: View {
                             Text(venue.name).tag(venue as Venue?)
                         }
                     }
-                    Stepper("R\(raceNumber)", value: $raceNumber, in: 1...30)
+                    Stepper("R\(raceNumber)", value: $raceNumber, in: 1 ... 30)
                     TextField("レース名（任意）", text: $raceName)
                 }
 

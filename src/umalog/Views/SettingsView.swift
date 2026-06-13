@@ -5,8 +5,8 @@
 //  Created by neko3cs on 2026/06/11.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -89,7 +89,9 @@ private struct VenueManagementView: View {
                 Text(venue.name)
             }
             .onDelete { indexSet in
-                for i in indexSet { modelContext.delete(venues[i]) }
+                for i in indexSet {
+                    modelContext.delete(venues[i])
+                }
             }
             Button {
                 showingAdd = true
@@ -149,7 +151,9 @@ private struct TicketTypeManagementView: View {
                 Text(tt.name)
             }
             .onDelete { indexSet in
-                for i in indexSet { modelContext.delete(ticketTypes[i]) }
+                for i in indexSet {
+                    modelContext.delete(ticketTypes[i])
+                }
             }
             Button {
                 showingAdd = true
@@ -199,11 +203,11 @@ struct ShareSheet: UIViewControllerRepresentable {
     let content: String
     let filename: String
 
-    func makeUIViewController(context: Context) -> UIActivityViewController {
+    func makeUIViewController(context _: Context) -> UIActivityViewController {
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         try? content.write(to: tempURL, atomically: true, encoding: .utf8)
         return UIActivityViewController(activityItems: [tempURL], applicationActivities: nil)
     }
 
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+    func updateUIViewController(_: UIActivityViewController, context _: Context) {}
 }
