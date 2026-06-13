@@ -6,13 +6,12 @@
 //
 
 import Foundation
-import Testing
 import SwiftData
+import Testing
 @testable import umalog
 
-@Suite @MainActor
+@MainActor
 struct CSVExporterTests {
-
     let container: ModelContainer
 
     init() throws {
@@ -43,7 +42,9 @@ struct CSVExporterTests {
 
     @Test func export_racesSection_hasCorrectColumnHeaders() {
         let output = CSVExporter.export(races: [])
-        #expect(output.contains("date,venue,race_number,race_name,distance,track_type,track_condition,category,total_purchase,total_payout,balance,memo"))
+        let expected = "date,venue,race_number,race_name,distance,track_type,track_condition," +
+            "category,total_purchase,total_payout,balance,memo"
+        #expect(output.contains(expected))
     }
 
     @Test func export_entriesSection_hasCorrectColumnHeaders() {
@@ -58,43 +59,43 @@ struct CSVExporterTests {
 
     // MARK: - Race row
 
-    @Test func export_raceRow_containsDate() throws {
+    @Test func export_raceRow_containsDate() {
         let race = Race(raceNumber: 1); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
         #expect(output.contains(formatDate(race.date)))
     }
 
-    @Test func export_raceRow_containsRaceNumber() throws {
+    @Test func export_raceRow_containsRaceNumber() {
         let race = Race(raceNumber: 5); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
         #expect(output.contains(",5,"))
     }
 
-    @Test func export_raceRow_turfTrackType() throws {
+    @Test func export_raceRow_turfTrackType() {
         let race = Race(trackType: "turf"); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
         #expect(output.contains(",芝,"))
     }
 
-    @Test func export_raceRow_dirtTrackType() throws {
+    @Test func export_raceRow_dirtTrackType() {
         let race = Race(trackType: "dirt"); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
         #expect(output.contains(",ダート,"))
     }
 
-    @Test func export_raceRow_centralCategory() throws {
+    @Test func export_raceRow_centralCategory() {
         let race = Race(category: "central"); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
         #expect(output.contains(",中央,"))
     }
 
-    @Test func export_raceRow_localCategory() throws {
+    @Test func export_raceRow_localCategory() {
         let race = Race(category: "local"); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
         #expect(output.contains(",地方,"))
     }
 
-    @Test func export_raceRow_containsTotalPurchase() throws {
+    @Test func export_raceRow_containsTotalPurchase() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 1500, payoutAmount: 0); ctx.insert(bet)
@@ -103,7 +104,7 @@ struct CSVExporterTests {
         #expect(output.contains(",1500,"))
     }
 
-    @Test func export_raceRow_containsTotalPayout() throws {
+    @Test func export_raceRow_containsTotalPayout() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 1000, payoutAmount: 3200); ctx.insert(bet)
@@ -112,7 +113,7 @@ struct CSVExporterTests {
         #expect(output.contains(",3200,"))
     }
 
-    @Test func export_raceRow_containsBalance() throws {
+    @Test func export_raceRow_containsBalance() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 1000, payoutAmount: 3000); ctx.insert(bet)
@@ -123,7 +124,7 @@ struct CSVExporterTests {
 
     // MARK: - Entry row
 
-    @Test func export_entryRow_containsHorseName() throws {
+    @Test func export_entryRow_containsHorseName() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let entry = RaceEntry(race: race, horseNumber: 3, horseName: "テスト馬"); ctx.insert(entry)
@@ -132,7 +133,7 @@ struct CSVExporterTests {
         #expect(output.contains("テスト馬"))
     }
 
-    @Test func export_entryRow_containsHorseNumber() throws {
+    @Test func export_entryRow_containsHorseNumber() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let entry = RaceEntry(race: race, horseNumber: 7, horseName: "テスト馬"); ctx.insert(entry)
@@ -141,7 +142,7 @@ struct CSVExporterTests {
         #expect(output.contains(",7,"))
     }
 
-    @Test func export_entryRow_containsPredictionMark() throws {
+    @Test func export_entryRow_containsPredictionMark() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let entry = RaceEntry(race: race, horseName: "テスト馬", predictionMark: "◎"); ctx.insert(entry)
@@ -150,7 +151,7 @@ struct CSVExporterTests {
         #expect(output.contains(",◎,"))
     }
 
-    @Test func export_entryRow_withNoPredictionMark_includesHorseName() throws {
+    @Test func export_entryRow_withNoPredictionMark_includesHorseName() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let entry = RaceEntry(race: race, horseName: "テスト馬", predictionMark: nil); ctx.insert(entry)
@@ -161,7 +162,7 @@ struct CSVExporterTests {
 
     // MARK: - Bet row
 
-    @Test func export_betRow_containsTicketTypeAndSelection() throws {
+    @Test func export_betRow_containsTicketTypeAndSelection() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, ticketTypeName: "単勝", selection: "1", purchaseAmount: 100); ctx.insert(bet)
@@ -171,7 +172,7 @@ struct CSVExporterTests {
         #expect(output.contains(",1,"))
     }
 
-    @Test func export_betRow_containsPurchaseAndPayout() throws {
+    @Test func export_betRow_containsPurchaseAndPayout() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, selection: "1-2", purchaseAmount: 500, payoutAmount: 1200); ctx.insert(bet)
@@ -183,26 +184,26 @@ struct CSVExporterTests {
 
     // MARK: - CSV escaping
 
-    @Test func export_valueWithComma_isQuoted() throws {
+    @Test func export_valueWithComma_isQuoted() {
         let race = Race(raceName: "東京,大賞典"); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
         #expect(output.contains("\"東京,大賞典\""))
     }
 
-    @Test func export_valueWithDoubleQuote_isEscaped() throws {
+    @Test func export_valueWithDoubleQuote_isEscaped() {
         let race = Race(raceName: "\"特別\"レース"); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
         #expect(output.contains("\"\"\"特別\"\"レース\""))
     }
 
-    @Test func export_normalValue_isNotQuoted() throws {
+    @Test func export_normalValue_isNotQuoted() {
         let race = Race(raceName: "天皇賞春"); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
         #expect(output.contains(",天皇賞春,"))
         #expect(!output.contains("\"天皇賞春\""))
     }
 
-    @Test func export_memoWithNewline_isReplacedWithSpace() throws {
+    @Test func export_memoWithNewline_isReplacedWithSpace() {
         let race = Race(); container.mainContext.insert(race)
         race.memo = "1行目\n2行目"
         let output = CSVExporter.export(races: [race])
@@ -215,14 +216,14 @@ struct CSVExporterTests {
     @Test func export_racesAreSortedByDateAscending() throws {
         let ctx = container.mainContext
         let today = Date()
-        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)!
-        let race1 = Race(date: today,     raceNumber: 1); ctx.insert(race1)
+        let yesterday = try #require(Calendar.current.date(byAdding: .day, value: -1, to: today))
+        let race1 = Race(date: today, raceNumber: 1); ctx.insert(race1)
         let race2 = Race(date: yesterday, raceNumber: 2); ctx.insert(race2)
 
         let output = CSVExporter.export(races: [race1, race2])
         let lines = output.components(separatedBy: "\n")
         let idx1 = lines.firstIndex { $0.contains(formatDate(yesterday)) } ?? Int.max
-        let idx2 = lines.firstIndex { $0.contains(formatDate(today)) }     ?? Int.max
+        let idx2 = lines.firstIndex { $0.contains(formatDate(today)) } ?? Int.max
         #expect(idx1 < idx2)
     }
 }

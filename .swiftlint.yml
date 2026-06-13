@@ -1,0 +1,48 @@
+included:
+  - src/umalog
+  - src/umalogTests
+  - src/umalogUITests
+
+excluded:
+  - src/umalog.xcodeproj
+
+disabled_rules:
+  - trailing_whitespace              # swiftformat が管理
+  - vertical_whitespace              # swiftformat が管理
+  - opening_brace                    # swiftformat が管理
+  - trailing_comma                   # swiftformat がトレイリングカンマを追加するため除外
+  - implicit_optional_initialization # SwiftUI の @State 変数では nil 明示が慣例
+
+opt_in_rules:
+  - empty_count
+  - first_where
+  - static_over_final_class
+
+line_length:
+  warning: 150
+  error: 200
+
+type_name:
+  min_length: 2
+  max_length: 60
+  excluded:
+    - umalogApp
+    - umalogTests
+    - umalogUITests
+    - umalogUITestsLaunchTests
+
+identifier_name:
+  min_length: 1
+  max_length: 60
+  excluded:
+    - id
+    - f
+    - tt
+
+function_body_length:
+  warning: 60
+  error: 100
+
+type_body_length:
+  warning: 300
+  error: 500

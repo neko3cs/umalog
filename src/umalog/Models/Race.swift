@@ -11,17 +11,17 @@ import SwiftData
 @Model
 final class Race {
     var date: Date = Date()
-    var venue: Venue? = nil
+    var venue: Venue?
     var raceNumber: Int = 1
     var raceName: String = ""
     var distance: Int = 1600
-    var trackType: String = "turf"      // "turf" | "dirt"
-    var trackCondition: String = "良"   // 良・稍重・重・不良
-    var category: String = "central"    // "central" | "local"
+    var trackType: String = "turf" // "turf" | "dirt"
+    var trackCondition: String = "良" // 良・稍重・重・不良
+    var category: String = "central" // "central" | "local"
     var memo: String = ""
     var sortIndex: Int = 0
-    var entries: [RaceEntry]? = nil
-    var bets: [Bet]? = nil
+    var entries: [RaceEntry]?
+    var bets: [Bet]?
 
     init(
         date: Date = Date(),

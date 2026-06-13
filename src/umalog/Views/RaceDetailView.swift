@@ -5,8 +5,8 @@
 //  Created by neko3cs on 2026/06/11.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct RaceDetailView: View {
     @Environment(\.modelContext) private var modelContext
@@ -51,7 +51,9 @@ struct RaceDetailView: View {
                         .onTapGesture { editingEntry = entry }
                 }
                 .onDelete { indexSet in
-                    for i in indexSet { modelContext.delete(sortedEntries[i]) }
+                    for i in indexSet {
+                        modelContext.delete(sortedEntries[i])
+                    }
                 }
                 Button { showingAddEntry = true } label: {
                     Label("出走馬を追加", systemImage: "plus")
@@ -67,7 +69,9 @@ struct RaceDetailView: View {
                         .onTapGesture { editingBet = bet }
                 }
                 .onDelete { indexSet in
-                    for i in indexSet { modelContext.delete(sortedBets[i]) }
+                    for i in indexSet {
+                        modelContext.delete(sortedBets[i])
+                    }
                 }
                 Button { showingAddBet = true } label: {
                     Label("馬券を追加", systemImage: "plus")
