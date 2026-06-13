@@ -20,6 +20,10 @@ final class Race {
     var category: String = "central" // "central" | "local"
     var memo: String = ""
     var sortIndex: Int = 0
+    // 着順（馬番を保持。0 = 未入力）
+    var firstPlaceHorseNumber: Int = 0
+    var secondPlaceHorseNumber: Int = 0
+    var thirdPlaceHorseNumber: Int = 0
     var entries: [RaceEntry]?
     var bets: [Bet]?
 
@@ -33,6 +37,9 @@ final class Race {
         trackCondition: String = "良",
         category: String = "central",
         memo: String = "",
+        firstPlaceHorseNumber: Int = 0,
+        secondPlaceHorseNumber: Int = 0,
+        thirdPlaceHorseNumber: Int = 0,
         sortIndex: Int = 0
     ) {
         self.date = date
@@ -44,7 +51,18 @@ final class Race {
         self.trackCondition = trackCondition
         self.category = category
         self.memo = memo
+        self.firstPlaceHorseNumber = firstPlaceHorseNumber
+        self.secondPlaceHorseNumber = secondPlaceHorseNumber
+        self.thirdPlaceHorseNumber = thirdPlaceHorseNumber
         self.sortIndex = sortIndex
+    }
+
+    /// 指定馬番の着順を返す（1〜3 着の中で当該馬番にマッチするものを返す。未入力時 nil）
+    func finishPosition(forHorseNumber number: Int) -> Int? {
+        if firstPlaceHorseNumber == number { return 1 }
+        if secondPlaceHorseNumber == number { return 2 }
+        if thirdPlaceHorseNumber == number { return 3 }
+        return nil
     }
 
     var totalPurchase: Int {
