@@ -58,7 +58,7 @@ enum CSVExporter {
 
         lines.append("")
         lines.append("=== BETS ===")
-        lines.append("date,venue,race_number,ticket_type,selection,purchase_amount,payout_amount,balance")
+        lines.append("date,venue,race_number,ticket_type,selection,unit_price,combination_count,purchase_amount,payout_amount,balance")
         for race in sorted {
             for bet in (race.bets ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
                 let row: [String] = [
@@ -67,6 +67,8 @@ enum CSVExporter {
                     "\(race.raceNumber)",
                     bet.displayTicketTypeName,
                     bet.selection,
+                    "\(bet.unitPrice)",
+                    "\(bet.combinationCount)",
                     "\(bet.purchaseAmount)",
                     "\(bet.payoutAmount)",
                     "\(bet.balance)",
@@ -181,7 +183,7 @@ enum ZipExporter {
     }
 
     private static func betsCSV(_ races: [Race]) -> String {
-        var lines = ["date,venue,race_number,ticket_type,selection,purchase_amount,payout_amount,balance"]
+        var lines = ["date,venue,race_number,ticket_type,selection,unit_price,combination_count,purchase_amount,payout_amount,balance"]
         for race in races {
             for bet in (race.bets ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
                 let row: [String] = [
@@ -190,6 +192,8 @@ enum ZipExporter {
                     "\(race.raceNumber)",
                     bet.displayTicketTypeName,
                     bet.selection,
+                    "\(bet.unitPrice)",
+                    "\(bet.combinationCount)",
                     "\(bet.purchaseAmount)",
                     "\(bet.payoutAmount)",
                     "\(bet.balance)",
@@ -259,15 +263,36 @@ enum ZipImporter {
         }
 
         // 馬券を作成
-        for (i, row) in parseCSV(betsText).dropFirst().enumerated() {
+        let betRows = parseCSV(betsText)
+        let betHeader = betRows.first ?? []
+        let hasUnitPrice = betHeader.contains("unit_price")
+        for (i, row) in betRows.dropFirst().enumerated() {
             guard row.count >= 6,
                   let race = raceMap[key(date: row[0], venue: row[1], raceNumber: row[2])] else { continue }
+            let ticketTypeName = row[3]
+            let selection = row[4]
+            let unitPrice: Int
+            let purchaseAmount: Int
+            let payoutAmount: Int
+            if hasUnitPrice {
+                // 新フォーマット: unit_price, combination_count, purchase_amount, payout_amount, balance
+                unitPrice = Int(row[5]) ?? 100
+                purchaseAmount = row.count > 7 ? Int(row[7]) ?? 0 : 0
+                payoutAmount = row.count > 8 ? Int(row[8]) ?? 0 : 0
+            } else {
+                // 旧フォーマット: purchase_amount, payout_amount, balance
+                purchaseAmount = Int(row[5]) ?? 0
+                payoutAmount = row.count > 6 ? Int(row[6]) ?? 0 : 0
+                let count = Bet.combinationCount(selection: selection, ticketTypeName: ticketTypeName)
+                unitPrice = count > 0 ? purchaseAmount / count : 100
+            }
             context.insert(Bet(
                 race: race,
-                ticketTypeName: row[3],
-                selection: row[4],
-                purchaseAmount: Int(row[5]) ?? 0,
-                payoutAmount: row.count > 6 ? Int(row[6]) ?? 0 : 0,
+                ticketTypeName: ticketTypeName,
+                selection: selection,
+                unitPrice: unitPrice,
+                purchaseAmount: purchaseAmount,
+                payoutAmount: payoutAmount,
                 sortIndex: i
             ))
         }
@@ -322,7 +347,7 @@ enum ZipImporter {
             let c = chars[i]
             if inQuotes {
                 if c == "\"" {
-                    if i + 1 < chars.count && chars[i + 1] == "\"" {
+                    if i + 1 < chars.count, chars[i + 1] == "\"" {
                         field.append("\""); i += 2; continue
                     }
                     inQuotes = false
@@ -334,7 +359,7 @@ enum ZipImporter {
                 case "\"": inQuotes = true
                 case ",": row.append(field); field = ""
                 case "\r":
-                    if i + 1 < chars.count && chars[i + 1] == "\n" { i += 1 }
+                    if i + 1 < chars.count, chars[i + 1] == "\n" { i += 1 }
                     fallthrough
                 case "\n":
                     row.append(field); field = ""

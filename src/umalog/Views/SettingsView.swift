@@ -255,7 +255,9 @@ private struct ExportURL: Identifiable {
 struct ImportDocumentPicker: UIViewControllerRepresentable {
     let onPicked: (URL) -> Void
 
-    func makeCoordinator() -> Coordinator { Coordinator(onPicked: onPicked) }
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onPicked: onPicked)
+    }
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.zip])
@@ -267,7 +269,9 @@ struct ImportDocumentPicker: UIViewControllerRepresentable {
 
     class Coordinator: NSObject, UIDocumentPickerDelegate {
         let onPicked: (URL) -> Void
-        init(onPicked: @escaping (URL) -> Void) { self.onPicked = onPicked }
+        init(onPicked: @escaping (URL) -> Void) {
+            self.onPicked = onPicked
+        }
 
         func documentPicker(_: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             guard let url = urls.first else { return }
@@ -281,7 +285,9 @@ struct ImportDocumentPicker: UIViewControllerRepresentable {
 struct ExportDocumentPicker: UIViewControllerRepresentable {
     let fileURL: URL
 
-    func makeCoordinator() -> Coordinator { Coordinator() }
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         let picker = UIDocumentPickerViewController(forExporting: [fileURL], asCopy: true)

@@ -54,7 +54,9 @@ struct CSVExporterTests {
 
     @Test func export_betsSection_hasCorrectColumnHeaders() {
         let output = CSVExporter.export(races: [])
-        #expect(output.contains("date,venue,race_number,ticket_type,selection,purchase_amount,payout_amount,balance"))
+        let expected = "date,venue,race_number,ticket_type,selection," +
+            "unit_price,combination_count,purchase_amount,payout_amount,balance"
+        #expect(output.contains(expected))
     }
 
     // MARK: - Race row
