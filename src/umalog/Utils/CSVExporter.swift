@@ -17,7 +17,7 @@ enum CSVExporter {
         let sorted = races.sorted { $0.date < $1.date }
 
         lines.append("=== RACES ===")
-        lines.append("date,venue,race_number,race_name,distance,track_type,track_condition,category,total_purchase,total_payout,balance,memo")
+        lines.append("date,venue,race_number,race_name,distance,track_type,track_condition,category,first_place_horse,second_place_horse,third_place_horse,total_purchase,total_payout,balance,memo")
         for race in sorted {
             let row: [String] = [
                 formatDate(race.date),
@@ -28,6 +28,9 @@ enum CSVExporter {
                 race.trackType == "turf" ? "芝" : "ダート",
                 race.trackCondition,
                 race.category == "central" ? "中央" : "地方",
+                horseNumberString(race.firstPlaceHorseNumber),
+                horseNumberString(race.secondPlaceHorseNumber),
+                horseNumberString(race.thirdPlaceHorseNumber),
                 "\(race.totalPurchase)",
                 "\(race.totalPayout)",
                 "\(race.balance)",
@@ -38,7 +41,7 @@ enum CSVExporter {
 
         lines.append("")
         lines.append("=== ENTRIES ===")
-        lines.append("date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark,finish_position")
+        lines.append("date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark")
         for race in sorted {
             for entry in (race.entries ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
                 let row: [String] = [
@@ -50,7 +53,6 @@ enum CSVExporter {
                     entry.jockeyName,
                     entry.trainerName,
                     entry.predictionMark ?? "",
-                    entry.finishPosition.map { "\($0)" } ?? "",
                 ]
                 lines.append(row.map { escape($0) }.joined(separator: ","))
             }
@@ -98,6 +100,11 @@ enum CSVExporter {
         f.dateFormat = "yyyyMMdd"
         return f.string(from: date)
     }
+
+    /// 0 を未入力として空文字に変換するヘルパー
+    static func horseNumberString(_ number: Int) -> String {
+        number > 0 ? "\(number)" : ""
+    }
 }
 
 // MARK: - ZIP Exporter
@@ -141,7 +148,7 @@ enum ZipExporter {
     }
 
     private static func racesCSV(_ races: [Race]) -> String {
-        var lines = ["date,venue,race_number,race_name,distance,track_type,track_condition,category,total_purchase,total_payout,balance"]
+        var lines = ["date,venue,race_number,race_name,distance,track_type,track_condition,category,first_place_horse,second_place_horse,third_place_horse,total_purchase,total_payout,balance"]
         for race in races {
             let row: [String] = [
                 CSVExporter.formatDate(race.date),
@@ -152,6 +159,9 @@ enum ZipExporter {
                 race.trackType == "turf" ? "芝" : "ダート",
                 race.trackCondition,
                 race.category == "central" ? "中央" : "地方",
+                CSVExporter.horseNumberString(race.firstPlaceHorseNumber),
+                CSVExporter.horseNumberString(race.secondPlaceHorseNumber),
+                CSVExporter.horseNumberString(race.thirdPlaceHorseNumber),
                 "\(race.totalPurchase)",
                 "\(race.totalPayout)",
                 "\(race.balance)",
@@ -162,7 +172,7 @@ enum ZipExporter {
     }
 
     private static func entriesCSV(_ races: [Race]) -> String {
-        var lines = ["date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark,finish_position"]
+        var lines = ["date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark"]
         for race in races {
             for entry in (race.entries ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
                 let row: [String] = [
@@ -174,7 +184,6 @@ enum ZipExporter {
                     entry.jockeyName,
                     entry.trainerName,
                     entry.predictionMark ?? "",
-                    entry.finishPosition.map { "\($0)" } ?? "",
                 ]
                 lines.append(row.map { CSVExporter.escape($0) }.joined(separator: ","))
             }
@@ -229,8 +238,15 @@ enum ZipImporter {
 
         // レースを作成しキーでマップ
         var raceMap: [String: Race] = [:]
-        for (i, row) in parseCSV(racesText).dropFirst().enumerated() {
+        let raceRows = parseCSV(racesText)
+        let raceHeader = raceRows.first ?? []
+        let hasFinishPlaces = raceHeader.contains("first_place_horse")
+        for (i, row) in raceRows.dropFirst().enumerated() {
             guard row.count >= 8 else { continue }
+            // 新フォーマットは category(7) の後に first/second/third(8,9,10) が入り、total_purchase は 11 列目以降
+            let firstPlace = hasFinishPlaces && row.count > 8 ? Int(row[8]) ?? 0 : 0
+            let secondPlace = hasFinishPlaces && row.count > 9 ? Int(row[9]) ?? 0 : 0
+            let thirdPlace = hasFinishPlaces && row.count > 10 ? Int(row[10]) ?? 0 : 0
             let race = Race(
                 date: parseDate(row[0]) ?? Date(),
                 venue: venues.first { $0.name == row[1] },
@@ -240,13 +256,16 @@ enum ZipImporter {
                 trackType: row[5] == "芝" ? "turf" : "dirt",
                 trackCondition: row[6],
                 category: row[7] == "中央" ? "central" : "local",
+                firstPlaceHorseNumber: firstPlace,
+                secondPlaceHorseNumber: secondPlace,
+                thirdPlaceHorseNumber: thirdPlace,
                 sortIndex: i
             )
             context.insert(race)
             raceMap[key(date: row[0], venue: row[1], raceNumber: row[2])] = race
         }
 
-        // 出走馬を作成
+        // 出走馬を作成（旧フォーマットの finish_position はもう使わない）
         for (i, row) in parseCSV(entriesText).dropFirst().enumerated() {
             guard row.count >= 5,
                   let race = raceMap[key(date: row[0], venue: row[1], raceNumber: row[2])] else { continue }
@@ -257,7 +276,6 @@ enum ZipImporter {
                 jockeyName: row.count > 5 ? row[5] : "",
                 trainerName: row.count > 6 ? row[6] : "",
                 predictionMark: row.count > 7 && !row[7].isEmpty ? row[7] : nil,
-                finishPosition: row.count > 8 ? Int(row[8]) : nil,
                 sortIndex: i
             ))
         }

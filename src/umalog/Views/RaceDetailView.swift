@@ -47,7 +47,7 @@ struct RaceDetailView: View {
 
             Section {
                 ForEach(sortedEntries) { entry in
-                    EntryRowView(entry: entry)
+                    EntryRowView(entry: entry, position: race.finishPosition(forHorseNumber: entry.horseNumber))
                         .contentShape(Rectangle())
                         .onTapGesture { editingEntry = entry }
                 }
@@ -61,6 +61,12 @@ struct RaceDetailView: View {
                 }
             } header: {
                 Text("出走馬 \(sortedEntries.count)頭")
+            }
+
+            Section("着順") {
+                FinishPositionPicker(label: "1着", selection: $race.firstPlaceHorseNumber, entries: sortedEntries)
+                FinishPositionPicker(label: "2着", selection: $race.secondPlaceHorseNumber, entries: sortedEntries)
+                FinishPositionPicker(label: "3着", selection: $race.thirdPlaceHorseNumber, entries: sortedEntries)
             }
 
             Section {
@@ -192,6 +198,7 @@ private struct MemoEditView: View {
 
 struct EntryRowView: View {
     let entry: RaceEntry
+    var position: Int? = nil
 
     var body: some View {
         HStack(spacing: 10) {
@@ -212,8 +219,10 @@ struct EntryRowView: View {
             if let mark = entry.mark {
                 Text(mark.rawValue).font(.title3).fontWeight(.bold).foregroundStyle(Color.accentColor)
             }
-            if let pos = entry.finishPosition {
-                Text("\(pos)着").font(.caption).foregroundStyle(.secondary)
+            if let pos = position {
+                Text("\(pos)着")
+                    .font(.caption.bold())
+                    .foregroundStyle(pos == 1 ? Color.orange : .secondary)
             }
         }
     }
@@ -248,14 +257,29 @@ struct BetRowView: View {
                     Text("¥\(bet.purchaseAmount.formatted())").font(.caption)
                 }
                 Image(systemName: "arrow.right").font(.caption2).foregroundStyle(.secondary)
-                if bet.payoutAmount > 0 {
-                    Text("¥\(bet.payoutAmount.formatted())").font(.caption).foregroundStyle(.green)
-                } else {
-                    Text("未確定").font(.caption).foregroundStyle(.secondary)
-                }
+                Text("¥\(bet.payoutAmount.formatted())")
+                    .font(.caption)
+                    .foregroundStyle(bet.payoutAmount > 0 ? .green : .red)
                 Spacer()
             }
         }
         .padding(.vertical, 2)
+    }
+}
+
+// MARK: - Finish Position Picker
+
+struct FinishPositionPicker: View {
+    let label: String
+    @Binding var selection: Int
+    let entries: [RaceEntry]
+
+    var body: some View {
+        Picker(label, selection: $selection) {
+            Text("未入力").tag(0)
+            ForEach(entries) { entry in
+                Text("\(entry.horseNumber)番 \(entry.horseName)").tag(entry.horseNumber)
+            }
+        }
     }
 }

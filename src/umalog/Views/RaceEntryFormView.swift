@@ -22,7 +22,6 @@ struct RaceEntryFormView: View {
     @State private var jockeyName: String = ""
     @State private var trainerName: String = ""
     @State private var selectedMark: PredictionMark? = nil
-    @State private var finishPositionText: String = ""
 
     private var isEditing: Bool {
         entry != nil
@@ -139,18 +138,6 @@ struct RaceEntryFormView: View {
                     }
                     .padding(.vertical, 4)
                 }
-
-                Section("着順（結果確定後に入力）") {
-                    HStack {
-                        Text("着順")
-                        Spacer()
-                        TextField("未入力", text: $finishPositionText)
-                            .keyboardType(.numberPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 60)
-                        if !finishPositionText.isEmpty { Text("着") }
-                    }
-                }
             }
             .navigationTitle(isEditing ? "出走馬を編集" : "出走馬を追加")
             .navigationBarTitleDisplayMode(.inline)
@@ -188,28 +175,25 @@ struct RaceEntryFormView: View {
             jockeyName = entry.jockeyName
             trainerName = entry.trainerName
             selectedMark = entry.mark
-            finishPositionText = entry.finishPosition.map { "\($0)" } ?? ""
         } else {
-            let maxNum = (race.entries ?? []).map { $0.horseNumber }.max() ?? 0
+            let maxNum = (race.entries ?? []).map(\.horseNumber).max() ?? 0
             horseNumber = maxNum + 1
         }
     }
 
     private func save() {
-        let pos = Int(finishPositionText)
         if let entry {
             entry.horseNumber = horseNumber
             entry.horseName = horseName
             entry.jockeyName = jockeyName
             entry.trainerName = trainerName
             entry.mark = selectedMark
-            entry.finishPosition = pos
         } else {
             let sortIndex = (race.entries ?? []).count
             modelContext.insert(RaceEntry(
                 race: race, horseNumber: horseNumber, horseName: horseName,
                 jockeyName: jockeyName, trainerName: trainerName,
-                predictionMark: selectedMark?.rawValue, finishPosition: pos,
+                predictionMark: selectedMark?.rawValue,
                 sortIndex: sortIndex
             ))
         }

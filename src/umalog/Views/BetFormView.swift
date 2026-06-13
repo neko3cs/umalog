@@ -229,11 +229,6 @@ struct BetFormView: View {
             amountPurchaseRow
             amountPurchaseHint
             amountPayoutRow
-            if payoutAmount == 0 {
-                Text("払戻額 0 円は「未確定」として扱われます")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
         }
     }
 
@@ -285,7 +280,7 @@ struct BetFormView: View {
         HStack {
             Text("払戻額")
             Spacer()
-            TextField("0 = 未確定", value: $payoutAmount, format: .number)
+            TextField("0", value: $payoutAmount, format: .number)
                 .keyboardType(.numberPad)
                 .multilineTextAlignment(.trailing)
                 .frame(width: 100)
