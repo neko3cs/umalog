@@ -5,6 +5,7 @@
 //  Created by neko3cs on 2026/06/11.
 //
 
+import MarkdownUI
 import SwiftData
 import SwiftUI
 
@@ -51,9 +52,7 @@ struct RaceDetailView: View {
                         .onTapGesture { editingEntry = entry }
                 }
                 .onDelete { indexSet in
-                    for i in indexSet {
-                        modelContext.delete(sortedEntries[i])
-                    }
+                    for i in indexSet { modelContext.delete(sortedEntries[i]) }
                 }
                 Button { showingAddEntry = true } label: {
                     Label("出走馬を追加", systemImage: "plus")
@@ -69,9 +68,7 @@ struct RaceDetailView: View {
                         .onTapGesture { editingBet = bet }
                 }
                 .onDelete { indexSet in
-                    for i in indexSet {
-                        modelContext.delete(sortedBets[i])
-                    }
+                    for i in indexSet { modelContext.delete(sortedBets[i]) }
                 }
                 Button { showingAddBet = true } label: {
                     Label("馬券を追加", systemImage: "plus")
@@ -98,10 +95,18 @@ struct RaceDetailView: View {
                 }
             }
 
-            if !race.memo.isEmpty {
-                Section("メモ") {
-                    Text(race.memo)
-                        .font(.body)
+            Section("メモ（Markdown）") {
+                NavigationLink {
+                    MemoView(race: race)
+                } label: {
+                    if race.memo.isEmpty {
+                        Text("タップして追加")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text(race.memo)
+                            .lineLimit(3)
+                            .foregroundStyle(.primary)
+                    }
                 }
             }
         }
@@ -120,6 +125,67 @@ struct RaceDetailView: View {
     }
 }
 
+// MARK: - Memo Views
+
+private struct MemoView: View {
+    @Bindable var race: Race
+    @State private var showingEditor = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                if race.memo.isEmpty {
+                    Text("メモなし")
+                        .foregroundStyle(.secondary)
+                        .italic()
+                        .padding()
+                } else {
+                    Markdown(race.memo)
+                        .padding()
+                }
+            }
+        }
+        .navigationTitle("メモ")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            Button("編集") { showingEditor = true }
+        }
+        .sheet(isPresented: $showingEditor) {
+            MemoEditView(race: race)
+        }
+    }
+}
+
+private struct MemoEditView: View {
+    @Bindable var race: Race
+    @Environment(\.dismiss) private var dismiss
+    @State private var draft = ""
+
+    var body: some View {
+        NavigationStack {
+            TextEditor(text: $draft)
+                .font(.body.monospaced())
+                .padding(.horizontal)
+                .navigationTitle("メモを編集")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("キャンセル") { dismiss() }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("保存") {
+                            race.memo = draft
+                            dismiss()
+                        }
+                    }
+                }
+                .onAppear { draft = race.memo }
+        }
+    }
+}
+
+// MARK: - Row Views
+
 struct EntryRowView: View {
     let entry: RaceEntry
 
@@ -135,22 +201,15 @@ struct EntryRowView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.horseName.isEmpty ? "（馬名未入力）" : entry.horseName)
                 if !entry.jockeyName.isEmpty {
-                    Text(entry.jockeyName)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text(entry.jockeyName).font(.caption).foregroundStyle(.secondary)
                 }
             }
             Spacer()
             if let mark = entry.mark {
-                Text(mark.rawValue)
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .foregroundStyle(Color.accentColor)
+                Text(mark.rawValue).font(.title3).fontWeight(.bold).foregroundStyle(Color.accentColor)
             }
             if let pos = entry.finishPosition {
-                Text("\(pos)着")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text("\(pos)着").font(.caption).foregroundStyle(.secondary)
             }
         }
     }
@@ -174,19 +233,12 @@ struct BetRowView: View {
                 Spacer()
             }
             HStack(spacing: 8) {
-                Text("¥\(bet.purchaseAmount.formatted())")
-                    .font(.caption)
-                Image(systemName: "arrow.right")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                Text("¥\(bet.purchaseAmount.formatted())").font(.caption)
+                Image(systemName: "arrow.right").font(.caption2).foregroundStyle(.secondary)
                 if bet.payoutAmount > 0 {
-                    Text("¥\(bet.payoutAmount.formatted())")
-                        .font(.caption)
-                        .foregroundStyle(.green)
+                    Text("¥\(bet.payoutAmount.formatted())").font(.caption).foregroundStyle(.green)
                 } else {
-                    Text("未確定")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text("未確定").font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
             }
