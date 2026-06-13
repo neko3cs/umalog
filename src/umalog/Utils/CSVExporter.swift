@@ -6,6 +6,10 @@
 //
 
 import Foundation
+import SwiftData
+import ZIPFoundation
+
+// MARK: - CSV Exporter
 
 enum CSVExporter {
     static func export(races: [Race]) -> String {
@@ -86,25 +90,33 @@ enum CSVExporter {
         f.dateFormat = "yyyy/MM/dd"
         return f.string(from: date)
     }
+
+    static func formatFilenameDate(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyyMMdd"
+        return f.string(from: date)
+    }
 }
 
 // MARK: - ZIP Exporter
 
 enum ZipExporter {
-    static func export(races: [Race]) -> Data {
+    static func export(races: [Race]) throws -> URL {
         let sorted = races.sorted { $0.date < $1.date }
-        var files: [(name: String, data: Data)] = []
 
-        // races.csv
-        files.append(("races.csv", Data(racesCSV(sorted).utf8)))
+        let dateStr = CSVExporter.formatFilenameDate(Date())
+        let filename = "umalog_backup_\(dateStr).zip"
+        let zipURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+        try? FileManager.default.removeItem(at: zipURL)
 
-        // entries.csv
-        files.append(("entries.csv", Data(entriesCSV(sorted).utf8)))
+        guard let archive = Archive(url: zipURL, accessMode: .create) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
 
-        // bets.csv
-        files.append(("bets.csv", Data(betsCSV(sorted).utf8)))
+        try addEntry(archive, name: "races.csv", content: racesCSV(sorted))
+        try addEntry(archive, name: "entries.csv", content: entriesCSV(sorted))
+        try addEntry(archive, name: "bets.csv", content: betsCSV(sorted))
 
-        // Markdown memo files per race
         for race in sorted {
             guard !race.memo.isEmpty else { continue }
             let baseName = race.raceName.isEmpty ? "R\(race.raceNumber)" : race.raceName
@@ -112,11 +124,18 @@ enum ZipExporter {
                 .replacingOccurrences(of: "/", with: "_")
                 .replacingOccurrences(of: ":", with: "_")
                 .replacingOccurrences(of: "\\", with: "_")
-            let fileName = "\(CSVExporter.formatDate(race.date))_\(safeName).md"
-            files.append((fileName, Data(race.memo.utf8)))
+            let name = "memo/\(CSVExporter.formatFilenameDate(race.date))_\(safeName).md"
+            try addEntry(archive, name: name, content: race.memo)
         }
 
-        return ZipWriter.create(files: files)
+        return zipURL
+    }
+
+    private static func addEntry(_ archive: Archive, name: String, content: String) throws {
+        let data = Data(content.utf8)
+        try archive.addEntry(
+            with: name, type: .file, uncompressedSize: Int64(data.count)
+        ) { _, size in data.subdata(in: 0 ..< size) }
     }
 
     private static func racesCSV(_ races: [Race]) -> String {
@@ -182,79 +201,151 @@ enum ZipExporter {
     }
 }
 
-// MARK: - ZIP Writer (STORE method, no compression)
+// MARK: - ZIP Importer
 
-private enum ZipWriter {
-    static func create(files: [(name: String, data: Data)]) -> Data {
-        var archive = Data()
-        var centralDir = Data()
-        var offsets: [UInt32] = []
-
-        for (name, data) in files {
-            offsets.append(UInt32(archive.count))
-            let nameData = Data(name.utf8)
-            let crc = crc32(data)
-            archive += localHeader(nameData: nameData, size: UInt32(data.count), crc: crc)
-            archive += data
+enum ZipImporter {
+    static func importZip(from url: URL, context: ModelContext) throws {
+        guard let archive = Archive(url: url, accessMode: .read) else {
+            throw CocoaError(.fileReadUnknown)
         }
 
-        let centralOffset = UInt32(archive.count)
-        for (i, (name, data)) in files.enumerated() {
-            let nameData = Data(name.utf8)
-            centralDir += centralHeader(nameData: nameData, size: UInt32(data.count), crc: crc32(data), offset: offsets[i])
+        let racesText = try readEntry(archive, path: "races.csv")
+        let entriesText = try readEntry(archive, path: "entries.csv")
+        let betsText = try readEntry(archive, path: "bets.csv")
+
+        // 既存のレースデータを削除（競馬場・券種は保持）
+        let existingBets = try context.fetch(FetchDescriptor<Bet>())
+        existingBets.forEach { context.delete($0) }
+        let existingEntries = try context.fetch(FetchDescriptor<RaceEntry>())
+        existingEntries.forEach { context.delete($0) }
+        let existingRaces = try context.fetch(FetchDescriptor<Race>())
+        existingRaces.forEach { context.delete($0) }
+
+        let venues = try context.fetch(FetchDescriptor<Venue>())
+
+        // レースを作成しキーでマップ
+        var raceMap: [String: Race] = [:]
+        for (i, row) in parseCSV(racesText).dropFirst().enumerated() {
+            guard row.count >= 8 else { continue }
+            let race = Race(
+                date: parseDate(row[0]) ?? Date(),
+                venue: venues.first { $0.name == row[1] },
+                raceNumber: Int(row[2]) ?? 1,
+                raceName: row[3],
+                distance: Int(row[4]) ?? 1600,
+                trackType: row[5] == "芝" ? "turf" : "dirt",
+                trackCondition: row[6],
+                category: row[7] == "中央" ? "central" : "local",
+                sortIndex: i
+            )
+            context.insert(race)
+            raceMap[key(date: row[0], venue: row[1], raceNumber: row[2])] = race
         }
 
-        archive += centralDir
-        archive += endRecord(count: UInt16(files.count), centralSize: UInt32(centralDir.count), centralOffset: centralOffset)
-        return archive
-    }
-
-    private static func localHeader(nameData: Data, size: UInt32, crc: UInt32) -> Data {
-        var d = Data()
-        d += sig(0x04034B50)
-        d += le(UInt16(20)); d += le(UInt16(0)); d += le(UInt16(0))
-        d += le(UInt16(0)); d += le(UInt16(0))
-        d += le(crc); d += le(size); d += le(size)
-        d += le(UInt16(nameData.count)); d += le(UInt16(0))
-        d += nameData
-        return d
-    }
-
-    private static func centralHeader(nameData: Data, size: UInt32, crc: UInt32, offset: UInt32) -> Data {
-        var d = Data()
-        d += sig(0x02014B50)
-        d += le(UInt16(20)); d += le(UInt16(20)); d += le(UInt16(0)); d += le(UInt16(0))
-        d += le(UInt16(0)); d += le(UInt16(0))
-        d += le(crc); d += le(size); d += le(size)
-        d += le(UInt16(nameData.count)); d += le(UInt16(0)); d += le(UInt16(0))
-        d += le(UInt16(0)); d += le(UInt16(0)); d += le(UInt32(0))
-        d += le(offset)
-        d += nameData
-        return d
-    }
-
-    private static func endRecord(count: UInt16, centralSize: UInt32, centralOffset: UInt32) -> Data {
-        var d = Data()
-        d += sig(0x06054B50)
-        d += le(UInt16(0)); d += le(UInt16(0))
-        d += le(count); d += le(count)
-        d += le(centralSize); d += le(centralOffset)
-        d += le(UInt16(0))
-        return d
-    }
-
-    private static func crc32(_ data: Data) -> UInt32 {
-        let table: [UInt32] = (0 ..< 256).map { i -> UInt32 in
-            (0 ..< 8).reduce(UInt32(i)) { crc, _ in (crc & 1) != 0 ? (crc >> 1) ^ 0xEDB8_8320 : crc >> 1 }
+        // 出走馬を作成
+        for (i, row) in parseCSV(entriesText).dropFirst().enumerated() {
+            guard row.count >= 5,
+                  let race = raceMap[key(date: row[0], venue: row[1], raceNumber: row[2])] else { continue }
+            context.insert(RaceEntry(
+                race: race,
+                horseNumber: Int(row[3]) ?? 0,
+                horseName: row[4],
+                jockeyName: row.count > 5 ? row[5] : "",
+                trainerName: row.count > 6 ? row[6] : "",
+                predictionMark: row.count > 7 && !row[7].isEmpty ? row[7] : nil,
+                finishPosition: row.count > 8 ? Int(row[8]) : nil,
+                sortIndex: i
+            ))
         }
-        return ~data.reduce(~UInt32(0)) { crc, byte in
-            table[Int((crc ^ UInt32(byte)) & 0xFF)] ^ (crc >> 8)
+
+        // 馬券を作成
+        for (i, row) in parseCSV(betsText).dropFirst().enumerated() {
+            guard row.count >= 6,
+                  let race = raceMap[key(date: row[0], venue: row[1], raceNumber: row[2])] else { continue }
+            context.insert(Bet(
+                race: race,
+                ticketTypeName: row[3],
+                selection: row[4],
+                purchaseAmount: Int(row[5]) ?? 0,
+                payoutAmount: row.count > 6 ? Int(row[6]) ?? 0 : 0,
+                sortIndex: i
+            ))
         }
+
+        // メモファイルをレースに紐付け
+        for entry in archive where entry.path.hasPrefix("memo/") && entry.path.hasSuffix(".md") {
+            var data = Data()
+            _ = try? archive.extract(entry) { data.append($0) }
+            guard let memo = String(data: data, encoding: .utf8), !memo.isEmpty else { continue }
+            let filename = String(entry.path.dropFirst("memo/".count).dropLast(".md".count))
+            for race in raceMap.values {
+                let dateStr = CSVExporter.formatFilenameDate(race.date)
+                let baseName = race.raceName.isEmpty ? "R\(race.raceNumber)" : race.raceName
+                let safeName = baseName
+                    .replacingOccurrences(of: "/", with: "_")
+                    .replacingOccurrences(of: ":", with: "_")
+                if filename == "\(dateStr)_\(safeName)" {
+                    race.memo = memo
+                    break
+                }
+            }
+        }
+
+        try context.save()
     }
 
-    private static func le<T: FixedWidthInteger>(_ v: T) -> Data {
-        withUnsafeBytes(of: v.littleEndian) { Data($0) }
+    private static func key(date: String, venue: String, raceNumber: String) -> String {
+        "\(date)|\(venue)|\(raceNumber)"
     }
 
-    private static func sig(_ v: UInt32) -> Data { le(v) }
+    private static func readEntry(_ archive: Archive, path: String) throws -> String {
+        guard let entry = archive[path] else { throw CocoaError(.fileNoSuchFile) }
+        var data = Data()
+        _ = try archive.extract(entry) { data.append($0) }
+        return String(data: data, encoding: .utf8) ?? ""
+    }
+
+    private static func parseDate(_ string: String) -> Date? {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy/MM/dd"
+        return f.date(from: string)
+    }
+
+    private static func parseCSV(_ text: String) -> [[String]] {
+        var result: [[String]] = []
+        var row: [String] = []
+        var field = ""
+        var inQuotes = false
+        var chars = Array(text)
+        var i = 0
+        while i < chars.count {
+            let c = chars[i]
+            if inQuotes {
+                if c == "\"" {
+                    if i + 1 < chars.count && chars[i + 1] == "\"" {
+                        field.append("\""); i += 2; continue
+                    }
+                    inQuotes = false
+                } else {
+                    field.append(c)
+                }
+            } else {
+                switch c {
+                case "\"": inQuotes = true
+                case ",": row.append(field); field = ""
+                case "\r":
+                    if i + 1 < chars.count && chars[i + 1] == "\n" { i += 1 }
+                    fallthrough
+                case "\n":
+                    row.append(field); field = ""
+                    if !row.isEmpty { result.append(row) }
+                    row = []
+                default: field.append(c)
+                }
+            }
+            i += 1
+        }
+        if !field.isEmpty || !row.isEmpty { row.append(field); result.append(row) }
+        return result
+    }
 }
