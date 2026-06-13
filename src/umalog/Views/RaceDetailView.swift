@@ -52,7 +52,9 @@ struct RaceDetailView: View {
                         .onTapGesture { editingEntry = entry }
                 }
                 .onDelete { indexSet in
-                    for i in indexSet { modelContext.delete(sortedEntries[i]) }
+                    for i in indexSet {
+                        modelContext.delete(sortedEntries[i])
+                    }
                 }
                 Button { showingAddEntry = true } label: {
                     Label("出走馬を追加", systemImage: "plus")
@@ -68,7 +70,9 @@ struct RaceDetailView: View {
                         .onTapGesture { editingBet = bet }
                 }
                 .onDelete { indexSet in
-                    for i in indexSet { modelContext.delete(sortedBets[i]) }
+                    for i in indexSet {
+                        modelContext.delete(sortedBets[i])
+                    }
                 }
                 Button { showingAddBet = true } label: {
                     Label("馬券を追加", systemImage: "plus")
@@ -218,6 +222,10 @@ struct EntryRowView: View {
 struct BetRowView: View {
     let bet: Bet
 
+    private var combinationCount: Int {
+        bet.combinationCount
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
@@ -233,7 +241,12 @@ struct BetRowView: View {
                 Spacer()
             }
             HStack(spacing: 8) {
-                Text("¥\(bet.purchaseAmount.formatted())").font(.caption)
+                if combinationCount > 1 {
+                    Text("¥\(bet.unitPrice.formatted()) × \(combinationCount)点 = ¥\(bet.purchaseAmount.formatted())")
+                        .font(.caption)
+                } else {
+                    Text("¥\(bet.purchaseAmount.formatted())").font(.caption)
+                }
                 Image(systemName: "arrow.right").font(.caption2).foregroundStyle(.secondary)
                 if bet.payoutAmount > 0 {
                     Text("¥\(bet.payoutAmount.formatted())").font(.caption).foregroundStyle(.green)

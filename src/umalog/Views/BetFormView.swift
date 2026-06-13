@@ -40,8 +40,11 @@ struct BetFormView: View {
     @State private var formLeg3: Set<Int> = []
     // テキスト入力フォールバック
     @State private var selectionText: String = ""
+    @State private var unitPrice: Int = 100
     @State private var purchaseAmount: Int = 100
     @State private var payoutAmount: Int = 0
+    @State private var hasManuallyEditedPurchase: Bool = false
+    @State private var hasFinishedInitialLoad: Bool = false
 
     private var isEditing: Bool {
         bet != nil
@@ -100,103 +103,200 @@ struct BetFormView: View {
         hasEntries ? builtSelection : selectionText
     }
 
+    private var currentTicketTypeName: String {
+        useCustom ? customTicketTypeName : (selectedTicketType?.name ?? "")
+    }
+
+    private var currentCombinationCount: Int {
+        let count = Bet.combinationCount(selection: selection, ticketTypeName: currentTicketTypeName)
+        return max(count, 1)
+    }
+
+    private var computedTotalPurchase: Int {
+        unitPrice * currentCombinationCount
+    }
+
     var body: some View {
         NavigationStack {
-            Form {
-                Section("券種") {
-                    Toggle("カスタム券種", isOn: $useCustom)
-                    if useCustom {
-                        TextField("券種名", text: $customTicketTypeName)
-                    } else {
-                        Picker("券種", selection: $selectedTicketType) {
-                            Text("未選択").tag(nil as TicketType?)
-                            ForEach(ticketTypes) { tt in
-                                Text(tt.name).tag(tt as TicketType?)
-                            }
-                        }
-                    }
-                }
-
-                Section("買い目") {
-                    if autoHorseCount == nil {
-                        Picker("頭数", selection: $manualHorseCount) {
-                            Text("1頭").tag(1)
-                            Text("2頭").tag(2)
-                            Text("3頭").tag(3)
-                        }
-                        .pickerStyle(.segmented)
-                    }
-
-                    if hasEntries && effectiveHorseCount >= 2 {
-                        Picker("買い方", selection: $betStyle) {
-                            ForEach(BetStyle.allCases, id: \.self) {
-                                Text($0.rawValue).tag($0)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                    }
-
-                    if hasEntries {
-                        selectionRows
-                    } else {
-                        TextField("買い目（例: 1-2-3）", text: $selectionText)
-                        Text("出走馬を先に登録すると馬番から選択できます")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    if hasEntries && !builtSelection.isEmpty {
-                        LabeledContent("買い目", value: builtSelection)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                Section("金額") {
-                    HStack {
-                        Text("購入額")
-                        Spacer()
-                        TextField("金額", value: $purchaseAmount, format: .number)
-                            .keyboardType(.numberPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 100)
-                        Text("円")
-                    }
-                    HStack {
-                        Text("払戻額")
-                        Spacer()
-                        TextField("0 = 未確定", value: $payoutAmount, format: .number)
-                            .keyboardType(.numberPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 100)
-                        Text("円")
-                    }
-                    if payoutAmount == 0 {
-                        Text("払戻額 0 円は「未確定」として扱われます")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .navigationTitle(isEditing ? "馬券を編集" : "馬券を追加")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("キャンセル") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(isEditing ? "更新" : "追加") {
-                        save()
-                        dismiss()
-                    }
-                    .disabled(selection.isEmpty || purchaseAmount <= 0)
-                }
-            }
-            .onAppear { loadIfEditing() }
-            .onChange(of: selectedTicketType) { _, _ in resetSelection(resetStyle: true) }
-            .onChange(of: useCustom) { _, _ in resetSelection(resetStyle: true) }
-            .onChange(of: betStyle) { _, _ in resetSelection(resetStyle: false) }
-            .onChange(of: manualHorseCount) { _, _ in resetSelection(resetStyle: false) }
+            formContent
+                .navigationTitle(isEditing ? "馬券を編集" : "馬券を追加")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar { toolbarContent }
+                .onAppear { setupInitialState() }
+                .onChange(of: selectedTicketType) { _, _ in resetIfUserChange(resetStyle: true) }
+                .onChange(of: useCustom) { _, _ in resetIfUserChange(resetStyle: true) }
+                .onChange(of: betStyle) { _, _ in resetIfUserChange(resetStyle: false) }
+                .onChange(of: manualHorseCount) { _, _ in resetIfUserChange(resetStyle: false) }
+                .onChange(of: unitPrice) { _, _ in syncPurchaseAmountIfAuto() }
+                .onChange(of: selection) { _, _ in syncPurchaseAmountIfAuto() }
+                .onChange(of: currentTicketTypeName) { _, _ in syncPurchaseAmountIfAuto() }
         }
+    }
+
+    private var formContent: some View {
+        Form {
+            ticketTypeSection
+            selectionSection
+            amountSection
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button("キャンセル") { dismiss() }
+        }
+        ToolbarItem(placement: .confirmationAction) {
+            Button(isEditing ? "更新" : "追加") {
+                save()
+                dismiss()
+            }
+            .disabled(selection.isEmpty || purchaseAmount <= 0)
+        }
+    }
+
+    // MARK: - Ticket Type Section
+
+    private var ticketTypeSection: some View {
+        Section("券種") {
+            Toggle("カスタム券種", isOn: $useCustom)
+            if useCustom {
+                TextField("券種名", text: $customTicketTypeName)
+            } else {
+                Picker("券種", selection: $selectedTicketType) {
+                    Text("未選択").tag(nil as TicketType?)
+                    ForEach(ticketTypes) { tt in
+                        Text(tt.name).tag(tt as TicketType?)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Selection Section
+
+    private var selectionSection: some View {
+        Section("買い目") {
+            if autoHorseCount == nil {
+                Picker("頭数", selection: $manualHorseCount) {
+                    Text("1頭").tag(1)
+                    Text("2頭").tag(2)
+                    Text("3頭").tag(3)
+                }
+                .pickerStyle(.segmented)
+            }
+
+            if hasEntries, effectiveHorseCount >= 2 {
+                Picker("買い方", selection: $betStyle) {
+                    ForEach(BetStyle.allCases, id: \.self) {
+                        Text($0.rawValue).tag($0)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+
+            if hasEntries {
+                selectionRows
+            } else {
+                TextField("買い目（例: 1-2-3）", text: $selectionText)
+                Text("出走馬を先に登録すると馬番から選択できます")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if hasEntries, !builtSelection.isEmpty {
+                LabeledContent("買い目", value: builtSelection)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    // MARK: - Amount Section
+
+    private var amountSection: some View {
+        Section("金額") {
+            amountUnitPriceRow
+            LabeledContent("組合せ", value: "\(currentCombinationCount)点")
+            amountPurchaseRow
+            amountPurchaseHint
+            amountPayoutRow
+            if payoutAmount == 0 {
+                Text("払戻額 0 円は「未確定」として扱われます")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var amountUnitPriceRow: some View {
+        HStack {
+            Text("1口あたり")
+            Spacer()
+            TextField("金額", value: $unitPrice, format: .number)
+                .keyboardType(.numberPad)
+                .multilineTextAlignment(.trailing)
+                .frame(width: 100)
+            Text("円")
+        }
+    }
+
+    private var amountPurchaseRow: some View {
+        HStack {
+            Text("合計購入額")
+            Spacer()
+            TextField("金額", value: $purchaseAmount, format: .number)
+                .keyboardType(.numberPad)
+                .multilineTextAlignment(.trailing)
+                .frame(width: 100)
+                .onChange(of: purchaseAmount) { _, _ in
+                    if purchaseAmount != computedTotalPurchase {
+                        hasManuallyEditedPurchase = true
+                    }
+                }
+            Text("円")
+        }
+    }
+
+    @ViewBuilder
+    private var amountPurchaseHint: some View {
+        if !hasManuallyEditedPurchase, currentCombinationCount > 1 {
+            Text("¥\(unitPrice) × \(currentCombinationCount)点 = ¥\(computedTotalPurchase)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } else if hasManuallyEditedPurchase {
+            Button("自動計算に戻す") {
+                purchaseAmount = computedTotalPurchase
+                hasManuallyEditedPurchase = false
+            }
+            .font(.caption)
+        }
+    }
+
+    private var amountPayoutRow: some View {
+        HStack {
+            Text("払戻額")
+            Spacer()
+            TextField("0 = 未確定", value: $payoutAmount, format: .number)
+                .keyboardType(.numberPad)
+                .multilineTextAlignment(.trailing)
+                .frame(width: 100)
+            Text("円")
+        }
+    }
+
+    private func setupInitialState() {
+        guard !hasFinishedInitialLoad else { return }
+        loadIfEditing()
+        DispatchQueue.main.async {
+            hasFinishedInitialLoad = true
+        }
+    }
+
+    /// `.onChange` から呼ばれるリセット処理。初期ロード中（loadIfEditing が State を
+    /// 書き込んだ直後の onChange 発火）では何もしない。
+    private func resetIfUserChange(resetStyle: Bool) {
+        guard hasFinishedInitialLoad else { return }
+        resetSelection(resetStyle: resetStyle)
     }
 
     private func resetSelection(resetStyle: Bool) {
@@ -204,6 +304,11 @@ struct BetFormView: View {
         boxHorses = []; formLeg1 = []; formLeg2 = []; formLeg3 = []
         selectionText = ""
         if resetStyle { betStyle = .normal }
+    }
+
+    private func syncPurchaseAmountIfAuto() {
+        guard !hasManuallyEditedPurchase else { return }
+        purchaseAmount = computedTotalPurchase
     }
 
     // MARK: - Selection rows
@@ -308,6 +413,7 @@ struct BetFormView: View {
         selectedTicketType = bet.ticketType
         customTicketTypeName = bet.ticketTypeName
         useCustom = bet.ticketType == nil && !bet.ticketTypeName.isEmpty
+        unitPrice = bet.unitPrice
         purchaseAmount = bet.purchaseAmount
         payoutAmount = bet.payoutAmount
 
@@ -334,6 +440,13 @@ struct BetFormView: View {
         } else {
             selectionText = bet.selection
         }
+
+        // 編集時は保存済み purchaseAmount を尊重する（自動計算と異なれば手動扱い）
+        let expected = bet.unitPrice * max(Bet.combinationCount(
+            selection: bet.selection,
+            ticketTypeName: bet.displayTicketTypeName
+        ), 1)
+        hasManuallyEditedPurchase = bet.purchaseAmount != expected
     }
 
     private func save() {
@@ -343,14 +456,16 @@ struct BetFormView: View {
             bet.ticketType = tt
             bet.ticketTypeName = ttName
             bet.selection = selection
+            bet.unitPrice = unitPrice
             bet.purchaseAmount = purchaseAmount
             bet.payoutAmount = payoutAmount
         } else {
             let sortIndex = (race.bets ?? []).count
             modelContext.insert(Bet(
                 race: race, ticketType: tt, ticketTypeName: ttName,
-                selection: selection, purchaseAmount: purchaseAmount,
-                payoutAmount: payoutAmount, sortIndex: sortIndex
+                selection: selection, unitPrice: unitPrice,
+                purchaseAmount: purchaseAmount, payoutAmount: payoutAmount,
+                sortIndex: sortIndex
             ))
         }
     }
