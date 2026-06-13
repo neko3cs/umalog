@@ -9,9 +9,7 @@ import Foundation
 import Testing
 @testable import umalog
 
-@Suite
 struct PredictionMarkTests {
-
     // MARK: - CaseIterable
 
     @Test func allCases_hasExactlyEightElements() {

@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct CSVExporter {
+enum CSVExporter {
     static func export(races: [Race]) -> String {
         var lines: [String] = []
         let sorted = races.sorted { $0.date < $1.date }

@@ -5,8 +5,8 @@
 //  Created by neko3cs on 2026/06/11.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct RaceListView: View {
     @Environment(\.modelContext) private var modelContext

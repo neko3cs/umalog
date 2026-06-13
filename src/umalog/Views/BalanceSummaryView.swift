@@ -5,8 +5,8 @@
 //  Created by neko3cs on 2026/06/11.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 enum SummaryPeriod: String, CaseIterable {
     case daily = "日"
@@ -18,7 +18,7 @@ struct BalanceSummaryView: View {
     @Query private var races: [Race]
 
     @State private var period: SummaryPeriod = .monthly
-    @State private var selectedDate: Date = Date()
+    @State private var selectedDate: Date = .init()
 
     private let calendar = Calendar.current
 
@@ -35,9 +35,18 @@ struct BalanceSummaryView: View {
         }
     }
 
-    private var totalPurchase: Int { filteredRaces.reduce(0) { $0 + $1.totalPurchase } }
-    private var totalPayout: Int { filteredRaces.reduce(0) { $0 + $1.totalPayout } }
-    private var balance: Int { totalPayout - totalPurchase }
+    private var totalPurchase: Int {
+        filteredRaces.reduce(0) { $0 + $1.totalPurchase }
+    }
+
+    private var totalPayout: Int {
+        filteredRaces.reduce(0) { $0 + $1.totalPayout }
+    }
+
+    private var balance: Int {
+        totalPayout - totalPurchase
+    }
+
     private var returnRate: Double? {
         guard totalPurchase > 0 else { return nil }
         return Double(totalPayout) / Double(totalPurchase)

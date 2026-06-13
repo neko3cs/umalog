@@ -5,13 +5,12 @@
 //  Created by neko3cs on 2026/06/12.
 //
 
-import Testing
 import SwiftData
+import Testing
 @testable import umalog
 
-@Suite @MainActor
+@MainActor
 struct RaceEntryModelTests {
-
     let container: ModelContainer
 
     init() throws {
@@ -22,67 +21,67 @@ struct RaceEntryModelTests {
 
     // MARK: - mark getter
 
-    @Test func mark_getter_whenNil_returnsNil() throws {
+    @Test func mark_getter_whenNil_returnsNil() {
         let entry = RaceEntry(predictionMark: nil)
         container.mainContext.insert(entry)
         #expect(entry.mark == nil)
     }
 
-    @Test func mark_getter_whenHonmei_returnsHonmei() throws {
+    @Test func mark_getter_whenHonmei_returnsHonmei() {
         let entry = RaceEntry(predictionMark: "◎")
         container.mainContext.insert(entry)
         #expect(entry.mark == .honmei)
     }
 
-    @Test func mark_getter_whenTaikou_returnsTaikou() throws {
+    @Test func mark_getter_whenTaikou_returnsTaikou() {
         let entry = RaceEntry(predictionMark: "○")
         container.mainContext.insert(entry)
         #expect(entry.mark == .taikou)
     }
 
-    @Test func mark_getter_whenTanana_returnsTanana() throws {
+    @Test func mark_getter_whenTanana_returnsTanana() {
         let entry = RaceEntry(predictionMark: "▲")
         container.mainContext.insert(entry)
         #expect(entry.mark == .tanana)
     }
 
-    @Test func mark_getter_whenRenmei_returnsRenmei() throws {
+    @Test func mark_getter_whenRenmei_returnsRenmei() {
         let entry = RaceEntry(predictionMark: "△")
         container.mainContext.insert(entry)
         #expect(entry.mark == .renmei)
     }
 
-    @Test func mark_getter_whenHoshi_returnsHoshi() throws {
+    @Test func mark_getter_whenHoshi_returnsHoshi() {
         let entry = RaceEntry(predictionMark: "☆")
         container.mainContext.insert(entry)
         #expect(entry.mark == .hoshi)
     }
 
-    @Test func mark_getter_whenChu_returnsChu() throws {
+    @Test func mark_getter_whenChu_returnsChu() {
         let entry = RaceEntry(predictionMark: "注")
         container.mainContext.insert(entry)
         #expect(entry.mark == .chu)
     }
 
-    @Test func mark_getter_whenOshi_returnsOshi() throws {
+    @Test func mark_getter_whenOshi_returnsOshi() {
         let entry = RaceEntry(predictionMark: "押")
         container.mainContext.insert(entry)
         #expect(entry.mark == .oshi)
     }
 
-    @Test func mark_getter_whenKeshi_returnsKeshi() throws {
+    @Test func mark_getter_whenKeshi_returnsKeshi() {
         let entry = RaceEntry(predictionMark: "消")
         container.mainContext.insert(entry)
         #expect(entry.mark == .keshi)
     }
 
-    @Test func mark_getter_whenInvalidString_returnsNil() throws {
+    @Test func mark_getter_whenInvalidString_returnsNil() {
         let entry = RaceEntry(predictionMark: "invalid")
         container.mainContext.insert(entry)
         #expect(entry.mark == nil)
     }
 
-    @Test func mark_getter_whenEmptyString_returnsNil() throws {
+    @Test func mark_getter_whenEmptyString_returnsNil() {
         let entry = RaceEntry(predictionMark: "")
         container.mainContext.insert(entry)
         #expect(entry.mark == nil)
@@ -90,21 +89,21 @@ struct RaceEntryModelTests {
 
     // MARK: - mark setter
 
-    @Test func mark_setter_whenSetToMark_updatesPredictionMark() throws {
+    @Test func mark_setter_whenSetToMark_updatesPredictionMark() {
         let entry = RaceEntry(predictionMark: nil)
         container.mainContext.insert(entry)
         entry.mark = .honmei
         #expect(entry.predictionMark == "◎")
     }
 
-    @Test func mark_setter_whenSetToNil_clearsPredictionMark() throws {
+    @Test func mark_setter_whenSetToNil_clearsPredictionMark() {
         let entry = RaceEntry(predictionMark: "◎")
         container.mainContext.insert(entry)
         entry.mark = nil
         #expect(entry.predictionMark == nil)
     }
 
-    @Test func mark_setter_whenChanged_updatesCorrectly() throws {
+    @Test func mark_setter_whenChanged_updatesCorrectly() {
         let entry = RaceEntry(predictionMark: "◎")
         container.mainContext.insert(entry)
         entry.mark = .keshi
@@ -112,7 +111,7 @@ struct RaceEntryModelTests {
         #expect(entry.mark == .keshi)
     }
 
-    @Test func mark_setterAndGetter_areConsistentForAllCases() throws {
+    @Test func mark_setterAndGetter_areConsistentForAllCases() {
         let entry = RaceEntry()
         container.mainContext.insert(entry)
         for mark in PredictionMark.allCases {

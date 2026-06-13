@@ -1,0 +1,29 @@
+{
+  "configurations" : [
+    {
+      "id" : "A1B2C3D4-E5F6-7890-ABCD-EF1234567890",
+      "name" : "Test Scheme Action",
+      "options" : {}
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverageEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:umalog.xcodeproj",
+        "identifier" : "F38D25B62FDA8B4000FBE2DD",
+        "name" : "umalogTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:umalog.xcodeproj",
+        "identifier" : "F38D25C02FDA8B4000FBE2DD",
+        "name" : "umalogUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

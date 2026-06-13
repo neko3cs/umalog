@@ -8,7 +8,6 @@
 import XCTest
 
 final class umalogUITests: XCTestCase {
-
     var app: XCUIApplication!
 
     override func setUpWithError() throws {
@@ -24,7 +23,7 @@ final class umalogUITests: XCTestCase {
     }
 
     @MainActor
-    func testAppLaunches() throws {
+    func testAppLaunches() {
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 5))
     }
 }
