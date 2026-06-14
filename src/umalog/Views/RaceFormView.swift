@@ -51,7 +51,7 @@ struct RaceFormView: View {
                             Text(venue.name).tag(venue as Venue?)
                         }
                     }
-                    Stepper("R\(raceNumber)", value: $raceNumber, in: 1 ... 30)
+                    Stepper("R\(raceNumber)", value: $raceNumber, in: 1 ... 12)
                     TextField("レース名（任意）", text: $raceName)
                 }
 
