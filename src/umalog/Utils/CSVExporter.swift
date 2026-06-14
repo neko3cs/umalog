@@ -113,8 +113,7 @@ enum ZipExporter {
     static func export(races: [Race]) throws -> URL {
         let sorted = races.sorted { $0.date < $1.date }
 
-        let dateStr = CSVExporter.formatFilenameDate(Date())
-        let filename = "umalog_backup_\(dateStr).zip"
+        let filename = "umalog_backup.zip"
         let zipURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         try? FileManager.default.removeItem(at: zipURL)
 
