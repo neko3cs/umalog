@@ -19,7 +19,7 @@ struct RaceDetailView: View {
     @State private var editingBet: Bet? = nil
 
     private var sortedEntries: [RaceEntry] {
-        (race.entries ?? []).sorted { $0.sortIndex < $1.sortIndex }
+        (race.entries ?? []).sorted { $0.horseNumber < $1.horseNumber }
     }
 
     private var sortedBets: [Bet] {
