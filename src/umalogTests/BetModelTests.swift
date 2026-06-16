@@ -14,7 +14,7 @@ struct BetModelTests {
     let container: ModelContainer
 
     init() throws {
-        let schema = Schema([Race.self, Bet.self, RaceEntry.self, Venue.self, TicketType.self])
+        let schema = Schema([Race.self, Bet.self, BetSelection.self, RaceEntry.self, Venue.self, TicketType.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         container = try ModelContainer(for: schema, configurations: [config])
     }
@@ -191,6 +191,33 @@ struct BetModelTests {
         #expect(bet.combinationCount == 4)
     }
 
+    // MARK: - BetSelection
+
+    @Test func betSelection_displayTicketTypeName_prefersTicketTypeOverStoredName() {
+        let ctx = container.mainContext
+        let ticketType = TicketType(name: "単勝"); ctx.insert(ticketType)
+        let sel = BetSelection(ticketType: ticketType, ticketTypeName: "fallback"); ctx.insert(sel)
+        #expect(sel.displayTicketTypeName == "単勝")
+    }
+
+    @Test func betSelection_displayTicketTypeName_fallsBackToStoredName() {
+        let sel = BetSelection(ticketType: nil, ticketTypeName: "カスタム")
+        container.mainContext.insert(sel)
+        #expect(sel.displayTicketTypeName == "カスタム")
+    }
+
+    @Test func betSelection_purchaseAmount_equalsUnitPriceTimesCombinationCount() {
+        let sel = BetSelection(unitPrice: 100, combinationCount: 6)
+        container.mainContext.insert(sel)
+        #expect(sel.purchaseAmount == 600)
+    }
+
+    @Test func betSelection_purchaseAmount_whenSingleCombination_equalsUnitPrice() {
+        let sel = BetSelection(unitPrice: 200, combinationCount: 1)
+        container.mainContext.insert(sel)
+        #expect(sel.purchaseAmount == 200)
+    }
+
     // MARK: - Venue init coverage
 
     @Test func venue_defaultInit_hasEmptyName() {
@@ -211,44 +238,44 @@ struct BetModelTests {
 
     // MARK: - Property-Based Tests
 
-    // Property 1 (Invariant): balance == payout - purchase for any values
+    /// Property 1 (Invariant): balance == payout - purchase for any values
     @Test func pbt_balance_alwaysEqualsPayoutMinusPurchase() {
-        for _ in 0..<1000 {
-            let purchase = Int.random(in: 0...100_000)
-            let payout = Int.random(in: 0...500_000)
+        for _ in 0 ..< 1000 {
+            let purchase = Int.random(in: 0 ... 100_000)
+            let payout = Int.random(in: 0 ... 500_000)
             let bet = Bet(purchaseAmount: purchase, payoutAmount: payout)
             container.mainContext.insert(bet)
             #expect(bet.balance == payout - purchase)
         }
     }
 
-    // Property 2 (Invariant): box count for n horses follows C(n,k) formula
+    /// Property 2 (Invariant): box count for n horses follows C(n,k) formula
     @Test func pbt_boxCount_umaren_alwaysEqualsNCR2() {
-        for horseCount in 2...18 {
-            let horses = (1...horseCount).map { "\($0)" }.joined(separator: ",")
+        for horseCount in 2 ... 18 {
+            let horses = (1 ... horseCount).map { "\($0)" }.joined(separator: ",")
             let count = Bet.combinationCount(selection: "\(horses)[BOX]", ticketTypeName: "馬連")
             let expected = horseCount * (horseCount - 1) / 2
             #expect(count == expected, "馬連BOX \(horseCount)頭: expected \(expected), got \(count)")
         }
     }
 
-    // Property 3 (Invariant): box count for 三連複 follows C(n,3) formula
+    /// Property 3 (Invariant): box count for 三連複 follows C(n,3) formula
     @Test func pbt_boxCount_sanrenpuku_alwaysEqualsNCR3() {
-        for horseCount in 3...18 {
-            let horses = (1...horseCount).map { "\($0)" }.joined(separator: ",")
+        for horseCount in 3 ... 18 {
+            let horses = (1 ... horseCount).map { "\($0)" }.joined(separator: ",")
             let count = Bet.combinationCount(selection: "\(horses)[BOX]", ticketTypeName: "三連複")
             let expected = horseCount * (horseCount - 1) * (horseCount - 2) / 6
             #expect(count == expected, "三連複BOX \(horseCount)頭: expected \(expected), got \(count)")
         }
     }
 
-    // Property 4 (Commutativity): formation unordered count is symmetric
+    /// Property 4 (Commutativity): formation unordered count is symmetric
     @Test func pbt_formationTwoLeg_unordered_isSymmetric() {
-        for _ in 0..<200 {
-            let leg1Size = Int.random(in: 1...5)
-            let leg2Size = Int.random(in: 1...5)
-            let leg1 = Array(1...leg1Size)
-            let leg2 = Array(6...(5 + leg2Size))
+        for _ in 0 ..< 200 {
+            let leg1Size = Int.random(in: 1 ... 5)
+            let leg2Size = Int.random(in: 1 ... 5)
+            let leg1 = Array(1 ... leg1Size)
+            let leg2 = Array(6 ... (5 + leg2Size))
             let leg1Str = leg1.map { "\($0)" }.joined(separator: ",")
             let leg2Str = leg2.map { "\($0)" }.joined(separator: ",")
             let sel1 = "\(leg1Str)/\(leg2Str)"
@@ -259,12 +286,12 @@ struct BetModelTests {
         }
     }
 
-    // Property 5 (Monotonicity): adding horses to a formation leg never decreases count
+    /// Property 5 (Monotonicity): adding horses to a formation leg never decreases count
     @Test func pbt_formationCount_isMonotonicallyNonDecreasing() {
-        for baseSize in 1...4 {
-            let base = Array(1...baseSize)
-            let extended = Array(1...(baseSize + 1))
-            let pivot = Array(10...13).map { "\($0)" }.joined(separator: ",")
+        for baseSize in 1 ... 4 {
+            let base = Array(1 ... baseSize)
+            let extended = Array(1 ... (baseSize + 1))
+            let pivot = Array(10 ... 13).map { "\($0)" }.joined(separator: ",")
             let sel1 = "\(base.map { "\($0)" }.joined(separator: ","))/\(pivot)"
             let sel2 = "\(extended.map { "\($0)" }.joined(separator: ","))/\(pivot)"
             let count1 = Bet.combinationCount(selection: sel1, ticketTypeName: "馬連")

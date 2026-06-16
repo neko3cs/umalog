@@ -11,11 +11,14 @@ import SwiftData
 @Model
 final class Bet {
     var race: Race?
+    @Relationship(deleteRule: .cascade, inverse: \BetSelection.bet)
+    var selections: [BetSelection]?
+    // Legacy fields kept for data migration and backward-compat CSV import
     var ticketType: TicketType?
-    var ticketTypeName: String = "" // 券種削除時の表示用デノーマライズ
+    var ticketTypeName: String = ""
     var selection: String = ""
-    var unitPrice: Int = 100 // 1口あたりの購入額
-    var purchaseAmount: Int = 0 // 合計購入額 (= unitPrice × 組合せ数)
+    var unitPrice: Int = 100
+    var purchaseAmount: Int = 0
     var payoutAmount: Int = 0 // 0 = 未確定
     var sortIndex: Int = 0
 

@@ -231,39 +231,76 @@ struct EntryRowView: View {
 struct BetRowView: View {
     let bet: Bet
 
-    private var combinationCount: Int {
-        bet.combinationCount
+    private var sortedSelections: [BetSelection] {
+        (bet.selections ?? []).sorted { $0.sortIndex < $1.sortIndex }
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 6) {
-                if !bet.displayTicketTypeName.isEmpty {
-                    Text(bet.displayTicketTypeName)
-                        .font(.caption)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.accentColor.opacity(0.15))
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+            if sortedSelections.isEmpty {
+                legacySelectionRow
+            } else {
+                ForEach(sortedSelections) { sel in
+                    selectionRow(sel)
                 }
-                Text(bet.selection)
-                Spacer()
             }
-            HStack(spacing: 8) {
-                if combinationCount > 1 {
-                    Text("¥\(bet.unitPrice.formatted()) × \(combinationCount)点 = ¥\(bet.purchaseAmount.formatted())")
-                        .font(.caption)
-                } else {
-                    Text("¥\(bet.purchaseAmount.formatted())").font(.caption)
-                }
-                Image(systemName: "arrow.right").font(.caption2).foregroundStyle(.secondary)
-                Text("¥\(bet.payoutAmount.formatted())")
-                    .font(.caption)
-                    .foregroundStyle(bet.payoutAmount > 0 ? .green : .red)
-                Spacer()
-            }
+            summaryRow
         }
         .padding(.vertical, 2)
+    }
+
+    private func selectionRow(_ sel: BetSelection) -> some View {
+        HStack(spacing: 6) {
+            if !sel.displayTicketTypeName.isEmpty {
+                Text(sel.displayTicketTypeName)
+                    .font(.caption)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.accentColor.opacity(0.15))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+            }
+            Text(sel.selection)
+            Spacer()
+            if sel.combinationCount > 1 {
+                Text("¥\(sel.unitPrice.formatted()) × \(sel.combinationCount)点")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("¥\(sel.unitPrice.formatted())")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var legacySelectionRow: some View {
+        HStack(spacing: 6) {
+            if !bet.displayTicketTypeName.isEmpty {
+                Text(bet.displayTicketTypeName)
+                    .font(.caption)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.accentColor.opacity(0.15))
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+            }
+            Text(bet.selection)
+            Spacer()
+        }
+    }
+
+    private var summaryRow: some View {
+        HStack(spacing: 8) {
+            if sortedSelections.count > 1 {
+                Text("計 ¥\(bet.purchaseAmount.formatted())").font(.caption)
+            } else {
+                Text("¥\(bet.purchaseAmount.formatted())").font(.caption)
+            }
+            Image(systemName: "arrow.right").font(.caption2).foregroundStyle(.secondary)
+            Text("¥\(bet.payoutAmount.formatted())")
+                .font(.caption)
+                .foregroundStyle(bet.payoutAmount > 0 ? .green : .red)
+            Spacer()
+        }
     }
 }
 

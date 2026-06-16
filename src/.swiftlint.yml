@@ -1,5 +1,8 @@
 disabled_rules:
   - for_where
+  - trailing_comma
+  - type_name
+  - opening_brace
 
 identifier_name:
   min_length:
