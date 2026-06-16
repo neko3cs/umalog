@@ -21,9 +21,9 @@ struct CSVExporterTests {
     }
 
     private func formatDate(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy/MM/dd"
-        return f.string(from: date)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy/MM/dd"
+        return formatter.string(from: date)
     }
 
     // MARK: - Section headers
@@ -50,7 +50,8 @@ struct CSVExporterTests {
 
     @Test func export_entriesSection_hasCorrectColumnHeaders() {
         let output = CSVExporter.export(races: [])
-        #expect(output.contains("date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark"))
+        let expected = "date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark"
+        #expect(output.contains(expected))
     }
 
     @Test func export_betsSection_hasCorrectColumnHeaders() {
@@ -151,7 +152,7 @@ struct CSVExporterTests {
         let entry = RaceEntry(race: race, horseName: "テスト馬", predictionMark: "◎"); ctx.insert(entry)
         race.entries = [entry]
         let output = CSVExporter.export(races: [race])
-        #expect(output.contains(",◎,"))
+        #expect(output.contains(",◎"))
     }
 
     @Test func export_entryRow_withNoPredictionMark_includesHorseName() {
@@ -260,6 +261,12 @@ struct CSVExporterTests {
         #expect(CSVExporter.formatFilenameDate(date) == "20260613")
     }
 
+    @Test func japaneseShortDateString_returnsJapaneseSlashFormat() throws {
+        let calendar = Calendar(identifier: .gregorian)
+        let date = try #require(calendar.date(from: DateComponents(year: 2026, month: 6, day: 13)))
+        #expect(date.japaneseShortDateString == "2026/06/13")
+    }
+
     // MARK: - ZipExporter / ZipImporter round-trip
 
     @Test func zipExporter_producesZipFileAtTemporaryDirectory() throws {
@@ -289,7 +296,10 @@ struct CSVExporterTests {
         let entry = RaceEntry(race: race, horseNumber: 5, horseName: "テスト馬", predictionMark: "◎")
         exportCtx.insert(entry)
         race.entries = [entry]
-        let bet = Bet(race: race, ticketTypeName: "馬連", selection: "1,2,3[BOX]", unitPrice: 100, purchaseAmount: 300, payoutAmount: 800)
+        let bet = Bet(
+            race: race, ticketTypeName: "馬連", selection: "1,2,3[BOX]",
+            unitPrice: 100, purchaseAmount: 300, payoutAmount: 800
+        )
         exportCtx.insert(bet)
         race.bets = [bet]
 

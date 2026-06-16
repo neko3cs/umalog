@@ -66,7 +66,7 @@ struct BalanceSummaryView: View {
                     HStack {
                         Text("対象")
                         Spacer()
-                        Text(selectedDate.formatted(Date.FormatStyle().locale(Locale(identifier: "ja_JP")).year(.defaultDigits).month(.twoDigits).day(.twoDigits)))
+                        Text(selectedDate.japaneseShortDateString)
                             .foregroundStyle(.blue)
                             .overlay {
                                 DatePicker("", selection: $selectedDate, displayedComponents: .date)
@@ -96,7 +96,7 @@ struct BalanceSummaryView: View {
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
                                     HStack(spacing: 4) {
-                                        Text(race.date.formatted(Date.FormatStyle().locale(Locale(identifier: "ja_JP")).year(.defaultDigits).month(.twoDigits).day(.twoDigits)))
+                                        Text(race.date.japaneseShortDateString)
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                         if let venue = race.venue {

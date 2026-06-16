@@ -13,7 +13,7 @@ struct RaceEntryFormView: View {
     @Environment(\.dismiss) private var dismiss
 
     let race: Race
-    var entry: RaceEntry? = nil
+    var entry: RaceEntry?
 
     @Query private var allEntries: [RaceEntry]
 
@@ -21,7 +21,7 @@ struct RaceEntryFormView: View {
     @State private var horseName: String = ""
     @State private var jockeyName: String = ""
     @State private var trainerName: String = ""
-    @State private var selectedMark: PredictionMark? = nil
+    @State private var selectedMark: PredictionMark?
 
     private var isEditing: Bool {
         entry != nil
