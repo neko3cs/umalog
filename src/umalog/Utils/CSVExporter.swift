@@ -143,9 +143,7 @@ enum ZipExporter {
         let zipURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         try? FileManager.default.removeItem(at: zipURL)
 
-        guard let archive = Archive(url: zipURL, accessMode: .create) else {
-            throw CocoaError(.fileWriteUnknown)
-        }
+        let archive = try Archive(url: zipURL, accessMode: .create)
 
         try addEntry(archive, name: "races.csv", content: racesCSV(sorted))
         try addEntry(archive, name: "entries.csv", content: entriesCSV(sorted))
@@ -269,9 +267,7 @@ enum ZipExporter {
 
 enum ZipImporter {
     static func importZip(from url: URL, context: ModelContext) throws {
-        guard let archive = Archive(url: url, accessMode: .read) else {
-            throw CocoaError(.fileReadUnknown)
-        }
+        let archive = try Archive(url: url, accessMode: .read)
 
         let racesText = try readEntry(archive, path: "races.csv")
         let entriesText = try readEntry(archive, path: "entries.csv")
