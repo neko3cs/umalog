@@ -38,7 +38,7 @@ struct RaceListView: View {
                             }
                         }
                     } header: {
-                        Text(date.formatted(Date.FormatStyle().locale(Locale(identifier: "ja_JP")).year(.defaultDigits).month(.twoDigits).day(.twoDigits)))
+                        Text(date.japaneseShortDateString)
                     }
                 }
             }

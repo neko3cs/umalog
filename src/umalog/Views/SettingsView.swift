@@ -15,17 +15,17 @@ struct SettingsView: View {
     @Query(sort: \TicketType.sortIndex) private var ticketTypes: [TicketType]
     @Query private var races: [Race]
 
-    @State private var exportURL: ExportURL? = nil
+    @State private var exportURL: ExportURL?
     @State private var showingImportPicker = false
     @State private var showingImportConfirm = false
-    @State private var pendingImportURL: URL? = nil
-    @State private var importError: String? = nil
+    @State private var pendingImportURL: URL?
+    @State private var importError: String?
     @State private var showingImportError = false
     @State private var showingImportSuccess = false
     @State private var isExporting = false
     @State private var isImporting = false
     @State private var showingExportSuccess = false
-    @State private var exportError: String? = nil
+    @State private var exportError: String?
     @State private var showingExportError = false
 
     var body: some View {

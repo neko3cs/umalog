@@ -186,4 +186,85 @@ struct RaceModelTests {
         let rate = try #require(race.returnRate)
         #expect(rate == 1.5)
     }
+
+    // MARK: - finishPosition
+
+    @Test func finishPosition_whenHorseIsFirst_returnsOne() {
+        let race = Race(firstPlaceHorseNumber: 5, secondPlaceHorseNumber: 3, thirdPlaceHorseNumber: 8)
+        container.mainContext.insert(race)
+        #expect(race.finishPosition(forHorseNumber: 5) == 1)
+    }
+
+    @Test func finishPosition_whenHorseIsSecond_returnsTwo() {
+        let race = Race(firstPlaceHorseNumber: 5, secondPlaceHorseNumber: 3, thirdPlaceHorseNumber: 8)
+        container.mainContext.insert(race)
+        #expect(race.finishPosition(forHorseNumber: 3) == 2)
+    }
+
+    @Test func finishPosition_whenHorseIsThird_returnsThree() {
+        let race = Race(firstPlaceHorseNumber: 5, secondPlaceHorseNumber: 3, thirdPlaceHorseNumber: 8)
+        container.mainContext.insert(race)
+        #expect(race.finishPosition(forHorseNumber: 8) == 3)
+    }
+
+    @Test func finishPosition_whenHorseIsNotPlaced_returnsNil() {
+        let race = Race(firstPlaceHorseNumber: 5, secondPlaceHorseNumber: 3, thirdPlaceHorseNumber: 8)
+        container.mainContext.insert(race)
+        #expect(race.finishPosition(forHorseNumber: 1) == nil)
+    }
+
+    // MARK: - Property-Based Tests
+
+    // Property 1 (Invariant): totalBalance == sum(payout - purchase) for any bets
+    @Test func pbt_totalBalance_equalsPayoutMinusPurchaseSummedOverAllBets() {
+        let ctx = container.mainContext
+        for _ in 0..<500 {
+            let race = Race(); ctx.insert(race)
+            let betCount = Int.random(in: 1...10)
+            var bets: [Bet] = []
+            var expected = 0
+            for _ in 0..<betCount {
+                let purchase = Int.random(in: 100...10_000)
+                let payout = Int.random(in: 0...50_000)
+                let bet = Bet(race: race, purchaseAmount: purchase, payoutAmount: payout)
+                ctx.insert(bet)
+                bets.append(bet)
+                expected += payout - purchase
+            }
+            race.bets = bets
+            #expect(race.balance == expected)
+        }
+    }
+
+    // Property 2 (Structural induction): balance == totalPayout - totalPurchase
+    @Test func pbt_balance_equalsPayoutMinusPurchaseForRace() {
+        let ctx = container.mainContext
+        for _ in 0..<500 {
+            let race = Race(); ctx.insert(race)
+            let betCount = Int.random(in: 1...8)
+            var bets: [Bet] = []
+            for _ in 0..<betCount {
+                let purchase = Int.random(in: 100...5_000)
+                let payout = Int.random(in: 0...20_000)
+                let bet = Bet(race: race, purchaseAmount: purchase, payoutAmount: payout)
+                ctx.insert(bet)
+                bets.append(bet)
+            }
+            race.bets = bets
+            #expect(race.balance == race.totalPayout - race.totalPurchase)
+        }
+    }
+
+    // Property 3 (Oracle): returnRate when payout == purchase is exactly 1.0
+    @Test func pbt_returnRate_whenPayoutEqualsPurchase_isExactlyOne() {
+        let ctx = container.mainContext
+        for _ in 0..<200 {
+            let amount = Int.random(in: 100...100_000)
+            let race = Race(); ctx.insert(race)
+            let bet = Bet(race: race, purchaseAmount: amount, payoutAmount: amount)
+            ctx.insert(bet)
+            race.bets = [bet]
+            #expect(race.returnRate == 1.0)
+        }
+    }
 }

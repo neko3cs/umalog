@@ -15,8 +15,8 @@ struct RaceDetailView: View {
     @State private var showingEditRace = false
     @State private var showingAddEntry = false
     @State private var showingAddBet = false
-    @State private var editingEntry: RaceEntry? = nil
-    @State private var editingBet: Bet? = nil
+    @State private var editingEntry: RaceEntry?
+    @State private var editingBet: Bet?
 
     private var sortedEntries: [RaceEntry] {
         (race.entries ?? []).sorted { $0.horseNumber < $1.horseNumber }
@@ -30,7 +30,7 @@ struct RaceDetailView: View {
         List {
             Section("レース情報") {
                 LabeledContent("日付") {
-                    Text(race.date.formatted(Date.FormatStyle().locale(Locale(identifier: "ja_JP")).year(.defaultDigits).month(.twoDigits).day(.twoDigits)))
+                    Text(race.date.japaneseShortDateString)
                 }
                 if let venue = race.venue {
                     LabeledContent("競馬場", value: venue.name)
@@ -198,7 +198,7 @@ private struct MemoEditView: View {
 
 struct EntryRowView: View {
     let entry: RaceEntry
-    var position: Int? = nil
+    var position: Int?
 
     var body: some View {
         HStack(spacing: 10) {

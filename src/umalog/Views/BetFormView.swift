@@ -19,11 +19,11 @@ struct BetFormView: View {
     @Environment(\.dismiss) private var dismiss
 
     let race: Race
-    var bet: Bet? = nil
+    var bet: Bet?
 
     @Query(sort: \TicketType.sortIndex) private var ticketTypes: [TicketType]
 
-    @State private var selectedTicketType: TicketType? = nil
+    @State private var selectedTicketType: TicketType?
     @State private var customTicketTypeName: String = ""
     @State private var useCustom: Bool = false
     @State private var manualHorseCount: Int = 1
@@ -174,8 +174,8 @@ struct BetFormView: View {
             } else {
                 Picker("券種", selection: $selectedTicketType) {
                     Text("未選択").tag(nil as TicketType?)
-                    ForEach(ticketTypes) { tt in
-                        Text(tt.name).tag(tt as TicketType?)
+                    ForEach(ticketTypes) { ticketType in
+                        Text(ticketType.name).tag(ticketType as TicketType?)
                     }
                 }
             }
@@ -454,11 +454,11 @@ struct BetFormView: View {
     }
 
     private func save() {
-        let ttName = useCustom ? customTicketTypeName : (selectedTicketType?.name ?? "")
-        let tt = useCustom ? nil : selectedTicketType
+        let ticketTypeName = useCustom ? customTicketTypeName : (selectedTicketType?.name ?? "")
+        let ticketType = useCustom ? nil : selectedTicketType
         if let bet {
-            bet.ticketType = tt
-            bet.ticketTypeName = ttName
+            bet.ticketType = ticketType
+            bet.ticketTypeName = ticketTypeName
             bet.selection = selection
             bet.unitPrice = unitPrice
             bet.purchaseAmount = purchaseAmount
@@ -466,7 +466,7 @@ struct BetFormView: View {
         } else {
             let sortIndex = (race.bets ?? []).count
             modelContext.insert(Bet(
-                race: race, ticketType: tt, ticketTypeName: ttName,
+                race: race, ticketType: ticketType, ticketTypeName: ticketTypeName,
                 selection: selection, unitPrice: unitPrice,
                 purchaseAmount: purchaseAmount, payoutAmount: payoutAmount,
                 sortIndex: sortIndex

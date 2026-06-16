@@ -17,7 +17,11 @@ enum CSVExporter {
         let sorted = races.sorted { $0.date < $1.date }
 
         lines.append("=== RACES ===")
-        lines.append("date,venue,race_number,race_name,distance,track_type,track_condition,category,first_place_horse,second_place_horse,third_place_horse,total_purchase,total_payout,balance,memo")
+        lines.append(
+            "date,venue,race_number,race_name,distance,track_type,track_condition," +
+            "category,first_place_horse,second_place_horse,third_place_horse," +
+            "total_purchase,total_payout,balance,memo"
+        )
         for race in sorted {
             let row: [String] = [
                 formatDate(race.date),
@@ -34,7 +38,7 @@ enum CSVExporter {
                 "\(race.totalPurchase)",
                 "\(race.totalPayout)",
                 "\(race.balance)",
-                race.memo.replacingOccurrences(of: "\n", with: " "),
+                race.memo.replacingOccurrences(of: "\n", with: " ")
             ]
             lines.append(row.map { escape($0) }.joined(separator: ","))
         }
@@ -52,7 +56,7 @@ enum CSVExporter {
                     entry.horseName,
                     entry.jockeyName,
                     entry.trainerName,
-                    entry.predictionMark ?? "",
+                    entry.predictionMark ?? ""
                 ]
                 lines.append(row.map { escape($0) }.joined(separator: ","))
             }
@@ -73,7 +77,7 @@ enum CSVExporter {
                     "\(bet.combinationCount)",
                     "\(bet.purchaseAmount)",
                     "\(bet.payoutAmount)",
-                    "\(bet.balance)",
+                    "\(bet.balance)"
                 ]
                 lines.append(row.map { escape($0) }.joined(separator: ","))
             }
@@ -90,15 +94,15 @@ enum CSVExporter {
     }
 
     static func formatDate(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy/MM/dd"
-        return f.string(from: date)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy/MM/dd"
+        return formatter.string(from: date)
     }
 
     static func formatFilenameDate(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "yyyyMMdd"
-        return f.string(from: date)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd"
+        return formatter.string(from: date)
     }
 
     /// 0 を未入力として空文字に変換するヘルパー
@@ -147,7 +151,10 @@ enum ZipExporter {
     }
 
     private static func racesCSV(_ races: [Race]) -> String {
-        var lines = ["date,venue,race_number,race_name,distance,track_type,track_condition,category,first_place_horse,second_place_horse,third_place_horse,total_purchase,total_payout,balance"]
+        let header = "date,venue,race_number,race_name,distance,track_type,track_condition," +
+            "category,first_place_horse,second_place_horse,third_place_horse," +
+            "total_purchase,total_payout,balance"
+        var lines = [header]
         for race in races {
             let row: [String] = [
                 CSVExporter.formatDate(race.date),
@@ -163,7 +170,7 @@ enum ZipExporter {
                 CSVExporter.horseNumberString(race.thirdPlaceHorseNumber),
                 "\(race.totalPurchase)",
                 "\(race.totalPayout)",
-                "\(race.balance)",
+                "\(race.balance)"
             ]
             lines.append(row.map { CSVExporter.escape($0) }.joined(separator: ","))
         }
@@ -182,7 +189,7 @@ enum ZipExporter {
                     entry.horseName,
                     entry.jockeyName,
                     entry.trainerName,
-                    entry.predictionMark ?? "",
+                    entry.predictionMark ?? ""
                 ]
                 lines.append(row.map { CSVExporter.escape($0) }.joined(separator: ","))
             }
@@ -204,7 +211,7 @@ enum ZipExporter {
                     "\(bet.combinationCount)",
                     "\(bet.purchaseAmount)",
                     "\(bet.payoutAmount)",
-                    "\(bet.balance)",
+                    "\(bet.balance)"
                 ]
                 lines.append(row.map { CSVExporter.escape($0) }.joined(separator: ","))
             }
@@ -216,6 +223,7 @@ enum ZipExporter {
 // MARK: - ZIP Importer
 
 enum ZipImporter {
+    // swiftlint:disable:next function_body_length
     static func importZip(from url: URL, context: ModelContext) throws {
         guard let archive = Archive(url: url, accessMode: .read) else {
             throw CocoaError(.fileReadUnknown)
@@ -348,9 +356,9 @@ enum ZipImporter {
     }
 
     private static func parseDate(_ string: String) -> Date? {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy/MM/dd"
-        return f.date(from: string)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy/MM/dd"
+        return formatter.date(from: string)
     }
 
     private static func parseCSV(_ text: String) -> [[String]] {
@@ -358,21 +366,21 @@ enum ZipImporter {
         var row: [String] = []
         var field = ""
         var inQuotes = false
-        var chars = Array(text)
+        let chars = Array(text)
         var i = 0
         while i < chars.count {
-            let c = chars[i]
+            let char = chars[i]
             if inQuotes {
-                if c == "\"" {
+                if char == "\"" {
                     if i + 1 < chars.count, chars[i + 1] == "\"" {
                         field.append("\""); i += 2; continue
                     }
                     inQuotes = false
                 } else {
-                    field.append(c)
+                    field.append(char)
                 }
             } else {
-                switch c {
+                switch char {
                 case "\"": inQuotes = true
                 case ",": row.append(field); field = ""
                 case "\r":
@@ -382,12 +390,26 @@ enum ZipImporter {
                     row.append(field); field = ""
                     if !row.isEmpty { result.append(row) }
                     row = []
-                default: field.append(c)
+                default: field.append(char)
                 }
             }
             i += 1
         }
         if !field.isEmpty || !row.isEmpty { row.append(field); result.append(row) }
         return result
+    }
+}
+
+// MARK: - Date Display Helpers
+
+extension Date {
+    var japaneseShortDateString: String {
+        formatted(
+            Date.FormatStyle()
+                .locale(Locale(identifier: "ja_JP"))
+                .year(.defaultDigits)
+                .month(.twoDigits)
+                .day(.twoDigits)
+        )
     }
 }

@@ -115,9 +115,9 @@ final class Bet {
     private static func formationTwoLegUnordered(legs: [[Int]]) -> Int {
         guard legs.count == 2 else { return 0 }
         var pairs = Set<Set<Int>>()
-        for a in legs[0] {
-            for b in legs[1] where a != b {
-                pairs.insert(Set([a, b]))
+        for first in legs[0] {
+            for second in legs[1] {
+                if first != second { pairs.insert(Set([first, second])) }
             }
         }
         return pairs.count
@@ -126,9 +126,9 @@ final class Bet {
     private static func formationTwoLegOrdered(legs: [[Int]]) -> Int {
         guard legs.count == 2 else { return 0 }
         var count = 0
-        for a in legs[0] {
-            for b in legs[1] where a != b {
-                count += 1
+        for first in legs[0] {
+            for second in legs[1] {
+                if first != second { count += 1 }
             }
         }
         return count
@@ -137,10 +137,12 @@ final class Bet {
     private static func formationThreeLegUnordered(legs: [[Int]]) -> Int {
         guard legs.count == 3 else { return 0 }
         var triples = Set<Set<Int>>()
-        for a in legs[0] {
-            for b in legs[1] {
-                for c in legs[2] where a != b && b != c && a != c {
-                    triples.insert(Set([a, b, c]))
+        for first in legs[0] {
+            for second in legs[1] {
+                for third in legs[2] {
+                    if first != second && second != third && first != third {
+                        triples.insert(Set([first, second, third]))
+                    }
                 }
             }
         }
@@ -150,10 +152,10 @@ final class Bet {
     private static func formationThreeLegOrdered(legs: [[Int]]) -> Int {
         guard legs.count == 3 else { return 0 }
         var count = 0
-        for a in legs[0] {
-            for b in legs[1] {
-                for c in legs[2] where a != b && b != c && a != c {
-                    count += 1
+        for first in legs[0] {
+            for second in legs[1] {
+                for third in legs[2] {
+                    if first != second && second != third && first != third { count += 1 }
                 }
             }
         }
