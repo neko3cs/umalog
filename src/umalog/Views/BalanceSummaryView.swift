@@ -12,6 +12,7 @@ enum SummaryPeriod: String, CaseIterable {
     case daily = "日"
     case monthly = "月"
     case yearly = "年"
+    case range = "期間"
 }
 
 // MARK: - Period Calculator
@@ -31,7 +32,15 @@ struct BalanceSummaryPeriodCalc {
         case .daily: return calendar.dateInterval(of: .day, for: date)
         case .monthly: return calendar.dateInterval(of: .month, for: date)
         case .yearly: return calendar.dateInterval(of: .year, for: date)
+        case .range: return nil
         }
+    }
+
+    func rangeInterval(from: Date, to: Date) -> DateInterval? {
+        guard from <= to else { return nil }
+        let start = calendar.startOfDay(for: from)
+        let end = calendar.startOfDay(for: to).addingTimeInterval(86400)
+        return DateInterval(start: start, end: end)
     }
 
     func advance(_ date: Date, by steps: Int, unit period: SummaryPeriod) -> Date {
@@ -40,6 +49,7 @@ struct BalanceSummaryPeriodCalc {
         case .daily: component = .day
         case .monthly: component = .month
         case .yearly: component = .year
+        case .range: return date
         }
         return calendar.date(byAdding: component, value: steps, to: date) ?? date
     }
@@ -51,8 +61,24 @@ struct BalanceSummaryPeriodCalc {
         case .daily: formatter.dateFormat = "yyyy年M月d日"
         case .monthly: formatter.dateFormat = "yyyy年M月"
         case .yearly: formatter.dateFormat = "yyyy年"
+        case .range: return ""
         }
         return formatter.string(from: date)
+    }
+
+    func rangeTitle(from: Date, to: Date) -> String {
+        guard from <= to else { return "期間を正しく設定してください" }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.dateFormat = "yyyy年M月d日"
+        let fromStr = formatter.string(from: from)
+        let toStr = formatter.string(from: to)
+        let days = calendar.dateComponents(
+            [.day],
+            from: calendar.startOfDay(for: from),
+            to: calendar.startOfDay(for: to)
+        ).day.map { $0 + 1 } ?? 1
+        return "\(fromStr) 〜 \(toStr) (\(days)日間)"
     }
 
     func year(from date: Date) -> Int {
@@ -83,10 +109,22 @@ struct BalanceSummaryView: View {
 
     @State private var period: SummaryPeriod = .monthly
     @State private var selectedDate: Date = .init()
+    @State private var fromDate: Date = Calendar.current.date(
+        byAdding: .month, value: -1, to: Date()
+    ) ?? Date()
+    @State private var toDate: Date = .init()
 
     private let calc = BalanceSummaryPeriodCalc()
 
+    private var isRangeValid: Bool {
+        period != .range || fromDate <= toDate
+    }
+
     private var filteredRaces: [Race] {
+        if period == .range {
+            guard let interval = calc.rangeInterval(from: fromDate, to: toDate) else { return [] }
+            return races.filter { interval.contains($0.date) }
+        }
         guard let interval = calc.interval(for: period, date: selectedDate) else { return [] }
         return races.filter { interval.contains($0.date) }
     }
@@ -143,9 +181,17 @@ struct BalanceSummaryView: View {
                 Image(systemName: "chevron.left").frame(width: 44, height: 32)
             }
             .buttonStyle(.borderless)
+            .disabled(period == .range)
             Spacer()
-            Text(calc.title(for: period, date: selectedDate))
-                .font(.headline)
+            Group {
+                if period == .range {
+                    Text(calc.rangeTitle(from: fromDate, to: toDate))
+                        .multilineTextAlignment(.center)
+                } else {
+                    Text(calc.title(for: period, date: selectedDate))
+                }
+            }
+            .font(.headline)
             Spacer()
             Button {
                 selectedDate = calc.advance(selectedDate, by: 1, unit: period)
@@ -153,6 +199,7 @@ struct BalanceSummaryView: View {
                 Image(systemName: "chevron.right").frame(width: 44, height: 32)
             }
             .buttonStyle(.borderless)
+            .disabled(period == .range)
         }
     }
 
@@ -193,6 +240,23 @@ struct BalanceSummaryView: View {
                 }
             }
             .frame(maxWidth: .infinity)
+        case .range:
+            rangePickers
+        }
+    }
+
+    private var rangePickers: some View {
+        VStack(spacing: 0) {
+            DatePicker("開始日", selection: $fromDate, displayedComponents: .date)
+                .environment(\.locale, Locale(identifier: "ja_JP"))
+            DatePicker("終了日", selection: $toDate, displayedComponents: .date)
+                .environment(\.locale, Locale(identifier: "ja_JP"))
+            if fromDate > toDate {
+                Text("開始日は終了日より前に設定してください")
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .padding(.top, 4)
+            }
         }
     }
 

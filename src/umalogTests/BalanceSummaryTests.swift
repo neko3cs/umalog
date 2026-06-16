@@ -146,4 +146,77 @@ struct BalanceSummaryTests {
         #expect(calc.month(from: updated) == 12)
         #expect(calc.year(from: updated) == 2026)
     }
+
+    // MARK: - rangeInterval
+
+    @Test func rangeInterval_containsFromDate() throws {
+        let from = makeDate(2026, 3, 1)
+        let to = makeDate(2026, 6, 30)
+        let interval = try #require(calc.rangeInterval(from: from, to: to))
+        #expect(interval.contains(makeDate(2026, 3, 1)))
+    }
+
+    @Test func rangeInterval_containsToDate() throws {
+        let from = makeDate(2026, 3, 1)
+        let to = makeDate(2026, 6, 30)
+        let interval = try #require(calc.rangeInterval(from: from, to: to))
+        #expect(interval.contains(makeDate(2026, 6, 30)))
+    }
+
+    @Test func rangeInterval_doesNotContainDayAfterTo() throws {
+        let from = makeDate(2026, 3, 1)
+        let to = makeDate(2026, 6, 30)
+        let interval = try #require(calc.rangeInterval(from: from, to: to))
+        #expect(!interval.contains(makeDate(2026, 7, 1)))
+    }
+
+    @Test func rangeInterval_doesNotContainDayBeforeFrom() throws {
+        let from = makeDate(2026, 3, 1)
+        let to = makeDate(2026, 6, 30)
+        let interval = try #require(calc.rangeInterval(from: from, to: to))
+        #expect(!interval.contains(makeDate(2026, 2, 28)))
+    }
+
+    @Test func rangeInterval_returnsNilWhenFromAfterTo() {
+        let from = makeDate(2026, 7, 1)
+        let to = makeDate(2026, 6, 30)
+        #expect(calc.rangeInterval(from: from, to: to) == nil)
+    }
+
+    @Test func rangeInterval_singleDay_containsThatDay() throws {
+        let date = makeDate(2026, 6, 15)
+        let interval = try #require(calc.rangeInterval(from: date, to: date))
+        #expect(interval.contains(makeDate(2026, 6, 15)))
+        #expect(!interval.contains(makeDate(2026, 6, 16)))
+    }
+
+    // MARK: - rangeTitle
+
+    @Test func rangeTitle_formatsFromAndTo() {
+        let from = makeDate(2026, 3, 1)
+        let to = makeDate(2026, 6, 14)
+        let title = calc.rangeTitle(from: from, to: to)
+        #expect(title.contains("2026年3月1日"))
+        #expect(title.contains("2026年6月14日"))
+    }
+
+    @Test func rangeTitle_includesDayCount() {
+        let from = makeDate(2026, 6, 1)
+        let to = makeDate(2026, 6, 14)
+        let title = calc.rangeTitle(from: from, to: to)
+        #expect(title.contains("14日間"))
+    }
+
+    @Test func rangeTitle_singleDay_shows1DayCount() {
+        let date = makeDate(2026, 6, 15)
+        let title = calc.rangeTitle(from: date, to: date)
+        #expect(title.contains("1日間"))
+    }
+
+    @Test func rangeTitle_whenFromAfterTo_returnsErrorMessage() {
+        let from = makeDate(2026, 7, 1)
+        let to = makeDate(2026, 6, 30)
+        let title = calc.rangeTitle(from: from, to: to)
+        #expect(!title.contains("〜"))
+    }
 }
