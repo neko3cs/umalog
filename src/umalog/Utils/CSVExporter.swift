@@ -19,8 +19,8 @@ enum CSVExporter {
         lines.append("=== RACES ===")
         lines.append(
             "date,venue,race_number,race_name,distance,track_type,track_condition," +
-            "category,first_place_horse,second_place_horse,third_place_horse," +
-            "total_purchase,total_payout,balance,memo"
+                "category,first_place_horse,second_place_horse,third_place_horse," +
+                "total_purchase,total_payout,balance,memo"
         )
         for race in sorted {
             let row: [String] = [
@@ -38,7 +38,7 @@ enum CSVExporter {
                 "\(race.totalPurchase)",
                 "\(race.totalPayout)",
                 "\(race.balance)",
-                race.memo.replacingOccurrences(of: "\n", with: " ")
+                race.memo.replacingOccurrences(of: "\n", with: " "),
             ]
             lines.append(row.map { escape($0) }.joined(separator: ","))
         }
@@ -56,7 +56,7 @@ enum CSVExporter {
                     entry.horseName,
                     entry.jockeyName,
                     entry.trainerName,
-                    entry.predictionMark ?? ""
+                    entry.predictionMark ?? "",
                 ]
                 lines.append(row.map { escape($0) }.joined(separator: ","))
             }
@@ -64,22 +64,44 @@ enum CSVExporter {
 
         lines.append("")
         lines.append("=== BETS ===")
-        lines.append("date,venue,race_number,ticket_type,selection,unit_price,combination_count,purchase_amount,payout_amount,balance")
+        lines.append("date,venue,race_number,bet_sort_index,purchase_amount,payout_amount,balance")
         for race in sorted {
             for bet in (race.bets ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
                 let row: [String] = [
                     formatDate(race.date),
                     race.venue?.name ?? "",
                     "\(race.raceNumber)",
-                    bet.displayTicketTypeName,
-                    bet.selection,
-                    "\(bet.unitPrice)",
-                    "\(bet.combinationCount)",
+                    "\(bet.sortIndex)",
                     "\(bet.purchaseAmount)",
                     "\(bet.payoutAmount)",
-                    "\(bet.balance)"
+                    "\(bet.balance)",
                 ]
                 lines.append(row.map { escape($0) }.joined(separator: ","))
+            }
+        }
+
+        lines.append("")
+        lines.append("=== BET_SELECTIONS ===")
+        lines.append(
+            "date,venue,race_number,bet_sort_index,ticket_type,selection," +
+                "unit_price,combination_count,sort_index"
+        )
+        for race in sorted {
+            for bet in (race.bets ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
+                for sel in (bet.selections ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
+                    let row: [String] = [
+                        formatDate(race.date),
+                        race.venue?.name ?? "",
+                        "\(race.raceNumber)",
+                        "\(bet.sortIndex)",
+                        sel.displayTicketTypeName,
+                        sel.selection,
+                        "\(sel.unitPrice)",
+                        "\(sel.combinationCount)",
+                        "\(sel.sortIndex)",
+                    ]
+                    lines.append(row.map { escape($0) }.joined(separator: ","))
+                }
             }
         }
 
@@ -128,6 +150,7 @@ enum ZipExporter {
         try addEntry(archive, name: "races.csv", content: racesCSV(sorted))
         try addEntry(archive, name: "entries.csv", content: entriesCSV(sorted))
         try addEntry(archive, name: "bets.csv", content: betsCSV(sorted))
+        try addEntry(archive, name: "bet_selections.csv", content: betSelectionsCSV(sorted))
 
         for race in sorted {
             guard !race.memo.isEmpty else { continue }
@@ -170,7 +193,7 @@ enum ZipExporter {
                 CSVExporter.horseNumberString(race.thirdPlaceHorseNumber),
                 "\(race.totalPurchase)",
                 "\(race.totalPayout)",
-                "\(race.balance)"
+                "\(race.balance)",
             ]
             lines.append(row.map { CSVExporter.escape($0) }.joined(separator: ","))
         }
@@ -189,7 +212,7 @@ enum ZipExporter {
                     entry.horseName,
                     entry.jockeyName,
                     entry.trainerName,
-                    entry.predictionMark ?? ""
+                    entry.predictionMark ?? "",
                 ]
                 lines.append(row.map { CSVExporter.escape($0) }.joined(separator: ","))
             }
@@ -198,22 +221,44 @@ enum ZipExporter {
     }
 
     private static func betsCSV(_ races: [Race]) -> String {
-        var lines = ["date,venue,race_number,ticket_type,selection,unit_price,combination_count,purchase_amount,payout_amount,balance"]
+        var lines = ["date,venue,race_number,bet_sort_index,purchase_amount,payout_amount,balance"]
         for race in races {
             for bet in (race.bets ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
                 let row: [String] = [
                     CSVExporter.formatDate(race.date),
                     race.venue?.name ?? "",
                     "\(race.raceNumber)",
-                    bet.displayTicketTypeName,
-                    bet.selection,
-                    "\(bet.unitPrice)",
-                    "\(bet.combinationCount)",
+                    "\(bet.sortIndex)",
                     "\(bet.purchaseAmount)",
                     "\(bet.payoutAmount)",
-                    "\(bet.balance)"
+                    "\(bet.balance)",
                 ]
                 lines.append(row.map { CSVExporter.escape($0) }.joined(separator: ","))
+            }
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private static func betSelectionsCSV(_ races: [Race]) -> String {
+        let header = "date,venue,race_number,bet_sort_index,ticket_type,selection," +
+            "unit_price,combination_count,sort_index"
+        var lines = [header]
+        for race in races {
+            for bet in (race.bets ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
+                for sel in (bet.selections ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
+                    let row: [String] = [
+                        CSVExporter.formatDate(race.date),
+                        race.venue?.name ?? "",
+                        "\(race.raceNumber)",
+                        "\(bet.sortIndex)",
+                        sel.displayTicketTypeName,
+                        sel.selection,
+                        "\(sel.unitPrice)",
+                        "\(sel.combinationCount)",
+                        "\(sel.sortIndex)",
+                    ]
+                    lines.append(row.map { CSVExporter.escape($0) }.joined(separator: ","))
+                }
             }
         }
         return lines.joined(separator: "\n")
@@ -223,7 +268,6 @@ enum ZipExporter {
 // MARK: - ZIP Importer
 
 enum ZipImporter {
-    // swiftlint:disable:next function_body_length
     static func importZip(from url: URL, context: ModelContext) throws {
         guard let archive = Archive(url: url, accessMode: .read) else {
             throw CocoaError(.fileReadUnknown)
@@ -232,8 +276,11 @@ enum ZipImporter {
         let racesText = try readEntry(archive, path: "races.csv")
         let entriesText = try readEntry(archive, path: "entries.csv")
         let betsText = try readEntry(archive, path: "bets.csv")
+        let hasBetSelections = archive["bet_selections.csv"] != nil
 
         // 既存のレースデータを削除（競馬場・券種は保持）
+        let existingSelections = try context.fetch(FetchDescriptor<BetSelection>())
+        existingSelections.forEach { context.delete($0) }
         let existingBets = try context.fetch(FetchDescriptor<Bet>())
         existingBets.forEach { context.delete($0) }
         let existingEntries = try context.fetch(FetchDescriptor<RaceEntry>())
@@ -248,9 +295,8 @@ enum ZipImporter {
         let raceRows = parseCSV(racesText)
         let raceHeader = raceRows.first ?? []
         let hasFinishPlaces = raceHeader.contains("first_place_horse")
-        for (i, row) in raceRows.dropFirst().enumerated() {
+        for (idx, row) in raceRows.dropFirst().enumerated() {
             guard row.count >= 8 else { continue }
-            // 新フォーマットは category(7) の後に first/second/third(8,9,10) が入り、total_purchase は 11 列目以降
             let firstPlace = hasFinishPlaces && row.count > 8 ? Int(row[8]) ?? 0 : 0
             let secondPlace = hasFinishPlaces && row.count > 9 ? Int(row[9]) ?? 0 : 0
             let thirdPlace = hasFinishPlaces && row.count > 10 ? Int(row[10]) ?? 0 : 0
@@ -266,14 +312,14 @@ enum ZipImporter {
                 firstPlaceHorseNumber: firstPlace,
                 secondPlaceHorseNumber: secondPlace,
                 thirdPlaceHorseNumber: thirdPlace,
-                sortIndex: i
+                sortIndex: idx
             )
             context.insert(race)
             raceMap[key(date: row[0], venue: row[1], raceNumber: row[2])] = race
         }
 
-        // 出走馬を作成（旧フォーマットの finish_position はもう使わない）
-        for (i, row) in parseCSV(entriesText).dropFirst().enumerated() {
+        // 出走馬を作成
+        for (idx, row) in parseCSV(entriesText).dropFirst().enumerated() {
             guard row.count >= 5,
                   let race = raceMap[key(date: row[0], venue: row[1], raceNumber: row[2])] else { continue }
             context.insert(RaceEntry(
@@ -283,43 +329,14 @@ enum ZipImporter {
                 jockeyName: row.count > 5 ? row[5] : "",
                 trainerName: row.count > 6 ? row[6] : "",
                 predictionMark: row.count > 7 && !row[7].isEmpty ? row[7] : nil,
-                sortIndex: i
+                sortIndex: idx
             ))
         }
 
-        // 馬券を作成
-        let betRows = parseCSV(betsText)
-        let betHeader = betRows.first ?? []
-        let hasUnitPrice = betHeader.contains("unit_price")
-        for (i, row) in betRows.dropFirst().enumerated() {
-            guard row.count >= 6,
-                  let race = raceMap[key(date: row[0], venue: row[1], raceNumber: row[2])] else { continue }
-            let ticketTypeName = row[3]
-            let selection = row[4]
-            let unitPrice: Int
-            let purchaseAmount: Int
-            let payoutAmount: Int
-            if hasUnitPrice {
-                // 新フォーマット: unit_price, combination_count, purchase_amount, payout_amount, balance
-                unitPrice = Int(row[5]) ?? 100
-                purchaseAmount = row.count > 7 ? Int(row[7]) ?? 0 : 0
-                payoutAmount = row.count > 8 ? Int(row[8]) ?? 0 : 0
-            } else {
-                // 旧フォーマット: purchase_amount, payout_amount, balance
-                purchaseAmount = Int(row[5]) ?? 0
-                payoutAmount = row.count > 6 ? Int(row[6]) ?? 0 : 0
-                let count = Bet.combinationCount(selection: selection, ticketTypeName: ticketTypeName)
-                unitPrice = count > 0 ? purchaseAmount / count : 100
-            }
-            context.insert(Bet(
-                race: race,
-                ticketTypeName: ticketTypeName,
-                selection: selection,
-                unitPrice: unitPrice,
-                purchaseAmount: purchaseAmount,
-                payoutAmount: payoutAmount,
-                sortIndex: i
-            ))
+        if hasBetSelections {
+            try importBetsNewFormat(archive: archive, betsText: betsText, raceMap: raceMap, context: context)
+        } else {
+            importBetsLegacyFormat(betsText: betsText, raceMap: raceMap, context: context)
         }
 
         // メモファイルをレースに紐付け
@@ -344,8 +361,95 @@ enum ZipImporter {
         try context.save()
     }
 
+    private static func importBetsNewFormat(
+        archive: Archive,
+        betsText: String,
+        raceMap: [String: Race],
+        context: ModelContext
+    ) throws {
+        let betSelectionsText = try readEntry(archive, path: "bet_selections.csv")
+        var betMap: [String: Bet] = [:]
+        for (idx, row) in parseCSV(betsText).dropFirst().enumerated() {
+            guard row.count >= 5,
+                  let race = raceMap[key(date: row[0], venue: row[1], raceNumber: row[2])] else { continue }
+            let betSortIndex = Int(row[3]) ?? idx
+            let purchaseAmount = Int(row[4]) ?? 0
+            let payoutAmount = row.count > 5 ? Int(row[5]) ?? 0 : 0
+            let newBet = Bet(
+                race: race, purchaseAmount: purchaseAmount,
+                payoutAmount: payoutAmount, sortIndex: betSortIndex
+            )
+            context.insert(newBet)
+            betMap[betKey(date: row[0], venue: row[1], raceNumber: row[2], betSortIndex: row[3])] = newBet
+        }
+        for (selIdx, row) in parseCSV(betSelectionsText).dropFirst().enumerated() {
+            guard row.count >= 7,
+                  let bet = betMap[betKey(
+                      date: row[0], venue: row[1], raceNumber: row[2], betSortIndex: row[3]
+                  )] else { continue }
+            let count = row.count > 7 ? Int(row[7]) ?? 1 : 1
+            let sortIndex = row.count > 8 ? Int(row[8]) ?? selIdx : selIdx
+            context.insert(BetSelection(
+                bet: bet,
+                ticketTypeName: row[4],
+                selection: row[5],
+                unitPrice: Int(row[6]) ?? 100,
+                combinationCount: count,
+                sortIndex: sortIndex
+            ))
+        }
+    }
+
+    private static func importBetsLegacyFormat(
+        betsText: String,
+        raceMap: [String: Race],
+        context: ModelContext
+    ) {
+        let betRows = parseCSV(betsText)
+        let betHeader = betRows.first ?? []
+        let hasUnitPrice = betHeader.contains("unit_price")
+        for (idx, row) in betRows.dropFirst().enumerated() {
+            guard row.count >= 6,
+                  let race = raceMap[key(date: row[0], venue: row[1], raceNumber: row[2])] else { continue }
+            let ticketTypeName = row[3]
+            let selection = row[4]
+            let unitPrice: Int
+            let purchaseAmount: Int
+            let payoutAmount: Int
+            if hasUnitPrice {
+                unitPrice = Int(row[5]) ?? 100
+                purchaseAmount = row.count > 7 ? Int(row[7]) ?? 0 : 0
+                payoutAmount = row.count > 8 ? Int(row[8]) ?? 0 : 0
+            } else {
+                purchaseAmount = Int(row[5]) ?? 0
+                payoutAmount = row.count > 6 ? Int(row[6]) ?? 0 : 0
+                let count = Bet.combinationCount(selection: selection, ticketTypeName: ticketTypeName)
+                unitPrice = count > 0 ? purchaseAmount / count : 100
+            }
+            let count = max(1, Bet.combinationCount(selection: selection, ticketTypeName: ticketTypeName))
+            let newBet = Bet(
+                race: race, ticketTypeName: ticketTypeName, selection: selection,
+                unitPrice: unitPrice, purchaseAmount: purchaseAmount,
+                payoutAmount: payoutAmount, sortIndex: idx
+            )
+            context.insert(newBet)
+            context.insert(BetSelection(
+                bet: newBet,
+                ticketTypeName: ticketTypeName,
+                selection: selection,
+                unitPrice: unitPrice,
+                combinationCount: count,
+                sortIndex: 0
+            ))
+        }
+    }
+
     private static func key(date: String, venue: String, raceNumber: String) -> String {
         "\(date)|\(venue)|\(raceNumber)"
+    }
+
+    private static func betKey(date: String, venue: String, raceNumber: String, betSortIndex: String) -> String {
+        "\(date)|\(venue)|\(raceNumber)|\(betSortIndex)"
     }
 
     private static func readEntry(_ archive: Archive, path: String) throws -> String {
@@ -361,19 +465,20 @@ enum ZipImporter {
         return formatter.date(from: string)
     }
 
+    // swiftlint:disable:next cyclomatic_complexity
     private static func parseCSV(_ text: String) -> [[String]] {
         var result: [[String]] = []
         var row: [String] = []
         var field = ""
         var inQuotes = false
         let chars = Array(text)
-        var i = 0
-        while i < chars.count {
-            let char = chars[i]
+        var idx = 0
+        while idx < chars.count {
+            let char = chars[idx]
             if inQuotes {
                 if char == "\"" {
-                    if i + 1 < chars.count, chars[i + 1] == "\"" {
-                        field.append("\""); i += 2; continue
+                    if idx + 1 < chars.count, chars[idx + 1] == "\"" {
+                        field.append("\""); idx += 2; continue
                     }
                     inQuotes = false
                 } else {
@@ -384,7 +489,7 @@ enum ZipImporter {
                 case "\"": inQuotes = true
                 case ",": row.append(field); field = ""
                 case "\r":
-                    if i + 1 < chars.count, chars[i + 1] == "\n" { i += 1 }
+                    if idx + 1 < chars.count, chars[idx + 1] == "\n" { idx += 1 }
                     fallthrough
                 case "\n":
                     row.append(field); field = ""
@@ -393,7 +498,7 @@ enum ZipImporter {
                 default: field.append(char)
                 }
             }
-            i += 1
+            idx += 1
         }
         if !field.isEmpty || !row.isEmpty { row.append(field); result.append(row) }
         return result

@@ -14,7 +14,7 @@ struct RaceModelTests {
     let container: ModelContainer
 
     init() throws {
-        let schema = Schema([Race.self, Bet.self, RaceEntry.self, Venue.self, TicketType.self])
+        let schema = Schema([Race.self, Bet.self, BetSelection.self, RaceEntry.self, Venue.self, TicketType.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         container = try ModelContainer(for: schema, configurations: [config])
     }
@@ -215,17 +215,17 @@ struct RaceModelTests {
 
     // MARK: - Property-Based Tests
 
-    // Property 1 (Invariant): totalBalance == sum(payout - purchase) for any bets
+    /// Property 1 (Invariant): totalBalance == sum(payout - purchase) for any bets
     @Test func pbt_totalBalance_equalsPayoutMinusPurchaseSummedOverAllBets() {
         let ctx = container.mainContext
-        for _ in 0..<500 {
+        for _ in 0 ..< 500 {
             let race = Race(); ctx.insert(race)
-            let betCount = Int.random(in: 1...10)
+            let betCount = Int.random(in: 1 ... 10)
             var bets: [Bet] = []
             var expected = 0
-            for _ in 0..<betCount {
-                let purchase = Int.random(in: 100...10_000)
-                let payout = Int.random(in: 0...50_000)
+            for _ in 0 ..< betCount {
+                let purchase = Int.random(in: 100 ... 10000)
+                let payout = Int.random(in: 0 ... 50000)
                 let bet = Bet(race: race, purchaseAmount: purchase, payoutAmount: payout)
                 ctx.insert(bet)
                 bets.append(bet)
@@ -236,16 +236,16 @@ struct RaceModelTests {
         }
     }
 
-    // Property 2 (Structural induction): balance == totalPayout - totalPurchase
+    /// Property 2 (Structural induction): balance == totalPayout - totalPurchase
     @Test func pbt_balance_equalsPayoutMinusPurchaseForRace() {
         let ctx = container.mainContext
-        for _ in 0..<500 {
+        for _ in 0 ..< 500 {
             let race = Race(); ctx.insert(race)
-            let betCount = Int.random(in: 1...8)
+            let betCount = Int.random(in: 1 ... 8)
             var bets: [Bet] = []
-            for _ in 0..<betCount {
-                let purchase = Int.random(in: 100...5_000)
-                let payout = Int.random(in: 0...20_000)
+            for _ in 0 ..< betCount {
+                let purchase = Int.random(in: 100 ... 5000)
+                let payout = Int.random(in: 0 ... 20000)
                 let bet = Bet(race: race, purchaseAmount: purchase, payoutAmount: payout)
                 ctx.insert(bet)
                 bets.append(bet)
@@ -255,11 +255,11 @@ struct RaceModelTests {
         }
     }
 
-    // Property 3 (Oracle): returnRate when payout == purchase is exactly 1.0
+    /// Property 3 (Oracle): returnRate when payout == purchase is exactly 1.0
     @Test func pbt_returnRate_whenPayoutEqualsPurchase_isExactlyOne() {
         let ctx = container.mainContext
-        for _ in 0..<200 {
-            let amount = Int.random(in: 100...100_000)
+        for _ in 0 ..< 200 {
+            let amount = Int.random(in: 100 ... 100_000)
             let race = Race(); ctx.insert(race)
             let bet = Bet(race: race, purchaseAmount: amount, payoutAmount: amount)
             ctx.insert(bet)

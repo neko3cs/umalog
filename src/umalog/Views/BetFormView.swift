@@ -8,11 +8,36 @@
 import SwiftData
 import SwiftUI
 
+// MARK: - Supporting Types
+
 enum BetStyle: String, CaseIterable {
     case normal = "通常"
     case box = "ボックス"
     case formation = "フォーメーション"
 }
+
+struct BetSelectionDraft: Identifiable {
+    var id: UUID = .init()
+    var ticketType: TicketType?
+    var ticketTypeName: String = ""
+    var useCustom: Bool = false
+    var selection: String = ""
+    var unitPrice: Int = 100
+
+    var displayTicketTypeName: String {
+        useCustom ? ticketTypeName : (ticketType?.name ?? "")
+    }
+
+    var combinationCount: Int {
+        max(1, Bet.combinationCount(selection: selection, ticketTypeName: displayTicketTypeName))
+    }
+
+    var purchaseAmount: Int {
+        unitPrice * combinationCount
+    }
+}
+
+// MARK: - BetFormView
 
 struct BetFormView: View {
     @Environment(\.modelContext) private var modelContext
@@ -21,6 +46,218 @@ struct BetFormView: View {
     let race: Race
     var bet: Bet?
 
+    @State private var draftSelections: [BetSelectionDraft] = []
+    @State private var payoutAmount: Int = 0
+    @State private var showingSelectionForm = false
+    @State private var editingDraftId: UUID?
+
+    private var isEditing: Bool {
+        bet != nil
+    }
+
+    private var totalPurchase: Int {
+        draftSelections.reduce(0) { $0 + $1.purchaseAmount }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                selectionsSection
+                amountSection
+            }
+            .navigationTitle(isEditing ? "馬券を編集" : "馬券を追加")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { toolbarContent }
+            .sheet(isPresented: $showingSelectionForm) {
+                selectionFormSheet
+            }
+            .onAppear { loadIfEditing() }
+        }
+    }
+
+    // MARK: - Sections
+
+    private var selectionsSection: some View {
+        Section("買い目") {
+            ForEach(draftSelections) { draft in
+                BetSelectionDraftRowView(draft: draft)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        editingDraftId = draft.id
+                        showingSelectionForm = true
+                    }
+            }
+            .onDelete { indexSet in draftSelections.remove(atOffsets: indexSet) }
+            Button {
+                editingDraftId = nil
+                showingSelectionForm = true
+            } label: {
+                Label("買い目を追加", systemImage: "plus")
+            }
+        }
+    }
+
+    private var amountSection: some View {
+        Section("金額") {
+            LabeledContent("合計購入額", value: "¥\(totalPurchase.formatted())")
+            HStack {
+                Text("払戻額")
+                Spacer()
+                TextField("0", value: $payoutAmount, format: .number)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 100)
+                Text("円")
+            }
+        }
+    }
+
+    // MARK: - Toolbar
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button("キャンセル") { dismiss() }
+        }
+        ToolbarItem(placement: .confirmationAction) {
+            Button(isEditing ? "更新" : "追加") {
+                save()
+                dismiss()
+            }
+            .disabled(draftSelections.isEmpty || totalPurchase <= 0)
+        }
+        ToolbarItemGroup(placement: .keyboard) {
+            Spacer()
+            Button("完了") {
+                UIApplication.shared.sendAction(
+                    #selector(UIResponder.resignFirstResponder),
+                    to: nil, from: nil, for: nil
+                )
+            }
+        }
+    }
+
+    // MARK: - Sheet
+
+    @ViewBuilder
+    private var selectionFormSheet: some View {
+        let editDraft = editingDraftId.flatMap { id in draftSelections.first { $0.id == id } }
+        SelectionFormView(race: race, existing: editDraft) { savedDraft in
+            if let editId = editingDraftId,
+               let idx = draftSelections.firstIndex(where: { $0.id == editId })
+            {
+                var updated = savedDraft
+                updated.id = editId
+                draftSelections[idx] = updated
+            } else {
+                draftSelections.append(savedDraft)
+            }
+            editingDraftId = nil
+        }
+    }
+
+    // MARK: - Load / Save
+
+    private func loadIfEditing() {
+        guard let bet else { return }
+        payoutAmount = bet.payoutAmount
+        let sorted = (bet.selections ?? []).sorted { $0.sortIndex < $1.sortIndex }
+        draftSelections = sorted.map { sel in
+            BetSelectionDraft(
+                ticketType: sel.ticketType,
+                ticketTypeName: sel.ticketTypeName,
+                useCustom: sel.ticketType == nil && !sel.ticketTypeName.isEmpty,
+                selection: sel.selection,
+                unitPrice: sel.unitPrice
+            )
+        }
+    }
+
+    private func save() {
+        if let bet {
+            for sel in bet.selections ?? [] {
+                modelContext.delete(sel)
+            }
+            bet.payoutAmount = payoutAmount
+            bet.purchaseAmount = totalPurchase
+            for (idx, draft) in draftSelections.enumerated() {
+                modelContext.insert(BetSelection(
+                    bet: bet,
+                    ticketType: draft.useCustom ? nil : draft.ticketType,
+                    ticketTypeName: draft.displayTicketTypeName,
+                    selection: draft.selection,
+                    unitPrice: draft.unitPrice,
+                    combinationCount: draft.combinationCount,
+                    sortIndex: idx
+                ))
+            }
+        } else {
+            let sortIndex = (race.bets ?? []).count
+            let newBet = Bet(
+                race: race,
+                purchaseAmount: totalPurchase,
+                payoutAmount: payoutAmount,
+                sortIndex: sortIndex
+            )
+            modelContext.insert(newBet)
+            for (idx, draft) in draftSelections.enumerated() {
+                modelContext.insert(BetSelection(
+                    bet: newBet,
+                    ticketType: draft.useCustom ? nil : draft.ticketType,
+                    ticketTypeName: draft.displayTicketTypeName,
+                    selection: draft.selection,
+                    unitPrice: draft.unitPrice,
+                    combinationCount: draft.combinationCount,
+                    sortIndex: idx
+                ))
+            }
+        }
+    }
+}
+
+// MARK: - BetSelectionDraftRowView
+
+struct BetSelectionDraftRowView: View {
+    let draft: BetSelectionDraft
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 6) {
+                if !draft.displayTicketTypeName.isEmpty {
+                    Text(draft.displayTicketTypeName)
+                        .font(.caption)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.accentColor.opacity(0.15))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                }
+                Text(draft.selection.isEmpty ? "（買い目未入力）" : draft.selection)
+                    .foregroundStyle(draft.selection.isEmpty ? .secondary : .primary)
+                Spacer()
+            }
+            if draft.combinationCount > 1 {
+                Text("¥\(draft.unitPrice.formatted()) × \(draft.combinationCount)点 = ¥\(draft.purchaseAmount.formatted())")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("¥\(draft.purchaseAmount.formatted())")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+}
+
+// MARK: - SelectionFormView
+
+struct SelectionFormView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let race: Race
+    let existing: BetSelectionDraft?
+    let onSave: (BetSelectionDraft) -> Void
+
     @Query(sort: \TicketType.sortIndex) private var ticketTypes: [TicketType]
 
     @State private var selectedTicketType: TicketType?
@@ -28,26 +265,19 @@ struct BetFormView: View {
     @State private var useCustom: Bool = false
     @State private var manualHorseCount: Int = 1
     @State private var betStyle: BetStyle = .normal
-    // 通常
     @State private var horse1: Int = -1
     @State private var horse2: Int = -1
     @State private var horse3: Int = -1
-    /// ボックス
     @State private var boxHorses: Set<Int> = []
-    // フォーメーション
     @State private var formLeg1: Set<Int> = []
     @State private var formLeg2: Set<Int> = []
     @State private var formLeg3: Set<Int> = []
-    // テキスト入力フォールバック
     @State private var selectionText: String = ""
     @State private var unitPrice: Int = 100
-    @State private var purchaseAmount: Int = 100
-    @State private var payoutAmount: Int = 0
-    @State private var hasManuallyEditedPurchase: Bool = false
     @State private var hasFinishedInitialLoad: Bool = false
 
     private var isEditing: Bool {
-        bet != nil
+        existing != nil
     }
 
     private var sortedEntries: [RaceEntry] {
@@ -108,59 +338,28 @@ struct BetFormView: View {
     }
 
     private var currentCombinationCount: Int {
-        let count = Bet.combinationCount(selection: selection, ticketTypeName: currentTicketTypeName)
-        return max(count, 1)
+        max(1, Bet.combinationCount(selection: selection, ticketTypeName: currentTicketTypeName))
     }
 
-    private var computedTotalPurchase: Int {
+    private var computedPurchase: Int {
         unitPrice * currentCombinationCount
     }
 
     var body: some View {
         NavigationStack {
-            formContent
-                .navigationTitle(isEditing ? "馬券を編集" : "馬券を追加")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar { toolbarContent }
-                .onAppear { setupInitialState() }
-                .onChange(of: selectedTicketType) { _, _ in resetIfUserChange(resetStyle: true) }
-                .onChange(of: useCustom) { _, _ in resetIfUserChange(resetStyle: true) }
-                .onChange(of: betStyle) { _, _ in resetIfUserChange(resetStyle: false) }
-                .onChange(of: manualHorseCount) { _, _ in resetIfUserChange(resetStyle: false) }
-                .onChange(of: unitPrice) { _, _ in syncPurchaseAmountIfAuto() }
-                .onChange(of: selection) { _, _ in syncPurchaseAmountIfAuto() }
-                .onChange(of: currentTicketTypeName) { _, _ in syncPurchaseAmountIfAuto() }
-        }
-    }
-
-    private var formContent: some View {
-        Form {
-            ticketTypeSection
-            selectionSection
-            amountSection
-        }
-    }
-
-    @ToolbarContentBuilder
-    private var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .cancellationAction) {
-            Button("キャンセル") { dismiss() }
-        }
-        ToolbarItem(placement: .confirmationAction) {
-            Button(isEditing ? "更新" : "追加") {
-                save()
-                dismiss()
+            Form {
+                ticketTypeSection
+                selectionSection
+                unitPriceSection
             }
-            .disabled(selection.isEmpty || purchaseAmount <= 0)
-        }
-        ToolbarItemGroup(placement: .keyboard) {
-            Spacer()
-            Button("完了") {
-                UIApplication.shared.sendAction(
-                    #selector(UIResponder.resignFirstResponder),
-                    to: nil, from: nil, for: nil
-                )
-            }
+            .navigationTitle(isEditing ? "買い目を編集" : "買い目を追加")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { toolbarContent }
+            .onAppear { setupInitialState() }
+            .onChange(of: selectedTicketType) { _, _ in resetIfUserChange(resetStyle: true) }
+            .onChange(of: useCustom) { _, _ in resetIfUserChange(resetStyle: true) }
+            .onChange(of: betStyle) { _, _ in resetIfUserChange(resetStyle: false) }
+            .onChange(of: manualHorseCount) { _, _ in resetIfUserChange(resetStyle: false) }
         }
     }
 
@@ -220,102 +419,55 @@ struct BetFormView: View {
         }
     }
 
-    // MARK: - Amount Section
+    // MARK: - Unit Price Section
 
-    private var amountSection: some View {
+    private var unitPriceSection: some View {
         Section("金額") {
-            amountUnitPriceRow
-            LabeledContent("組合せ", value: "\(currentCombinationCount)点")
-            amountPurchaseRow
-            amountPurchaseHint
-            amountPayoutRow
-        }
-    }
-
-    private var amountUnitPriceRow: some View {
-        HStack {
-            Text("1口あたり")
-            Spacer()
-            TextField("金額", value: $unitPrice, format: .number)
-                .keyboardType(.numberPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 100)
-            Text("円")
-        }
-    }
-
-    private var amountPurchaseRow: some View {
-        HStack {
-            Text("合計購入額")
-            Spacer()
-            TextField("金額", value: $purchaseAmount, format: .number)
-                .keyboardType(.numberPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 100)
-                .onChange(of: purchaseAmount) { _, _ in
-                    if purchaseAmount != computedTotalPurchase {
-                        hasManuallyEditedPurchase = true
-                    }
-                }
-            Text("円")
-        }
-    }
-
-    @ViewBuilder
-    private var amountPurchaseHint: some View {
-        if !hasManuallyEditedPurchase, currentCombinationCount > 1 {
-            Text("¥\(unitPrice) × \(currentCombinationCount)点 = ¥\(computedTotalPurchase)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        } else if hasManuallyEditedPurchase {
-            Button("自動計算に戻す") {
-                purchaseAmount = computedTotalPurchase
-                hasManuallyEditedPurchase = false
+            HStack {
+                Text("1口あたり")
+                Spacer()
+                TextField("金額", value: $unitPrice, format: .number)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 100)
+                Text("円")
             }
-            .font(.caption)
+            if currentCombinationCount > 1 {
+                LabeledContent("この買い目の購入額") {
+                    Text("¥\(unitPrice.formatted()) × \(currentCombinationCount)点 = ¥\(computedPurchase.formatted())")
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                LabeledContent("この買い目の購入額", value: "¥\(computedPurchase.formatted())")
+            }
         }
     }
 
-    private var amountPayoutRow: some View {
-        HStack {
-            Text("払戻額")
+    // MARK: - Toolbar
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button("キャンセル") { dismiss() }
+        }
+        ToolbarItem(placement: .confirmationAction) {
+            Button(isEditing ? "更新" : "追加") {
+                save()
+            }
+            .disabled(selection.isEmpty || unitPrice <= 0)
+        }
+        ToolbarItemGroup(placement: .keyboard) {
             Spacer()
-            TextField("0", value: $payoutAmount, format: .number)
-                .keyboardType(.numberPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 100)
-            Text("円")
+            Button("完了") {
+                UIApplication.shared.sendAction(
+                    #selector(UIResponder.resignFirstResponder),
+                    to: nil, from: nil, for: nil
+                )
+            }
         }
     }
 
-    private func setupInitialState() {
-        guard !hasFinishedInitialLoad else { return }
-        loadIfEditing()
-        DispatchQueue.main.async {
-            hasFinishedInitialLoad = true
-        }
-    }
-
-    /// `.onChange` から呼ばれるリセット処理。初期ロード中（loadIfEditing が State を
-    /// 書き込んだ直後の onChange 発火）では何もしない。
-    private func resetIfUserChange(resetStyle: Bool) {
-        guard hasFinishedInitialLoad else { return }
-        resetSelection(resetStyle: resetStyle)
-    }
-
-    private func resetSelection(resetStyle: Bool) {
-        horse1 = -1; horse2 = -1; horse3 = -1
-        boxHorses = []; formLeg1 = []; formLeg2 = []; formLeg3 = []
-        selectionText = ""
-        if resetStyle { betStyle = .normal }
-    }
-
-    private func syncPurchaseAmountIfAuto() {
-        guard !hasManuallyEditedPurchase else { return }
-        purchaseAmount = computedTotalPurchase
-    }
-
-    // MARK: - Selection rows
+    // MARK: - Selection Rows
 
     @ViewBuilder
     private var selectionRows: some View {
@@ -342,7 +494,6 @@ struct BetFormView: View {
             }
 
         case .formation:
-            // 1行に馬の情報 + 各軸のトグルボタンを並べる
             HStack {
                 Text("馬番 / 馬名")
                     .font(.caption)
@@ -410,19 +561,31 @@ struct BetFormView: View {
         if set.contains(value) { set.remove(value) } else { set.insert(value) }
     }
 
+    private func resetIfUserChange(resetStyle: Bool) {
+        guard hasFinishedInitialLoad else { return }
+        horse1 = -1; horse2 = -1; horse3 = -1
+        boxHorses = []; formLeg1 = []; formLeg2 = []; formLeg3 = []
+        selectionText = ""
+        if resetStyle { betStyle = .normal }
+    }
+
     // MARK: - Load / Save
 
-    private func loadIfEditing() {
-        guard let bet else { return }
-        selectedTicketType = bet.ticketType
-        customTicketTypeName = bet.ticketTypeName
-        useCustom = bet.ticketType == nil && !bet.ticketTypeName.isEmpty
-        unitPrice = bet.unitPrice
-        purchaseAmount = bet.purchaseAmount
-        payoutAmount = bet.payoutAmount
+    private func setupInitialState() {
+        guard !hasFinishedInitialLoad else { return }
+        loadFromExisting()
+        DispatchQueue.main.async { hasFinishedInitialLoad = true }
+    }
+
+    private func loadFromExisting() {
+        guard let existing else { return }
+        selectedTicketType = existing.ticketType
+        customTicketTypeName = existing.ticketTypeName
+        useCustom = existing.useCustom
+        unitPrice = existing.unitPrice
 
         if hasEntries {
-            let sel = bet.selection
+            let sel = existing.selection
             if sel.hasSuffix("[BOX]") {
                 betStyle = .box
                 boxHorses = Set(sel.dropLast(5).split(separator: ",").compactMap { Int($0) })
@@ -430,8 +593,12 @@ struct BetFormView: View {
                 betStyle = .formation
                 let parts = sel.split(separator: "/")
                 formLeg1 = Set(parts.first?.split(separator: ",").compactMap { Int($0) } ?? [])
-                formLeg2 = Set(parts.dropFirst().first?.split(separator: ",").compactMap { Int($0) } ?? [])
-                formLeg3 = Set(parts.dropFirst(2).first?.split(separator: ",").compactMap { Int($0) } ?? [])
+                formLeg2 = Set(
+                    parts.dropFirst().first?.split(separator: ",").compactMap { Int($0) } ?? []
+                )
+                formLeg3 = Set(
+                    parts.dropFirst(2).first?.split(separator: ",").compactMap { Int($0) } ?? []
+                )
                 manualHorseCount = parts.count >= 3 ? 3 : 2
             } else {
                 betStyle = .normal
@@ -442,35 +609,19 @@ struct BetFormView: View {
                 horse3 = nums.count > 2 ? nums[2] : -1
             }
         } else {
-            selectionText = bet.selection
+            selectionText = existing.selection
         }
-
-        // 編集時は保存済み purchaseAmount を尊重する（自動計算と異なれば手動扱い）
-        let expected = bet.unitPrice * max(Bet.combinationCount(
-            selection: bet.selection,
-            ticketTypeName: bet.displayTicketTypeName
-        ), 1)
-        hasManuallyEditedPurchase = bet.purchaseAmount != expected
     }
 
     private func save() {
-        let ticketTypeName = useCustom ? customTicketTypeName : (selectedTicketType?.name ?? "")
-        let ticketType = useCustom ? nil : selectedTicketType
-        if let bet {
-            bet.ticketType = ticketType
-            bet.ticketTypeName = ticketTypeName
-            bet.selection = selection
-            bet.unitPrice = unitPrice
-            bet.purchaseAmount = purchaseAmount
-            bet.payoutAmount = payoutAmount
-        } else {
-            let sortIndex = (race.bets ?? []).count
-            modelContext.insert(Bet(
-                race: race, ticketType: ticketType, ticketTypeName: ticketTypeName,
-                selection: selection, unitPrice: unitPrice,
-                purchaseAmount: purchaseAmount, payoutAmount: payoutAmount,
-                sortIndex: sortIndex
-            ))
-        }
+        let draft = BetSelectionDraft(
+            ticketType: useCustom ? nil : selectedTicketType,
+            ticketTypeName: currentTicketTypeName,
+            useCustom: useCustom,
+            selection: selection,
+            unitPrice: unitPrice
+        )
+        onSave(draft)
+        dismiss()
     }
 }
