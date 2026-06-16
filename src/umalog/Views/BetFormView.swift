@@ -173,23 +173,45 @@ struct BetFormView: View {
         }
     }
 
+    // swiftlint:disable:next function_body_length
     private func save() {
         if let bet {
-            for sel in bet.selections ?? [] {
-                modelContext.delete(sel)
-            }
             bet.payoutAmount = payoutAmount
             bet.purchaseAmount = totalPurchase
-            for (idx, draft) in draftSelections.enumerated() {
-                modelContext.insert(BetSelection(
-                    bet: bet,
-                    ticketType: draft.useCustom ? nil : draft.ticketType,
-                    ticketTypeName: draft.displayTicketTypeName,
-                    selection: draft.selection,
-                    unitPrice: draft.unitPrice,
-                    combinationCount: draft.combinationCount,
-                    sortIndex: idx
-                ))
+            let existing = (bet.selections ?? []).sorted { $0.sortIndex < $1.sortIndex }
+            let draftCount = draftSelections.count
+            let existingCount = existing.count
+            // Update existing records in-place to avoid rapid insert/delete confusing SwiftUI List
+            for idx in 0 ..< min(draftCount, existingCount) {
+                let sel = existing[idx]
+                let draft = draftSelections[idx]
+                sel.ticketType = draft.useCustom ? nil : draft.ticketType
+                sel.ticketTypeName = draft.displayTicketTypeName
+                sel.selection = draft.selection
+                sel.unitPrice = draft.unitPrice
+                sel.combinationCount = draft.combinationCount
+                sel.sortIndex = idx
+            }
+            // Insert additional selections if drafts increased
+            if draftCount > existingCount {
+                for idx in existingCount ..< draftCount {
+                    let draft = draftSelections[idx]
+                    modelContext.insert(BetSelection(
+                        bet: bet,
+                        ticketType: draft.useCustom ? nil : draft.ticketType,
+                        ticketTypeName: draft.displayTicketTypeName,
+                        selection: draft.selection,
+                        unitPrice: draft.unitPrice,
+                        combinationCount: draft.combinationCount,
+                        sortIndex: idx
+                    ))
+                }
+            }
+            // Delete surplus selections if drafts decreased
+            if existingCount > draftCount {
+                for idx in draftCount ..< existingCount {
+                    modelContext.delete(existing[idx])
+                }
             }
         } else {
             let sortIndex = (race.bets ?? []).count
