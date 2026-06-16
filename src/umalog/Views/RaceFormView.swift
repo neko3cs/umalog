@@ -12,12 +12,12 @@ struct RaceFormView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
-    var race: Race? = nil
+    var race: Race?
 
     @Query(sort: \Venue.sortIndex) private var venues: [Venue]
 
     @State private var date: Date = .init()
-    @State private var selectedVenue: Venue? = nil
+    @State private var selectedVenue: Venue?
     @State private var raceNumber: Int = 1
     @State private var raceName: String = ""
     @State private var distance: Int = 1600
@@ -37,7 +37,7 @@ struct RaceFormView: View {
                     HStack {
                         Text("日付")
                         Spacer()
-                        Text(date.formatted(Date.FormatStyle().locale(Locale(identifier: "ja_JP")).year(.defaultDigits).month(.twoDigits).day(.twoDigits)))
+                        Text(date.japaneseShortDateString)
                             .foregroundStyle(.blue)
                             .overlay {
                                 DatePicker("", selection: $date, displayedComponents: .date)
@@ -73,8 +73,8 @@ struct RaceFormView: View {
                     }
 
                     Picker("馬場状態", selection: $trackCondition) {
-                        ForEach(trackConditions, id: \.self) { c in
-                            Text(c).tag(c)
+                        ForEach(trackConditions, id: \.self) { condition in
+                            Text(condition).tag(condition)
                         }
                     }
                     .pickerStyle(.segmented)

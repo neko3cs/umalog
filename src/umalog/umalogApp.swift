@@ -21,7 +21,7 @@ struct umalogApp: App {
             TicketType.self,
             Race.self,
             RaceEntry.self,
-            Bet.self,
+            Bet.self
         ])
         let isUITesting = CommandLine.arguments.contains("--UITesting")
         let isUnitTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
