@@ -169,7 +169,7 @@ struct BalanceSummaryView: View {
                     set: { selectedDate = calc.setYear($0, in: selectedDate) }
                 )) {
                     ForEach(2000 ... 2050, id: \.self) { year in
-                        Text("\(year)年").tag(year)
+                        Text(verbatim: "\(year)年").tag(year)
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -178,20 +178,21 @@ struct BalanceSummaryView: View {
                     set: { selectedDate = calc.setMonth($0, in: selectedDate) }
                 )) {
                     ForEach(1 ... 12, id: \.self) { month in
-                        Text("\(month)月").tag(month)
+                        Text(verbatim: "\(month)月").tag(month)
                     }
                 }
                 .frame(maxWidth: .infinity)
             }
         case .yearly:
-            Stepper(
-                "\(calc.year(from: selectedDate))年",
-                value: Binding(
-                    get: { calc.year(from: selectedDate) },
-                    set: { selectedDate = calc.setYear($0, in: selectedDate) }
-                ),
-                in: 2000 ... 2050
-            )
+            Picker("年", selection: Binding(
+                get: { calc.year(from: selectedDate) },
+                set: { selectedDate = calc.setYear($0, in: selectedDate) }
+            )) {
+                ForEach(2000 ... 2050, id: \.self) { year in
+                    Text(verbatim: "\(year)年").tag(year)
+                }
+            }
+            .frame(maxWidth: .infinity)
         }
     }
 
