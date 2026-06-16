@@ -5,9 +5,13 @@
 //  Created by neko3cs on 2026/06/11.
 //
 
+import SwiftData
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(\.undoManager) private var undoManager
+    @Environment(\.modelContext) private var modelContext
+
     var body: some View {
         TabView {
             RaceListView()
@@ -22,6 +26,12 @@ struct ContentView: View {
                 .tabItem {
                     Label("設定", systemImage: "gear")
                 }
+        }
+        .onAppear {
+            modelContext.undoManager = undoManager
+        }
+        .onChange(of: undoManager) { _, newManager in
+            modelContext.undoManager = newManager
         }
     }
 }
