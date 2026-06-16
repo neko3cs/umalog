@@ -445,7 +445,7 @@ struct CSVExporterTests {
         """
         let zipURL = FileManager.default.temporaryDirectory.appendingPathComponent("legacy_test.zip")
         try? FileManager.default.removeItem(at: zipURL)
-        guard let archive = Archive(url: zipURL, accessMode: .create) else { return }
+        let archive = try Archive(url: zipURL, accessMode: .create)
         defer { try? FileManager.default.removeItem(at: zipURL) }
 
         func addEntry(name: String, content: String) throws {
