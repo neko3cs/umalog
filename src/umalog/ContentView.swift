@@ -5,12 +5,12 @@
 //  Created by neko3cs on 2026/06/11.
 //
 
-import SwiftData
 import SwiftUI
 
 struct ContentView: View {
     @Environment(\.undoManager) private var undoManager
-    @Environment(\.modelContext) private var modelContext
+    @State private var showUndoAlert = false
+    @State private var pendingUndo = false
 
     var body: some View {
         TabView {
@@ -27,11 +27,29 @@ struct ContentView: View {
                     Label("設定", systemImage: "gear")
                 }
         }
-        .onAppear {
-            modelContext.undoManager = undoManager
+        .onReceive(NotificationCenter.default.publisher(for: .deviceDidShake)) { _ in
+            if undoManager?.canUndo == true {
+                showUndoAlert = true
+            }
         }
-        .onChange(of: undoManager) { _, newManager in
-            modelContext.undoManager = newManager
+        .alert("取り消し", isPresented: $showUndoAlert) {
+            Button("取り消す", role: .destructive) {
+                pendingUndo = true
+            }
+            Button("キャンセル", role: .cancel) {}
+        } message: {
+            let name = undoManager?.undoActionName ?? ""
+            Text(name.isEmpty ? "最後の操作を取り消しますか？" : "\(name)を取り消しますか？")
+        }
+        // アラートのdismissアニメーション完了後にundoを実行する。
+        // アニメーション中にListを更新するとUICollectionViewの差分計算が崩れるため。
+        .onChange(of: showUndoAlert) { _, isShowing in
+            guard !isShowing, pendingUndo else { return }
+            pendingUndo = false
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(350))
+                undoManager?.undo()
+            }
         }
     }
 }
