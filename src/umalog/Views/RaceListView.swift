@@ -10,6 +10,7 @@ import SwiftUI
 
 struct RaceListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.undoManager) private var undoManager
     @Query(sort: \Race.date, order: .reverse) private var races: [Race]
     @State private var showingAddRace = false
 
@@ -68,9 +69,103 @@ struct RaceListView: View {
     }
 
     private func deleteRace(_ race: Race) {
+        let snapshot = RaceSnapshot(from: race)
+        undoManager?.registerUndo(withTarget: modelContext) { [snapshot] ctx in
+            snapshot.restore(into: ctx)
+        }
+        undoManager?.setActionName("レースを削除")
+
         (race.entries ?? []).forEach { modelContext.delete($0) }
-        (race.bets ?? []).forEach { modelContext.delete($0) }
+        (race.bets ?? []).forEach { bet in
+            (bet.selections ?? []).forEach { modelContext.delete($0) }
+            modelContext.delete(bet)
+        }
         modelContext.delete(race)
+    }
+}
+
+// MARK: - Snapshot for Undo
+
+private struct RaceSnapshot {
+    let date: Date
+    let venueId: PersistentIdentifier?
+    let raceNumber: Int
+    let raceName: String
+    let distance: Int
+    let trackType: String
+    let trackCondition: String
+    let category: String
+    let memo: String
+    let sortIndex: Int
+    let firstPlaceHorseNumber: Int
+    let secondPlaceHorseNumber: Int
+    let thirdPlaceHorseNumber: Int
+    let entries: [EntrySnapshot]
+    let bets: [BetSnapshot]
+
+    init(from race: Race) {
+        date = race.date
+        venueId = race.venue?.persistentModelID
+        raceNumber = race.raceNumber
+        raceName = race.raceName
+        distance = race.distance
+        trackType = race.trackType
+        trackCondition = race.trackCondition
+        category = race.category
+        memo = race.memo
+        sortIndex = race.sortIndex
+        firstPlaceHorseNumber = race.firstPlaceHorseNumber
+        secondPlaceHorseNumber = race.secondPlaceHorseNumber
+        thirdPlaceHorseNumber = race.thirdPlaceHorseNumber
+        entries = (race.entries ?? []).map { EntrySnapshot(from: $0) }
+        bets = (race.bets ?? []).map { BetSnapshot(from: $0) }
+    }
+
+    func restore(into context: ModelContext) {
+        let allVenues = (try? context.fetch(FetchDescriptor<Venue>())) ?? []
+        let allTicketTypes = (try? context.fetch(FetchDescriptor<TicketType>())) ?? []
+        let venue = venueId.flatMap { id in allVenues.first(where: { $0.persistentModelID == id }) }
+        let race = Race(
+            date: date, venue: venue, raceNumber: raceNumber, raceName: raceName,
+            distance: distance, trackType: trackType, trackCondition: trackCondition,
+            category: category, memo: memo,
+            firstPlaceHorseNumber: firstPlaceHorseNumber,
+            secondPlaceHorseNumber: secondPlaceHorseNumber,
+            thirdPlaceHorseNumber: thirdPlaceHorseNumber,
+            sortIndex: sortIndex
+        )
+        context.insert(race)
+        entries.forEach { snap in
+            context.insert(RaceEntry(
+                race: race, horseNumber: snap.horseNumber, horseName: snap.horseName,
+                jockeyName: snap.jockeyName, trainerName: snap.trainerName,
+                predictionMark: snap.predictionMark, finishPosition: snap.finishPosition,
+                sortIndex: snap.sortIndex
+            ))
+        }
+        bets.forEach { betSnap in
+            let ticketType = betSnap.ticketTypeId.flatMap { id in
+                allTicketTypes.first(where: { $0.persistentModelID == id })
+            }
+            let bet = Bet(
+                race: race, ticketType: ticketType,
+                ticketTypeName: betSnap.ticketTypeName, selection: betSnap.selection,
+                unitPrice: betSnap.unitPrice, purchaseAmount: betSnap.purchaseAmount,
+                payoutAmount: betSnap.payoutAmount, sortIndex: betSnap.sortIndex
+            )
+            context.insert(bet)
+            betSnap.selections.forEach { selSnap in
+                let selTicketType = selSnap.ticketTypeId.flatMap { id in
+                    allTicketTypes.first(where: { $0.persistentModelID == id })
+                }
+                context.insert(BetSelection(
+                    bet: bet, ticketType: selTicketType,
+                    ticketTypeName: selSnap.ticketTypeName, selection: selSnap.selection,
+                    unitPrice: selSnap.unitPrice, combinationCount: selSnap.combinationCount,
+                    sortIndex: selSnap.sortIndex
+                ))
+            }
+        }
     }
 }
 
