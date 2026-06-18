@@ -69,19 +69,6 @@ struct SettingsView: View {
                     .disabled(isExporting || isImporting)
                 }
 
-                Section {
-                    HStack {
-                        Text("iCloud同期")
-                        Spacer()
-                        Text("準備中")
-                            .foregroundStyle(.secondary)
-                    }
-                } header: {
-                    Text("iCloud同期")
-                } footer: {
-                    Text("Apple Developer Account契約後に実装予定です")
-                }
-
                 Section("このアプリについて") {
                     LabeledContent(
                         "バージョン",
