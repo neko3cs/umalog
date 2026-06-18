@@ -14,8 +14,8 @@ final class SceneDelegate: NSObject, UIWindowSceneDelegate {
 
     func scene(
         _ scene: UIScene,
-        willConnectTo session: UISceneSession,
-        options connectionOptions: UIScene.ConnectionOptions
+        willConnectTo _: UISceneSession,
+        options _: UIScene.ConnectionOptions
     ) {
         guard let windowScene = scene as? UIWindowScene else { return }
 
@@ -27,7 +27,7 @@ final class SceneDelegate: NSObject, UIWindowSceneDelegate {
         self.window = window
     }
 
-    func sceneDidBecomeActive(_ scene: UIScene) {
+    func sceneDidBecomeActive(_: UIScene) {
         Task { @MainActor in
             await AppDelegate.shared.seedInitialDataIfNeeded()
         }

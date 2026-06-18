@@ -461,7 +461,6 @@ enum ZipImporter {
         return formatter.date(from: string)
     }
 
-    // swiftlint:disable:next cyclomatic_complexity
     private static func parseCSV(_ text: String) -> [[String]] {
         var result: [[String]] = []
         var row: [String] = []

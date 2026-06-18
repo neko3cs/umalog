@@ -9,7 +9,7 @@ import SwiftData
 import UIKit
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
-    static private(set) var shared: AppDelegate!
+    private(set) static var shared: AppDelegate!
 
     let modelContainer: ModelContainer = {
         let schema = Schema([
@@ -37,9 +37,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     }
 
     func application(
-        _ application: UIApplication,
+        _: UIApplication,
         configurationForConnecting connectingSceneSession: UISceneSession,
-        options: UIScene.ConnectionOptions
+        options _: UIScene.ConnectionOptions
     ) -> UISceneConfiguration {
         let config = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
         config.delegateClass = SceneDelegate.self

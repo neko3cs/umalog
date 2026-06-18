@@ -77,6 +77,7 @@ struct RaceDetailView: View {
                 Button { showingAddEntry = true } label: {
                     Label("出走馬を追加", systemImage: "plus")
                 }
+                .accessibilityIdentifier("add-entry-button")
             } header: {
                 Text("出走馬 \(sortedEntries.count)頭")
             }
@@ -113,7 +114,7 @@ struct RaceDetailView: View {
                                 payoutAmount: snap.payoutAmount, sortIndex: snap.sortIndex
                             )
                             ctx.insert(restored)
-                            snap.selections.forEach { selSnap in
+                            for selSnap in snap.selections {
                                 let selTicketType = selSnap.ticketTypeId.flatMap { id in
                                     allTicketTypes.first(where: { $0.persistentModelID == id })
                                 }
@@ -133,6 +134,7 @@ struct RaceDetailView: View {
                 Button { showingAddBet = true } label: {
                     Label("馬券を追加", systemImage: "plus")
                 }
+                .accessibilityIdentifier("add-bet-button")
             } header: {
                 Text("馬券 \(sortedBets.count)枚")
             } footer: {
