@@ -5,6 +5,7 @@
 //  Created by neko3cs on 2026/06/12.
 //
 
+import Foundation
 import SwiftData
 import Testing
 @testable import umalog
@@ -266,5 +267,41 @@ struct RaceModelTests {
             race.bets = [bet]
             #expect(race.returnRate == 1.0)
         }
+    }
+
+    // MARK: - Undo Manager
+
+    @Test func undoManager_canBeAssignedToModelContext() {
+        let ctx = container.mainContext
+        let undoManager = UndoManager()
+        ctx.undoManager = undoManager
+        #expect(ctx.undoManager === undoManager)
+    }
+
+    @Test func undoManager_canRegisterAndCallUndoAction() {
+        let undoManager = UndoManager()
+        var value = 0
+        undoManager.registerUndo(withTarget: undoManager as AnyObject) { _ in value = 1 }
+        undoManager.undo()
+        #expect(value == 1)
+    }
+
+    @Test func undoManager_canUndoAndRedoPropertyChange() throws {
+        let ctx = container.mainContext
+        let undoManager = UndoManager()
+        ctx.undoManager = undoManager
+
+        let race = Race(raceNumber: 1, raceName: "before")
+        ctx.insert(race)
+
+        undoManager.beginUndoGrouping()
+        race.raceName = "after"
+        undoManager.endUndoGrouping()
+
+        #expect(race.raceName == "after")
+        undoManager.undo()
+        #expect(race.raceName == "before")
+        undoManager.redo()
+        #expect(race.raceName == "after")
     }
 }
