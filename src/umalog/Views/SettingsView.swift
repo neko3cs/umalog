@@ -5,6 +5,7 @@
 //  Created by neko3cs on 2026/06/11.
 //
 
+// swiftlint:disable line_length
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
@@ -80,6 +81,7 @@ struct SettingsView: View {
                     NavigationLink(destination: LicensesView()) {
                         Label("ライセンス", systemImage: "doc.text")
                     }
+                    .accessibilityIdentifier("licenses-link")
                 }
             }
             .navigationTitle("設定")

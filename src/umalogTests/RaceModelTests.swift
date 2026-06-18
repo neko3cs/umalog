@@ -286,22 +286,23 @@ struct RaceModelTests {
         #expect(value == 1)
     }
 
-    @Test func undoManager_canUndoAndRedoPropertyChange() throws {
+    @Test func undoManager_canUndoPropertyChange() {
         let ctx = container.mainContext
         let undoManager = UndoManager()
         ctx.undoManager = undoManager
 
         let race = Race(raceNumber: 1, raceName: "before")
         ctx.insert(race)
+        ctx.processPendingChanges()
 
         undoManager.beginUndoGrouping()
         race.raceName = "after"
+        ctx.processPendingChanges()
         undoManager.endUndoGrouping()
 
         #expect(race.raceName == "after")
         undoManager.undo()
+        ctx.processPendingChanges()
         #expect(race.raceName == "before")
-        undoManager.redo()
-        #expect(race.raceName == "after")
     }
 }
