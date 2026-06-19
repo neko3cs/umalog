@@ -5,31 +5,18 @@
 //  Created by neko3cs on 2026/06/18.
 //
 
-import SwiftData
-import SwiftUI
 import UIKit
 
+// ウィンドウ管理は SwiftUI の WindowGroup に委譲し、
+// ここではシードデータ初期化とシーン状態保存の無効化のみ担う
 final class SceneDelegate: NSObject, UIWindowSceneDelegate {
-    var window: UIWindow?
-
-    func scene(
-        _ scene: UIScene,
-        willConnectTo _: UISceneSession,
-        options _: UIScene.ConnectionOptions
-    ) {
-        guard let windowScene = scene as? UIWindowScene else { return }
-
-        let window = ShakeWindow(windowScene: windowScene)
-        window.rootViewController = UIHostingController(
-            rootView: ContentView().modelContainer(AppDelegate.shared.modelContainer)
-        )
-        window.makeKeyAndVisible()
-        self.window = window
-    }
-
-    func sceneDidBecomeActive(_: UIScene) {
+    func sceneDidBecomeActive(_ scene: UIScene) {
         Task { @MainActor in
             await AppDelegate.shared.seedInitialDataIfNeeded()
         }
+    }
+
+    func stateRestorationActivity(for scene: UIScene) -> NSUserActivity? {
+        return nil
     }
 }
