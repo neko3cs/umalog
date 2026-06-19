@@ -134,6 +134,7 @@ struct RaceEntryFormView: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
                             .buttonStyle(.plain)
+                            .accessibilityIdentifier("mark-button-\(mark.rawValue)")
                         }
                     }
                     .padding(.vertical, 4)
