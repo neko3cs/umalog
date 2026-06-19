@@ -269,7 +269,9 @@ struct EntryRowView: View {
             }
             Spacer()
             if let mark = entry.mark {
-                Text(mark.rawValue).font(.title3).fontWeight(.bold).foregroundStyle(Color.accentColor)
+                Text(mark.rawValue)
+                    .font(.title3).fontWeight(.bold).foregroundStyle(Color.accentColor)
+                    .accessibilityIdentifier("entry-mark-display")
             }
             if let pos = position {
                 Text("\(pos)着")
