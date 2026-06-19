@@ -9,7 +9,7 @@ import XCTest
 
 // MARK: - Base
 
-class UITestCase: XCTestCase {
+class UIテストケース: XCTestCase {
     var app: XCUIApplication!
 
     override func setUpWithError() throws {
@@ -45,10 +45,9 @@ class UITestCase: XCTestCase {
 
 // MARK: - Scenario 1: タブバーナビゲーション
 
-final class TabBarNavigationTests: UITestCase {
-    /// アプリ起動時にタブバーが表示され、3つのタブが存在する
+final class タブバーナビゲーションTest: UIテストケース {
     @MainActor
-    func testTabBarExists() {
+    func testタブバーが表示され3つのタブが存在する() {
         let tabBar = app.tabBars.firstMatch
         XCTAssertTrue(tabBar.waitForExistence(timeout: 5))
         XCTAssertTrue(tabBar.buttons["レース"].exists)
@@ -56,9 +55,8 @@ final class TabBarNavigationTests: UITestCase {
         XCTAssertTrue(tabBar.buttons["設定"].exists)
     }
 
-    /// 各タブに切り替えられる
     @MainActor
-    func testTabSwitching() {
+    func testタブをタップして各画面に切り替えられる() {
         let tabBar = app.tabBars.firstMatch
         XCTAssertTrue(tabBar.waitForExistence(timeout: 5))
 
@@ -75,27 +73,24 @@ final class TabBarNavigationTests: UITestCase {
 
 // MARK: - Scenario 2: レース追加
 
-final class AddRaceTests: UITestCase {
-    /// + ボタンをタップするとレース追加フォームが表示される
+final class レース追加Test: UIテストケース {
     @MainActor
-    func testAddRaceFormAppears() {
+    func testプラスボタンをタップするとレース追加フォームが表示される() {
         XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
         app.navigationBars["Umalog"].buttons["Add"].tap()
         XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
     }
 
-    /// キャンセルするとフォームが閉じる
     @MainActor
-    func testAddRaceCancel() {
+    func testキャンセルボタンをタップするとフォームが閉じる() {
         app.navigationBars["Umalog"].buttons["Add"].tap()
         XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
         app.buttons["キャンセル"].tap()
         XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
     }
 
-    /// レースを追加するとリストに表示される
     @MainActor
-    func testAddRaceSuccess() {
+    func testレース名を入力して追加するとリストに表示される() {
         XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
         app.navigationBars["Umalog"].buttons["Add"].tap()
         XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
@@ -112,7 +107,7 @@ final class AddRaceTests: UITestCase {
 
 // MARK: - Scenario 3: レース詳細・出走馬追加
 
-final class RaceDetailTests: UITestCase {
+final class レース詳細Test: UIテストケース {
     private func addRace(name: String = "シナリオレース") {
         app.navigationBars["Umalog"].buttons["Add"].tap()
         XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
@@ -123,17 +118,15 @@ final class RaceDetailTests: UITestCase {
         XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
     }
 
-    /// レースタップで詳細画面に遷移する
     @MainActor
-    func testNavigateToRaceDetail() {
+    func testレースセルをタップすると詳細画面に遷移する() {
         addRace()
         tapWhenReady(app.staticTexts["シナリオレース"])
         XCTAssertTrue(app.navigationBars["シナリオレース"].waitForExistence(timeout: 5))
     }
 
-    /// 詳細画面に「出走馬を追加」ボタンがある
     @MainActor
-    func testRaceDetailHasAddEntryButton() {
+    func test詳細画面に出走馬追加ボタンが表示される() {
         addRace()
         tapWhenReady(app.staticTexts["シナリオレース"])
         XCTAssertTrue(app.navigationBars["シナリオレース"].waitForExistence(timeout: 5))
@@ -142,9 +135,8 @@ final class RaceDetailTests: UITestCase {
         XCTAssertTrue(addEntryButton.waitForExistence(timeout: 10))
     }
 
-    /// 出走馬を追加できる
     @MainActor
-    func testAddHorseEntry() {
+    func test出走馬を追加すると詳細画面に表示される() {
         addRace()
         tapWhenReady(app.staticTexts["シナリオレース"])
         XCTAssertTrue(app.navigationBars["シナリオレース"].waitForExistence(timeout: 5))
@@ -161,9 +153,8 @@ final class RaceDetailTests: UITestCase {
         XCTAssertTrue(app.staticTexts["テスト馬"].waitForExistence(timeout: 5))
     }
 
-    /// 出走馬に予想印を付けられる
     @MainActor
-    func testAddHorseEntryWithMark() {
+    func test出走馬に予想印を付けると詳細画面に印が表示される() {
         addRace()
         tapWhenReady(app.staticTexts["シナリオレース"])
         XCTAssertTrue(app.navigationBars["シナリオレース"].waitForExistence(timeout: 5))
@@ -185,9 +176,8 @@ final class RaceDetailTests: UITestCase {
         XCTAssertTrue(findElement("entry-mark-display").waitForExistence(timeout: 5))
     }
 
-    /// 「馬券を追加」ボタンが詳細画面にある
     @MainActor
-    func testRaceDetailHasAddBetButton() {
+    func test詳細画面に馬券追加ボタンが表示される() {
         addRace()
         tapWhenReady(app.staticTexts["シナリオレース"])
         XCTAssertTrue(app.navigationBars["シナリオレース"].waitForExistence(timeout: 5))
@@ -201,7 +191,7 @@ final class RaceDetailTests: UITestCase {
 
 // MARK: - Scenario 4: 馬券追加（出走馬なし・テキスト入力モード）
 
-final class AddBetTests: UITestCase {
+final class 馬券追加Test: UIテストケース {
     private func setupRaceAndNavigateToDetail(name: String = "馬券テストレース") {
         app.navigationBars["Umalog"].buttons["Add"].tap()
         XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
@@ -216,17 +206,15 @@ final class AddBetTests: UITestCase {
         app.swipeUp()
     }
 
-    /// 馬券追加フォームが開く
     @MainActor
-    func testAddBetFormAppears() {
+    func test馬券追加ボタンをタップすると馬券追加フォームが開く() {
         setupRaceAndNavigateToDetail()
         tapWhenReady(findElement("add-bet-button"))
         XCTAssertTrue(app.navigationBars["馬券を追加"].waitForExistence(timeout: 5))
     }
 
-    /// 馬券追加をキャンセルできる
     @MainActor
-    func testAddBetCancel() {
+    func testキャンセルすると詳細画面に戻る() {
         setupRaceAndNavigateToDetail()
         tapWhenReady(findElement("add-bet-button"))
         XCTAssertTrue(app.navigationBars["馬券を追加"].waitForExistence(timeout: 5))
@@ -234,9 +222,8 @@ final class AddBetTests: UITestCase {
         XCTAssertTrue(app.navigationBars["馬券テストレース"].waitForExistence(timeout: 5))
     }
 
-    /// 出走馬なしの場合、テキスト入力で買い目を追加できる
     @MainActor
-    func testAddBetWithTextInput() {
+    func test出走馬なしの場合にテキスト入力で買い目を追加できる() {
         setupRaceAndNavigateToDetail()
         tapWhenReady(findElement("add-bet-button"))
         XCTAssertTrue(app.navigationBars["馬券を追加"].waitForExistence(timeout: 5))
@@ -261,7 +248,7 @@ final class AddBetTests: UITestCase {
 
 // MARK: - Scenario 5: レース削除
 
-final class DeleteRaceTests: UITestCase {
+final class レース削除Test: UIテストケース {
     private func addRace(name: String) {
         app.navigationBars["Umalog"].buttons["Add"].tap()
         XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
@@ -272,9 +259,8 @@ final class DeleteRaceTests: UITestCase {
         XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
     }
 
-    /// レースをスワイプ削除できる
     @MainActor
-    func testDeleteRaceBySwipe() {
+    func testレースをスワイプして削除できる() {
         addRace(name: "削除対象レース")
 
         let raceCell = app.staticTexts["削除対象レース"].firstMatch
@@ -296,17 +282,15 @@ final class DeleteRaceTests: UITestCase {
 
 // MARK: - Scenario 6: 収支サマリー
 
-final class BalanceSummaryTests: UITestCase {
-    /// 収支タブに切り替えると収支画面が表示される
+final class 収支サマリーTest: UIテストケース {
     @MainActor
-    func testBalanceSummaryTabNavigation() {
+    func test収支タブをタップすると収支画面が表示される() {
         app.tabBars.firstMatch.buttons["収支"].tap()
         XCTAssertTrue(app.navigationBars["収支"].waitForExistence(timeout: 5))
     }
 
-    /// 集計単位（日・月・年・期間）を切り替えられる
     @MainActor
-    func testBalanceSummaryPeriodSwitching() {
+    func test集計単位を日月年期間で切り替えられる() {
         app.tabBars.firstMatch.buttons["収支"].tap()
         XCTAssertTrue(app.navigationBars["収支"].waitForExistence(timeout: 5))
 
@@ -319,9 +303,8 @@ final class BalanceSummaryTests: UITestCase {
         app.buttons["月"].tap()
     }
 
-    /// 集計セクションが表示されている
     @MainActor
-    func testBalanceSummaryShowsSummarySection() {
+    func test購入合計のラベルが表示される() {
         app.tabBars.firstMatch.buttons["収支"].tap()
         XCTAssertTrue(app.navigationBars["収支"].waitForExistence(timeout: 5))
         // iOS 26 では Text() が staticText 以外の型になる場合があるため descendants で検索
@@ -334,26 +317,23 @@ final class BalanceSummaryTests: UITestCase {
 
 // MARK: - Scenario 7: 設定画面
 
-final class SettingsTests: UITestCase {
-    /// 設定タブに切り替えると設定画面が表示される
+final class 設定Test: UIテストケース {
     @MainActor
-    func testSettingsTabNavigation() {
+    func test設定タブをタップすると設定画面が表示される() {
         app.tabBars.firstMatch.buttons["設定"].tap()
         XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
     }
 
-    /// 設定画面にライセンスリンクが存在する
     @MainActor
-    func testSettingsShowsAppInfo() {
+    func test設定画面にライセンスリンクが表示される() {
         app.tabBars.firstMatch.buttons["設定"].tap()
         XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
         let licensesButton = findElement("licenses-link")
         XCTAssertTrue(licensesButton.waitForExistence(timeout: 10))
     }
 
-    /// ライセンス画面に遷移できる
     @MainActor
-    func testSettingsNavigateToLicenses() {
+    func testライセンスリンクをタップするとライセンス一覧に遷移する() {
         app.tabBars.firstMatch.buttons["設定"].tap()
         XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
 
@@ -362,9 +342,8 @@ final class SettingsTests: UITestCase {
         XCTAssertTrue(app.staticTexts["swift-markdown-ui"].waitForExistence(timeout: 5))
     }
 
-    /// ライセンス詳細に遷移できる
     @MainActor
-    func testSettingsNavigateToLicenseDetail() {
+    func testライセンスをタップすると詳細画面に遷移する() {
         app.tabBars.firstMatch.buttons["設定"].tap()
         XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
 
@@ -380,10 +359,9 @@ final class SettingsTests: UITestCase {
 
 // MARK: - Scenario 8: エンドツーエンド（レース記録フルフロー）
 
-final class FullRaceRecordFlowTests: UITestCase {
-    /// レース追加→出走馬追加→馬券追加→収支確認のフルフロー
+final class フルフローTest: UIテストケース {
     @MainActor
-    func testFullRaceRecordFlow() {
+    func testレース追加から収支確認まで一連の操作が完結する() {
         // 1. レースを追加
         XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
         app.navigationBars["Umalog"].buttons["Add"].tap()
@@ -412,7 +390,7 @@ final class FullRaceRecordFlowTests: UITestCase {
 
         // 4. 馬券フォームを開いてキャンセル
         //    （出走馬あり時は馬番 Picker での選択が必要になり UI テストが複雑なため
-        //    フォームの開閉のみを確認し、テキスト入力での馬券追加は AddBetTests でカバー）
+        //    フォームの開閉のみを確認し、テキスト入力での馬券追加は 馬券追加Test でカバー）
         app.swipeUp()
         tapWhenReady(findElement("add-bet-button"))
         XCTAssertTrue(app.navigationBars["馬券を追加"].waitForExistence(timeout: 5))
