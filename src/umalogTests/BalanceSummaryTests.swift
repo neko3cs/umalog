@@ -21,6 +21,11 @@ struct 収支集計期間計算Test {
 
     // MARK: - interval
 
+    @Test func 期間モードのintervalは常にnilを返す() {
+        let interval = calc.interval(for: .range, date: makeDate(2026, 6, 15))
+        #expect(interval == nil)
+    }
+
     @Test func 日次の集計期間に同日正午が含まれる() throws {
         let date = makeDate(2026, 6, 15)
         let interval = try #require(calc.interval(for: .daily, date: date))
@@ -48,6 +53,12 @@ struct 収支集計期間計算Test {
     }
 
     // MARK: - advance
+
+    @Test func 期間モードのadvanceは日付を変更しない() {
+        let date = makeDate(2026, 6, 15)
+        let result = calc.advance(date, by: 1, unit: .range)
+        #expect(result == date)
+    }
 
     @Test func 日次で1進めると翌日になる() {
         let date = makeDate(2026, 6, 15)
@@ -84,6 +95,10 @@ struct 収支集計期間計算Test {
     }
 
     // MARK: - title
+
+    @Test func 期間モードのtitleは空文字を返す() {
+        #expect(calc.title(for: .range, date: makeDate(2026, 6, 15)) == "")
+    }
 
     @Test func 日次のタイトルが年月日形式で表示される() {
         let date = makeDate(2026, 6, 15)
