@@ -36,12 +36,12 @@ struct CSVエクスポーターTest {
         #expect(output.contains("=== BETS ==="))
         #expect(output.contains("=== BET_SELECTIONS ==="))
         #expect(output.contains("date,venue,race_number,race_name,distance,track_type,track_condition," +
-            "category,first_place_horse,second_place_horse,third_place_horse," +
-            "total_purchase,total_payout,balance,memo"))
+                "category,first_place_horse,second_place_horse,third_place_horse," +
+                "total_purchase,total_payout,balance,memo"))
         #expect(output.contains("date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark"))
         #expect(output.contains("date,venue,race_number,bet_sort_index,purchase_amount,payout_amount,balance"))
         #expect(output.contains("date,venue,race_number,bet_sort_index,ticket_type,selection," +
-            "unit_price,combination_count,sort_index"))
+                "unit_price,combination_count,sort_index"))
     }
 
     // MARK: - レース行

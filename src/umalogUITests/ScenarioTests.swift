@@ -32,8 +32,8 @@ class UIテストケース: XCTestCase {
         app.descendants(matching: .any).matching(identifier: identifier).firstMatch
     }
 
-    // SwiftUI List 内の要素はレイアウト完了前にタップすると
-    // "Invalid frame dimension" 警告が出るため isHittable を待ってからタップする
+    /// SwiftUI List 内の要素はレイアウト完了前にタップすると
+    /// "Invalid frame dimension" 警告が出るため isHittable を待ってからタップする
     func tapWhenReady(_ element: XCUIElement, timeout: TimeInterval = 5) {
         XCTAssertTrue(element.waitForExistence(timeout: timeout))
         let hittable = NSPredicate(format: "isHittable == true")
