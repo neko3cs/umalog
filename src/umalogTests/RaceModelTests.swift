@@ -172,6 +172,13 @@ struct レースモデルTest {
 
     // MARK: - finishPosition
 
+    @Test func 着順が未設定のとき有効な馬番でfinishPositionがnilになる() {
+        let race = Race()
+        container.mainContext.insert(race)
+        #expect(race.finishPosition(forHorseNumber: 1) == nil)
+        #expect(race.finishPosition(forHorseNumber: 18) == nil)
+    }
+
     @Test func 馬番が1着馬の場合に着順が1になる() {
         let race = Race(firstPlaceHorseNumber: 5, secondPlaceHorseNumber: 3, thirdPlaceHorseNumber: 8)
         container.mainContext.insert(race)
