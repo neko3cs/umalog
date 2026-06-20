@@ -189,6 +189,12 @@ struct 馬券モデルTest {
         #expect(sel.purchaseAmount == 100)
     }
 
+    @Test func 買い目の組合せ数が0のとき購入額がゼロになる() {
+        let sel = BetSelection(unitPrice: 100, combinationCount: 0)
+        container.mainContext.insert(sel)
+        #expect(sel.purchaseAmount == 0)
+    }
+
     @Test func 買い目の表示券種名は券種が設定されている場合に優先される() {
         let ctx = container.mainContext
         let ticketType = TicketType(name: "単勝"); ctx.insert(ticketType)
@@ -212,6 +218,14 @@ struct 馬券モデルTest {
         let sel = BetSelection(unitPrice: 200, combinationCount: 1)
         container.mainContext.insert(sel)
         #expect(sel.purchaseAmount == 200)
+    }
+
+    // MARK: - TicketType
+
+    @Test func 券種のデフォルトソート順がゼロである() {
+        let ticketType = TicketType(name: "単勝")
+        container.mainContext.insert(ticketType)
+        #expect(ticketType.sortIndex == 0)
     }
 
     // MARK: - Venue

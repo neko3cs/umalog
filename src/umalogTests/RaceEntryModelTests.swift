@@ -19,6 +19,44 @@ struct 出走馬モデルTest {
         container = try ModelContainer(for: schema, configurations: [config])
     }
 
+    // MARK: - デフォルト値
+
+    @Test func 新規出走馬の馬番デフォルトが0である() {
+        let entry = RaceEntry()
+        container.mainContext.insert(entry)
+        #expect(entry.horseNumber == 0)
+    }
+
+    @Test func 新規出走馬の馬名デフォルトが空文字である() {
+        let entry = RaceEntry()
+        container.mainContext.insert(entry)
+        #expect(entry.horseName == "")
+    }
+
+    @Test func 新規出走馬の騎手名デフォルトが空文字である() {
+        let entry = RaceEntry()
+        container.mainContext.insert(entry)
+        #expect(entry.jockeyName == "")
+    }
+
+    @Test func 新規出走馬の調教師名デフォルトが空文字である() {
+        let entry = RaceEntry()
+        container.mainContext.insert(entry)
+        #expect(entry.trainerName == "")
+    }
+
+    @Test func 新規出走馬の予想印デフォルトがnilである() {
+        let entry = RaceEntry()
+        container.mainContext.insert(entry)
+        #expect(entry.predictionMark == nil)
+    }
+
+    @Test func 新規出走馬のソート順デフォルトが0である() {
+        let entry = RaceEntry()
+        container.mainContext.insert(entry)
+        #expect(entry.sortIndex == 0)
+    }
+
     // MARK: - mark getter
 
     @Test func predictionMarkがnilのときmarkがnilを返す() {

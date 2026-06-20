@@ -32,6 +32,18 @@ struct 収支集計期間計算Test {
         #expect(interval.contains(makeDate(2026, 6, 15)))
     }
 
+    @Test func 日次の集計期間に前日が含まれない() throws {
+        let date = makeDate(2026, 6, 15)
+        let interval = try #require(calc.interval(for: .daily, date: date))
+        #expect(!interval.contains(makeDate(2026, 6, 14)))
+    }
+
+    @Test func 日次の集計期間に翌日が含まれない() throws {
+        let date = makeDate(2026, 6, 15)
+        let interval = try #require(calc.interval(for: .daily, date: date))
+        #expect(!interval.contains(makeDate(2026, 6, 16)))
+    }
+
     @Test func 月次の集計期間に月初と月末が含まれる() throws {
         let date = makeDate(2026, 6, 15)
         let interval = try #require(calc.interval(for: .monthly, date: date))
@@ -64,6 +76,13 @@ struct 収支集計期間計算Test {
         let date = makeDate(2026, 6, 15)
         let next = calc.advance(date, by: 1, unit: .daily)
         let diff = calc.calendar.dateComponents([.day], from: date, to: next)
+        #expect(diff.day == 1)
+    }
+
+    @Test func 日次でマイナス1進めると前日になる() {
+        let date = makeDate(2026, 6, 15)
+        let prev = calc.advance(date, by: -1, unit: .daily)
+        let diff = calc.calendar.dateComponents([.day], from: prev, to: date)
         #expect(diff.day == 1)
     }
 

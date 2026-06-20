@@ -89,6 +89,12 @@ struct レースモデルTest {
 
     // MARK: - balance
 
+    @Test func 馬券がnilのとき収支がゼロになる() {
+        let race = Race(); container.mainContext.insert(race)
+        race.bets = nil
+        #expect(race.balance == 0)
+    }
+
     @Test func 馬券がないとき収支がゼロになる() {
         let race = Race(); container.mainContext.insert(race)
         race.bets = []

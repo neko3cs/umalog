@@ -82,6 +82,18 @@ struct CSVエクスポーターTest {
         #expect(output.contains(",地方,"))
     }
 
+    @Test func トラック種別が未知の場合はダートとして出力される() {
+        let race = Race(trackType: "unknown"); container.mainContext.insert(race)
+        let output = CSVExporter.export(races: [race])
+        #expect(output.contains(",ダート,"))
+    }
+
+    @Test func カテゴリが未知の場合は地方として出力される() {
+        let race = Race(category: "unknown"); container.mainContext.insert(race)
+        let output = CSVExporter.export(races: [race])
+        #expect(output.contains(",地方,"))
+    }
+
     @Test func レース行に購入合計が含まれる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
@@ -193,6 +205,22 @@ struct CSVエクスポーターTest {
     }
 
     // MARK: - ソート
+
+    @Test func 馬券がsortIndex昇順で出力される() {
+        let ctx = container.mainContext
+        let race = Race(); ctx.insert(race)
+        let bet1 = Bet(race: race, purchaseAmount: 100, sortIndex: 1); ctx.insert(bet1)
+        let bet2 = Bet(race: race, purchaseAmount: 200, sortIndex: 0); ctx.insert(bet2)
+        race.bets = [bet1, bet2]
+        let output = CSVExporter.export(races: [race])
+        let idx1 = output.range(of: ",100,")
+        let idx2 = output.range(of: ",200,")
+        if let r1 = idx1, let r2 = idx2 {
+            #expect(r2.lowerBound < r1.lowerBound)
+        } else {
+            Issue.record("馬券行が出力に含まれていない")
+        }
+    }
 
     @Test func レースが日付昇順で出力される() throws {
         let ctx = container.mainContext
