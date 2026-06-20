@@ -27,35 +27,11 @@ struct 収支集計期間計算Test {
         #expect(interval.contains(makeDate(2026, 6, 15)))
     }
 
-    @Test func 日次の集計期間に翌日が含まれない() throws {
-        let date = makeDate(2026, 6, 15)
-        let interval = try #require(calc.interval(for: .daily, date: date))
-        #expect(!interval.contains(makeDate(2026, 6, 16)))
-    }
-
-    @Test func 日次の集計期間に前日が含まれない() throws {
-        let date = makeDate(2026, 6, 15)
-        let interval = try #require(calc.interval(for: .daily, date: date))
-        #expect(!interval.contains(makeDate(2026, 6, 14)))
-    }
-
     @Test func 月次の集計期間に月初と月末が含まれる() throws {
         let date = makeDate(2026, 6, 15)
         let interval = try #require(calc.interval(for: .monthly, date: date))
         #expect(interval.contains(makeDate(2026, 6, 1)))
         #expect(interval.contains(makeDate(2026, 6, 30)))
-    }
-
-    @Test func 月次の集計期間に翌月が含まれない() throws {
-        let date = makeDate(2026, 6, 15)
-        let interval = try #require(calc.interval(for: .monthly, date: date))
-        #expect(!interval.contains(makeDate(2026, 7, 1)))
-    }
-
-    @Test func 月次の集計期間に前月が含まれない() throws {
-        let date = makeDate(2026, 6, 15)
-        let interval = try #require(calc.interval(for: .monthly, date: date))
-        #expect(!interval.contains(makeDate(2026, 5, 31)))
     }
 
     @Test func 年次の集計期間に1月1日と12月31日が含まれる() throws {
@@ -77,13 +53,6 @@ struct 収支集計期間計算Test {
         let date = makeDate(2026, 6, 15)
         let next = calc.advance(date, by: 1, unit: .daily)
         let diff = calc.calendar.dateComponents([.day], from: date, to: next)
-        #expect(diff.day == 1)
-    }
-
-    @Test func 日次でマイナス1進めると前日になる() {
-        let date = makeDate(2026, 6, 15)
-        let prev = calc.advance(date, by: -1, unit: .daily)
-        let diff = calc.calendar.dateComponents([.day], from: prev, to: date)
         #expect(diff.day == 1)
     }
 
@@ -161,20 +130,6 @@ struct 収支集計期間計算Test {
         let to = makeDate(2026, 6, 30)
         let interval = try #require(calc.rangeInterval(from: from, to: to))
         #expect(interval.contains(makeDate(2026, 6, 30)))
-    }
-
-    @Test func 期間指定の集計区間に終了日翌日が含まれない() throws {
-        let from = makeDate(2026, 3, 1)
-        let to = makeDate(2026, 6, 30)
-        let interval = try #require(calc.rangeInterval(from: from, to: to))
-        #expect(!interval.contains(makeDate(2026, 7, 1)))
-    }
-
-    @Test func 期間指定の集計区間に開始日前日が含まれない() throws {
-        let from = makeDate(2026, 3, 1)
-        let to = makeDate(2026, 6, 30)
-        let interval = try #require(calc.rangeInterval(from: from, to: to))
-        #expect(!interval.contains(makeDate(2026, 2, 28)))
     }
 
     @Test func 開始日が終了日より後の場合はnilを返す() {

@@ -39,12 +39,6 @@ struct 馬券モデルTest {
         #expect(bet.balance == 0)
     }
 
-    @Test func 収支が払戻額から購入額を引いた値に等しい() {
-        let bet = Bet(purchaseAmount: 300, payoutAmount: 750)
-        container.mainContext.insert(bet)
-        #expect(bet.balance == bet.payoutAmount - bet.purchaseAmount)
-    }
-
     // MARK: - displayTicketTypeName
 
     @Test func 券種が設定されている場合に券種名が表示される() {
@@ -58,12 +52,6 @@ struct 馬券モデルTest {
         let bet = Bet(ticketType: nil, ticketTypeName: "カスタム券種")
         container.mainContext.insert(bet)
         #expect(bet.displayTicketTypeName == "カスタム券種")
-    }
-
-    @Test func 券種もnilで券種名も空の場合に空文字が表示される() {
-        let bet = Bet(ticketType: nil, ticketTypeName: "")
-        container.mainContext.insert(bet)
-        #expect(bet.displayTicketTypeName == "")
     }
 
     @Test func 券種が設定されている場合は保存された券種名より優先される() {

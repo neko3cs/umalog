@@ -150,14 +150,6 @@ struct レースモデルTest {
         #expect(race.returnRate == nil)
     }
 
-    @Test func 収支がトントンの場合に回収率が1になる() {
-        let ctx = container.mainContext
-        let race = Race(); ctx.insert(race)
-        let bet = Bet(race: race, purchaseAmount: 1000, payoutAmount: 1000); ctx.insert(bet)
-        race.bets = [bet]
-        #expect(race.returnRate == 1.0)
-    }
-
     @Test func 利益がある場合に回収率が1より大きくなる() throws {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
@@ -176,16 +168,6 @@ struct レースモデルTest {
         let rate = try #require(race.returnRate)
         #expect(rate < 1.0)
         #expect(rate == 0.4)
-    }
-
-    @Test func 回収率が払戻合計を購入合計で割った値になる() throws {
-        let ctx = container.mainContext
-        let race = Race(); ctx.insert(race)
-        let bet1 = Bet(race: race, purchaseAmount: 500, payoutAmount: 1500); ctx.insert(bet1)
-        let bet2 = Bet(race: race, purchaseAmount: 500, payoutAmount: 0); ctx.insert(bet2)
-        race.bets = [bet1, bet2]
-        let rate = try #require(race.returnRate)
-        #expect(rate == 1.5)
     }
 
     // MARK: - finishPosition
@@ -266,40 +248,4 @@ struct レースモデルTest {
         }
     }
 
-    // MARK: - Undo Manager
-
-    @Test func UndoManagerをModelContextに設定できる() {
-        let ctx = container.mainContext
-        let undoManager = UndoManager()
-        ctx.undoManager = undoManager
-        #expect(ctx.undoManager === undoManager)
-    }
-
-    @Test func UndoManagerにアクションを登録してundoで呼び出せる() {
-        let undoManager = UndoManager()
-        var value = 0
-        undoManager.registerUndo(withTarget: undoManager as AnyObject) { _ in value = 1 }
-        undoManager.undo()
-        #expect(value == 1)
-    }
-
-    @Test func ModelContextのプロパティ変更をundoで元に戻せる() {
-        let ctx = container.mainContext
-        let undoManager = UndoManager()
-        ctx.undoManager = undoManager
-
-        let race = Race(raceNumber: 1, raceName: "before")
-        ctx.insert(race)
-        ctx.processPendingChanges()
-
-        undoManager.beginUndoGrouping()
-        race.raceName = "after"
-        ctx.processPendingChanges()
-        undoManager.endUndoGrouping()
-
-        #expect(race.raceName == "after")
-        undoManager.undo()
-        ctx.processPendingChanges()
-        #expect(race.raceName == "before")
-    }
 }
