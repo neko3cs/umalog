@@ -13,4 +13,5 @@ exclude:
   - src/umalog/umalogApp.swift
   - src/umalog/ContentView.swift
   - src/umalog/Utils/VenuePresets.swift
+  - src/umalog/ShakeWindow.swift
 excludeCalls: []
