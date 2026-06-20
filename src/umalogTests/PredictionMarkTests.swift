@@ -16,6 +16,11 @@ struct 予想印Test {
         #expect(PredictionMark.allCases.count == 8)
     }
 
+    @Test func 全ケースの順序が仕様書通りになる() {
+        let expected: [PredictionMark] = [.honmei, .taikou, .tanana, .renmei, .hoshi, .chu, .oshi, .keshi]
+        #expect(PredictionMark.allCases == expected)
+    }
+
     // MARK: - rawValue
 
     @Test func 本命のrawValueが本命記号の文字列になる() {

@@ -208,6 +208,17 @@ struct CSVエクスポーターTest {
         #expect(idx1 < idx2)
     }
 
+    // MARK: - horseNumberString
+
+    @Test func horseNumberStringでゼロは空文字になる() {
+        #expect(CSVExporter.horseNumberString(0) == "")
+    }
+
+    @Test func horseNumberStringで正数は文字列になる() {
+        #expect(CSVExporter.horseNumberString(1) == "1")
+        #expect(CSVExporter.horseNumberString(18) == "18")
+    }
+
     // MARK: - escape / formatDate / formatFilenameDate
 
     @Test func カンマを含む文字列がクォートされる() {

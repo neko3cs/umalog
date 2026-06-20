@@ -177,6 +177,18 @@ struct 馬券モデルTest {
 
     // MARK: - BetSelection
 
+    @Test func 買い目のデフォルト単価が100円である() {
+        let sel = BetSelection()
+        container.mainContext.insert(sel)
+        #expect(sel.unitPrice == 100)
+    }
+
+    @Test func 買い目のデフォルト購入額が100円である() {
+        let sel = BetSelection()
+        container.mainContext.insert(sel)
+        #expect(sel.purchaseAmount == 100)
+    }
+
     @Test func 買い目の表示券種名は券種が設定されている場合に優先される() {
         let ctx = container.mainContext
         let ticketType = TicketType(name: "単勝"); ctx.insert(ticketType)
