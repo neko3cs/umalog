@@ -260,5 +260,4 @@ struct レースモデルTest {
             #expect(race.returnRate == 1.0)
         }
     }
-
 }

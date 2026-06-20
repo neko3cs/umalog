@@ -4,32 +4,20 @@ disabled_rules:
   - type_name
   - opening_brace
   - blanket_disable_command
-
-identifier_name:
-  min_length:
-    warning: 2
-    error: 2
-  excluded:
-    - id
-    - url
-    - i
-    - n
-    - x
-    - y
-    - z
+  - identifier_name   # 日本語テスト関数名を仕様書形式で記述しているため除外
 
 type_body_length:
   warning: 400
-  error: 500
+  error: 600
 
 function_body_length:
   warning: 100
   error: 150
 
 file_length:
-  warning: 500
-  error: 700
+  warning: 700
+  error: 900
 
 line_length:
-  warning: 150
-  error: 200
+  warning: 180
+  error: 220

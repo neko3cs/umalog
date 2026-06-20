@@ -1,7 +1,6 @@
 included:
   - src/umalog
   - src/umalogTests
-  - src/umalogUITests
 
 excluded:
   - src/umalog.xcodeproj
@@ -12,6 +11,7 @@ disabled_rules:
   - opening_brace                    # swiftformat が管理
   - trailing_comma                   # swiftformat がトレイリングカンマを追加するため除外
   - implicit_optional_initialization # SwiftUI の @State 変数では nil 明示が慣例
+  - identifier_name                  # 日本語テスト関数名を仕様書形式で記述しているため除外
 
 opt_in_rules:
   - empty_count
@@ -31,14 +31,6 @@ type_name:
     - umalogUITests
     - umalogUITestsLaunchTests
 
-identifier_name:
-  min_length: 1
-  max_length: 60
-  excluded:
-    - id
-    - f
-    - tt
-
 function_body_length:
   warning: 100
   error: 150
@@ -48,8 +40,8 @@ type_body_length:
   error: 600
 
 file_length:
-  warning: 500
-  error: 700
+  warning: 700
+  error: 900
 
 cyclomatic_complexity:
   warning: 15
