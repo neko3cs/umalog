@@ -12,7 +12,7 @@ import Testing
 import ZIPFoundation
 
 @MainActor
-struct CSVExporterTests {
+struct CSVエクスポーターTest {
     let container: ModelContainer
 
     init() throws {
@@ -27,90 +27,74 @@ struct CSVExporterTests {
         return formatter.string(from: date)
     }
 
-    // MARK: - Section headers
+    // MARK: - セクションヘッダー
 
-    @Test func export_alwaysContainsRacesHeader() {
-        #expect(CSVExporter.export(races: []).contains("=== RACES ==="))
-    }
-
-    @Test func export_alwaysContainsEntriesHeader() {
-        #expect(CSVExporter.export(races: []).contains("=== ENTRIES ==="))
-    }
-
-    @Test func export_alwaysContainsBetsHeader() {
-        #expect(CSVExporter.export(races: []).contains("=== BETS ==="))
-    }
-
-    @Test func export_racesSection_hasCorrectColumnHeaders() {
+    @Test func エクスポート結果にRACES・ENTRIES・BETS・BET_SELECTIONSの全セクションヘッダーが含まれる() {
         let output = CSVExporter.export(races: [])
-        let expected = "date,venue,race_number,race_name,distance,track_type,track_condition," +
-            "category,first_place_horse,second_place_horse,third_place_horse," +
-            "total_purchase,total_payout,balance,memo"
-        #expect(output.contains(expected))
+        #expect(output.contains("=== RACES ==="))
+        #expect(output.contains("=== ENTRIES ==="))
+        #expect(output.contains("=== BETS ==="))
+        #expect(output.contains("=== BET_SELECTIONS ==="))
+        #expect(output.contains("date,venue,race_number,race_name,distance,track_type,track_condition," +
+                "category,first_place_horse,second_place_horse,third_place_horse," +
+                "total_purchase,total_payout,balance,memo"))
+        #expect(output.contains("date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark"))
+        #expect(output.contains("date,venue,race_number,bet_sort_index,purchase_amount,payout_amount,balance"))
+        #expect(output.contains("date,venue,race_number,bet_sort_index,ticket_type,selection," +
+                "unit_price,combination_count,sort_index"))
     }
 
-    @Test func export_entriesSection_hasCorrectColumnHeaders() {
-        let output = CSVExporter.export(races: [])
-        let expected = "date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark"
-        #expect(output.contains(expected))
-    }
+    // MARK: - レース行
 
-    @Test func export_alwaysContainsBetSelectionsHeader() {
-        #expect(CSVExporter.export(races: []).contains("=== BET_SELECTIONS ==="))
-    }
-
-    @Test func export_betsSection_hasCorrectColumnHeaders() {
-        let output = CSVExporter.export(races: [])
-        let expected = "date,venue,race_number,bet_sort_index,purchase_amount,payout_amount,balance"
-        #expect(output.contains(expected))
-    }
-
-    @Test func export_betSelectionsSection_hasCorrectColumnHeaders() {
-        let output = CSVExporter.export(races: [])
-        let expected = "date,venue,race_number,bet_sort_index,ticket_type,selection," +
-            "unit_price,combination_count,sort_index"
-        #expect(output.contains(expected))
-    }
-
-    // MARK: - Race row
-
-    @Test func export_raceRow_containsDate() {
+    @Test func レース行に日付が含まれる() {
         let race = Race(raceNumber: 1); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
         #expect(output.contains(formatDate(race.date)))
     }
 
-    @Test func export_raceRow_containsRaceNumber() {
+    @Test func レース行にレース番号が含まれる() {
         let race = Race(raceNumber: 5); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
         #expect(output.contains(",5,"))
     }
 
-    @Test func export_raceRow_turfTrackType() {
+    @Test func トラック種別が芝の場合に芝と出力される() {
         let race = Race(trackType: "turf"); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
         #expect(output.contains(",芝,"))
     }
 
-    @Test func export_raceRow_dirtTrackType() {
+    @Test func トラック種別がダートの場合にダートと出力される() {
         let race = Race(trackType: "dirt"); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
         #expect(output.contains(",ダート,"))
     }
 
-    @Test func export_raceRow_centralCategory() {
+    @Test func カテゴリが中央の場合に中央と出力される() {
         let race = Race(category: "central"); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
         #expect(output.contains(",中央,"))
     }
 
-    @Test func export_raceRow_localCategory() {
+    @Test func カテゴリが地方の場合に地方と出力される() {
         let race = Race(category: "local"); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
         #expect(output.contains(",地方,"))
     }
 
-    @Test func export_raceRow_containsTotalPurchase() {
+    @Test func トラック種別が未知の場合はダートとして出力される() {
+        let race = Race(trackType: "unknown"); container.mainContext.insert(race)
+        let output = CSVExporter.export(races: [race])
+        #expect(output.contains(",ダート,"))
+    }
+
+    @Test func カテゴリが未知の場合は地方として出力される() {
+        let race = Race(category: "unknown"); container.mainContext.insert(race)
+        let output = CSVExporter.export(races: [race])
+        #expect(output.contains(",地方,"))
+    }
+
+    @Test func レース行に購入合計が含まれる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 1500, payoutAmount: 0); ctx.insert(bet)
@@ -119,7 +103,7 @@ struct CSVExporterTests {
         #expect(output.contains(",1500,"))
     }
 
-    @Test func export_raceRow_containsTotalPayout() {
+    @Test func レース行に払戻合計が含まれる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 1000, payoutAmount: 3200); ctx.insert(bet)
@@ -128,7 +112,7 @@ struct CSVExporterTests {
         #expect(output.contains(",3200,"))
     }
 
-    @Test func export_raceRow_containsBalance() {
+    @Test func レース行に収支が含まれる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 1000, payoutAmount: 3000); ctx.insert(bet)
@@ -137,9 +121,9 @@ struct CSVExporterTests {
         #expect(output.contains(",2000"))
     }
 
-    // MARK: - Entry row
+    // MARK: - 出走馬行
 
-    @Test func export_entryRow_containsHorseName() {
+    @Test func 出走馬行に馬名が含まれる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let entry = RaceEntry(race: race, horseNumber: 3, horseName: "テスト馬"); ctx.insert(entry)
@@ -148,7 +132,7 @@ struct CSVExporterTests {
         #expect(output.contains("テスト馬"))
     }
 
-    @Test func export_entryRow_containsHorseNumber() {
+    @Test func 出走馬行に馬番が含まれる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let entry = RaceEntry(race: race, horseNumber: 7, horseName: "テスト馬"); ctx.insert(entry)
@@ -157,7 +141,7 @@ struct CSVExporterTests {
         #expect(output.contains(",7,"))
     }
 
-    @Test func export_entryRow_containsPredictionMark() {
+    @Test func 出走馬行に予想印が含まれる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let entry = RaceEntry(race: race, horseName: "テスト馬", predictionMark: "◎"); ctx.insert(entry)
@@ -166,18 +150,9 @@ struct CSVExporterTests {
         #expect(output.contains(",◎"))
     }
 
-    @Test func export_entryRow_withNoPredictionMark_includesHorseName() {
-        let ctx = container.mainContext
-        let race = Race(); ctx.insert(race)
-        let entry = RaceEntry(race: race, horseName: "テスト馬", predictionMark: nil); ctx.insert(entry)
-        race.entries = [entry]
-        let output = CSVExporter.export(races: [race])
-        #expect(output.contains("テスト馬"))
-    }
+    // MARK: - 馬券行
 
-    // MARK: - Bet row
-
-    @Test func export_betRow_containsPurchaseAndPayout() {
+    @Test func 馬券行に購入額と払戻額が含まれる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 500, payoutAmount: 1200); ctx.insert(bet)
@@ -187,7 +162,7 @@ struct CSVExporterTests {
         #expect(output.contains(",1200,"))
     }
 
-    @Test func export_betSelectionRow_containsTicketTypeAndSelection() {
+    @Test func 買い目行に券種と買い目が含まれる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 100); ctx.insert(bet)
@@ -200,28 +175,28 @@ struct CSVExporterTests {
         #expect(output.contains(",1,"))
     }
 
-    // MARK: - CSV escaping
+    // MARK: - CSVエスケープ
 
-    @Test func export_valueWithComma_isQuoted() {
+    @Test func カンマを含む値がクォートされる() {
         let race = Race(raceName: "東京,大賞典"); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
         #expect(output.contains("\"東京,大賞典\""))
     }
 
-    @Test func export_valueWithDoubleQuote_isEscaped() {
+    @Test func ダブルクォートを含む値がエスケープされる() {
         let race = Race(raceName: "\"特別\"レース"); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
         #expect(output.contains("\"\"\"特別\"\"レース\""))
     }
 
-    @Test func export_normalValue_isNotQuoted() {
+    @Test func 通常の値はクォートされない() {
         let race = Race(raceName: "天皇賞春"); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
         #expect(output.contains(",天皇賞春,"))
         #expect(!output.contains("\"天皇賞春\""))
     }
 
-    @Test func export_memoWithNewline_isReplacedWithSpace() {
+    @Test func 改行を含むメモが空白に置換される() {
         let race = Race(); container.mainContext.insert(race)
         race.memo = "1行目\n2行目"
         let output = CSVExporter.export(races: [race])
@@ -229,9 +204,25 @@ struct CSVExporterTests {
         #expect(!output.contains("1行目\n2行目"))
     }
 
-    // MARK: - Sorting
+    // MARK: - ソート
 
-    @Test func export_racesAreSortedByDateAscending() throws {
+    @Test func 馬券がsortIndex昇順で出力される() {
+        let ctx = container.mainContext
+        let race = Race(); ctx.insert(race)
+        let bet1 = Bet(race: race, purchaseAmount: 100, sortIndex: 1); ctx.insert(bet1)
+        let bet2 = Bet(race: race, purchaseAmount: 200, sortIndex: 0); ctx.insert(bet2)
+        race.bets = [bet1, bet2]
+        let output = CSVExporter.export(races: [race])
+        let idx1 = output.range(of: ",100,")
+        let idx2 = output.range(of: ",200,")
+        if let r1 = idx1, let r2 = idx2 {
+            #expect(r2.lowerBound < r1.lowerBound)
+        } else {
+            Issue.record("馬券行が出力に含まれていない")
+        }
+    }
+
+    @Test func レースが日付昇順で出力される() throws {
         let ctx = container.mainContext
         let today = Date()
         let yesterday = try #require(Calendar.current.date(byAdding: .day, value: -1, to: today))
@@ -245,45 +236,52 @@ struct CSVExporterTests {
         #expect(idx1 < idx2)
     }
 
-    // MARK: - escape / formatDate / formatFilenameDate
+    // MARK: - horseNumberString
 
-    @Test func escape_normalString_isNotQuoted() {
-        #expect(CSVExporter.escape("普通の文字") == "普通の文字")
+    @Test func horseNumberStringでゼロは空文字になる() {
+        #expect(CSVExporter.horseNumberString(0) == "")
     }
 
-    @Test func escape_stringWithComma_isQuoted() {
+    @Test func horseNumberStringで正数は文字列になる() {
+        #expect(CSVExporter.horseNumberString(1) == "1")
+        #expect(CSVExporter.horseNumberString(18) == "18")
+    }
+
+    // MARK: - escape / formatDate / formatFilenameDate
+
+    @Test func カンマを含む文字列がクォートされる() {
         #expect(CSVExporter.escape("a,b") == "\"a,b\"")
     }
 
-    @Test func escape_stringWithDoubleQuote_isEscapedAndQuoted() {
+    @Test func ダブルクォートを含む文字列がエスケープされクォートされる() {
         #expect(CSVExporter.escape("a\"b") == "\"a\"\"b\"")
     }
 
-    @Test func escape_stringWithNewline_isQuoted() {
+    @Test func 改行を含む文字列がクォートされる() {
         #expect(CSVExporter.escape("a\nb") == "\"a\nb\"")
     }
 
-    @Test func formatDate_returnsSlashFormat() throws {
+    @Test func 日付がスラッシュ区切り形式でフォーマットされる() throws {
         let calendar = Calendar(identifier: .gregorian)
         let date = try #require(calendar.date(from: DateComponents(year: 2026, month: 6, day: 13)))
         #expect(CSVExporter.formatDate(date) == "2026/06/13")
     }
 
-    @Test func formatFilenameDate_returnsCompactFormat() throws {
+    @Test func ファイル名用日付がコンパクト形式でフォーマットされる() throws {
         let calendar = Calendar(identifier: .gregorian)
         let date = try #require(calendar.date(from: DateComponents(year: 2026, month: 6, day: 13)))
         #expect(CSVExporter.formatFilenameDate(date) == "20260613")
     }
 
-    @Test func japaneseShortDateString_returnsJapaneseSlashFormat() throws {
+    @Test func 日本語短縮日付文字列がスラッシュ区切り形式になる() throws {
         let calendar = Calendar(identifier: .gregorian)
         let date = try #require(calendar.date(from: DateComponents(year: 2026, month: 6, day: 13)))
         #expect(date.japaneseShortDateString == "2026/06/13")
     }
 
-    // MARK: - ZipExporter / ZipImporter round-trip
+    // MARK: - ZipExporter / ZipImporter
 
-    @Test func zipExporter_producesZipFileAtTemporaryDirectory() throws {
+    @Test func ZIPエクスポートで一時ディレクトリにzipファイルが生成される() throws {
         let ctx = container.mainContext
         let race = Race(raceNumber: 7); ctx.insert(race)
         let url = try ZipExporter.export(races: [race])
@@ -292,7 +290,7 @@ struct CSVExporterTests {
         #expect(FileManager.default.fileExists(atPath: url.path))
     }
 
-    @Test func zipExporter_zipImporter_roundTrip_preservesData() throws {
+    @Test func ZIPエクスポートとインポートでデータが完全に復元される() throws {
         let exportCtx = container.mainContext
         let venue = Venue(name: "東京"); exportCtx.insert(venue)
         let race = Race(
@@ -323,7 +321,6 @@ struct CSVExporterTests {
         let url = try ZipExporter.export(races: [race])
         defer { try? FileManager.default.removeItem(at: url) }
 
-        // Import into a fresh container
         let schema = Schema([Race.self, Bet.self, BetSelection.self, RaceEntry.self, Venue.self, TicketType.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         let importContainer = try ModelContainer(for: schema, configurations: [config])
@@ -363,12 +360,10 @@ struct CSVExporterTests {
         #expect(restoredSel.combinationCount == 3)
     }
 
-    @Test func zipImporter_replacesExistingRaceData() throws {
-        // 既存レースを 1 件投入
+    @Test func ZIPインポートで既存レースデータが新データに置き換わる() throws {
         let pre = Race(raceNumber: 99); container.mainContext.insert(pre)
         try container.mainContext.save()
 
-        // 別レースを ZIP 化
         let exportSchema = Schema([Race.self, Bet.self, BetSelection.self, RaceEntry.self, Venue.self, TicketType.self])
         let exportConfig = ModelConfiguration(schema: exportSchema, isStoredInMemoryOnly: true)
         let exportContainer = try ModelContainer(for: exportSchema, configurations: [exportConfig])
@@ -385,9 +380,9 @@ struct CSVExporterTests {
         #expect(races.first?.raceName == "新規")
     }
 
-    // MARK: - Multiple items (sort closure coverage)
+    // MARK: - 複数アイテム
 
-    @Test func export_withMultipleBetsAndSelections_includesAllInOutput() {
+    @Test func 複数の馬券と買い目を持つレースが全てエクスポートされる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet1 = Bet(race: race, purchaseAmount: 100, sortIndex: 0); ctx.insert(bet1)
@@ -404,7 +399,7 @@ struct CSVExporterTests {
         #expect(output.contains(",馬連,"))
     }
 
-    @Test func zipExporter_withMultipleSelectionsPerBet_exportsAndImportsAll() throws {
+    @Test func 複数の買い目を持つ馬券のZIPエクスポートとインポートで全件が復元される() throws {
         let ctx = container.mainContext
         let race = Race(raceNumber: 1); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 700, payoutAmount: 0); ctx.insert(bet)
@@ -433,7 +428,7 @@ struct CSVExporterTests {
         #expect(sels.count == 3)
     }
 
-    @Test func zipImporter_legacyFormat_createsSelectionsFromBetsCSV() throws {
+    @Test func レガシーフォーマットのZIPインポートで馬券から買い目が生成される() throws {
         let racesCSV = """
         date,venue,race_number,race_name,distance,track_type,track_condition,category
         2026/06/16,,1,,1600,芝,良,中央

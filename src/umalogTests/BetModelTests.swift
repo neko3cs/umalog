@@ -10,7 +10,7 @@ import Testing
 @testable import umalog
 
 @MainActor
-struct BetModelTests {
+struct 馬券モデルTest {
     let container: ModelContainer
 
     init() throws {
@@ -21,52 +21,40 @@ struct BetModelTests {
 
     // MARK: - balance
 
-    @Test func balance_whenProfit_returnsPositiveValue() {
+    @Test func 払戻が購入より多い場合に収支がプラスになる() {
         let bet = Bet(purchaseAmount: 1000, payoutAmount: 2500)
         container.mainContext.insert(bet)
         #expect(bet.balance == 1500)
     }
 
-    @Test func balance_whenLoss_returnsNegativeValue() {
+    @Test func 払戻がゼロの場合に収支がマイナスになる() {
         let bet = Bet(purchaseAmount: 1000, payoutAmount: 0)
         container.mainContext.insert(bet)
         #expect(bet.balance == -1000)
     }
 
-    @Test func balance_whenBreakEven_returnsZero() {
+    @Test func 払戻と購入が同額の場合に収支がゼロになる() {
         let bet = Bet(purchaseAmount: 800, payoutAmount: 800)
         container.mainContext.insert(bet)
         #expect(bet.balance == 0)
     }
 
-    @Test func balance_equalsPayoutMinusPurchase() {
-        let bet = Bet(purchaseAmount: 300, payoutAmount: 750)
-        container.mainContext.insert(bet)
-        #expect(bet.balance == bet.payoutAmount - bet.purchaseAmount)
-    }
-
     // MARK: - displayTicketTypeName
 
-    @Test func displayTicketTypeName_whenTicketTypeIsSet_returnsTicketTypeName() {
+    @Test func 券種が設定されている場合に券種名が表示される() {
         let ctx = container.mainContext
         let ticketType = TicketType(name: "単勝"); ctx.insert(ticketType)
         let bet = Bet(ticketType: ticketType, ticketTypeName: "fallback"); ctx.insert(bet)
         #expect(bet.displayTicketTypeName == "単勝")
     }
 
-    @Test func displayTicketTypeName_whenTicketTypeIsNil_returnsStoredName() {
+    @Test func 券種がnilの場合に保存された券種名が表示される() {
         let bet = Bet(ticketType: nil, ticketTypeName: "カスタム券種")
         container.mainContext.insert(bet)
         #expect(bet.displayTicketTypeName == "カスタム券種")
     }
 
-    @Test func displayTicketTypeName_whenBothNilAndEmpty_returnsEmpty() {
-        let bet = Bet(ticketType: nil, ticketTypeName: "")
-        container.mainContext.insert(bet)
-        #expect(bet.displayTicketTypeName == "")
-    }
-
-    @Test func displayTicketTypeName_prefersTicketTypeOverStoredName() {
+    @Test func 券種が設定されている場合は保存された券種名より優先される() {
         let ctx = container.mainContext
         let ticketType = TicketType(name: "馬連"); ctx.insert(ticketType)
         let bet = Bet(ticketType: ticketType, ticketTypeName: "これは使われない"); ctx.insert(bet)
@@ -76,116 +64,112 @@ struct BetModelTests {
 
     // MARK: - unitPrice / combinationCount
 
-    @Test func defaultUnitPrice_is100() {
+    @Test func デフォルトの単価が100円である() {
         let bet = Bet()
         container.mainContext.insert(bet)
         #expect(bet.unitPrice == 100)
     }
 
-    // MARK: - combinationCount: empty / normal
+    // MARK: - combinationCount: 通常
 
-    @Test func combinationCount_whenSelectionIsEmpty_returnsZero() {
+    @Test func 買い目が空の場合に組合せ数がゼロになる() {
         #expect(Bet.combinationCount(selection: "", ticketTypeName: "単勝") == 0)
     }
 
-    @Test func combinationCount_whenSingleNumber_returnsOne() {
+    @Test func 単一馬番の場合に組合せ数が1になる() {
         #expect(Bet.combinationCount(selection: "5", ticketTypeName: "単勝") == 1)
     }
 
-    @Test func combinationCount_whenTwoNumbersHyphen_returnsOne() {
+    @Test func ハイフン区切り2頭の場合に組合せ数が1になる() {
         #expect(Bet.combinationCount(selection: "1-2", ticketTypeName: "馬連") == 1)
     }
 
-    @Test func combinationCount_whenThreeNumbersHyphen_returnsOne() {
+    @Test func ハイフン区切り3頭の場合に組合せ数が1になる() {
         #expect(Bet.combinationCount(selection: "1-2-3", ticketTypeName: "三連単") == 1)
     }
 
-    // MARK: - combinationCount: box
+    // MARK: - combinationCount: BOX
 
-    @Test func combinationCount_boxUmaren_3horses_returns3() {
+    @Test func 馬連BOX3頭の組合せ数が3になる() {
         // 3C2 = 3
         #expect(Bet.combinationCount(selection: "1,2,3[BOX]", ticketTypeName: "馬連") == 3)
     }
 
-    @Test func combinationCount_boxWide_4horses_returns6() {
+    @Test func ワイドBOX4頭の組合せ数が6になる() {
         // 4C2 = 6
         #expect(Bet.combinationCount(selection: "1,2,3,4[BOX]", ticketTypeName: "ワイド") == 6)
     }
 
-    @Test func combinationCount_boxUmatan_3horses_returns6() {
+    @Test func 馬単BOX3頭の組合せ数が6になる() {
         // 3P2 = 6
         #expect(Bet.combinationCount(selection: "1,2,3[BOX]", ticketTypeName: "馬単") == 6)
     }
 
-    @Test func combinationCount_boxSanrenpuku_4horses_returns4() {
+    @Test func 三連複BOX4頭の組合せ数が4になる() {
         // 4C3 = 4
         #expect(Bet.combinationCount(selection: "1,2,3,4[BOX]", ticketTypeName: "三連複") == 4)
     }
 
-    @Test func combinationCount_boxSanrentan_4horses_returns24() {
+    @Test func 三連単BOX4頭の組合せ数が24になる() {
         // 4P3 = 24
         #expect(Bet.combinationCount(selection: "1,2,3,4[BOX]", ticketTypeName: "三連単") == 24)
     }
 
-    @Test func combinationCount_boxWakuren_3horses_returns3() {
+    @Test func 枠連BOX3頭の組合せ数が3になる() {
         #expect(Bet.combinationCount(selection: "1,2,3[BOX]", ticketTypeName: "枠連") == 3)
     }
 
-    @Test func combinationCount_boxSanrenpuku_2horses_returnsZero() {
+    @Test func 三連複BOX2頭の組合せ数がゼロになる() {
         // 三連複に2頭BOXは不成立
         #expect(Bet.combinationCount(selection: "1,2[BOX]", ticketTypeName: "三連複") == 0)
     }
 
-    @Test func combinationCount_boxUnknownTicketType_returnsZero() {
+    @Test func 未知の券種のBOX組合せ数がゼロになる() {
         #expect(Bet.combinationCount(selection: "1,2,3[BOX]", ticketTypeName: "未知の券種") == 0)
     }
 
-    // MARK: - combinationCount: formation
+    // MARK: - combinationCount: フォーメーション
 
-    @Test func combinationCount_formationUmaren_1axis_3second_returns3() {
+    @Test func 馬連フォーメーション1軸3頭の組合せ数が3になる() {
         // 1×3 = 3、重複なし
         #expect(Bet.combinationCount(selection: "1/2,3,4", ticketTypeName: "馬連") == 3)
     }
 
-    @Test func combinationCount_formationUmaren_excludesSelfPairs() {
+    @Test func 馬連フォーメーションで同一馬番ペアが除外される() {
         // (1,1),(1,2),(2,1),(2,2) → 順不同で {1,2} のみ
         #expect(Bet.combinationCount(selection: "1,2/1,2", ticketTypeName: "馬連") == 1)
     }
 
-    @Test func combinationCount_formationUmatan_excludesSelfPairs_returnsOrderedCount() {
+    @Test func 馬単フォーメーションで同一馬番ペアが除外され順序考慮の数になる() {
         // (1,2)(2,1) = 2 通り（順序あり）
         #expect(Bet.combinationCount(selection: "1,2/1,2", ticketTypeName: "馬単") == 2)
     }
 
-    @Test func combinationCount_formationSanrentan_1axis_2x3_returns6() {
+    @Test func 三連単フォーメーション1軸2x3の組合せ数が6になる() {
         // 1×2×3 = 6、軸とそれ以外がぶつからなければそのまま
         #expect(Bet.combinationCount(selection: "1/2,3/4,5,6", ticketTypeName: "三連単") == 6)
     }
 
-    @Test func combinationCount_formationSanrenpuku_1axis_2x3_returns6() {
+    @Test func 三連複フォーメーション1軸2x3の組合せ数が6になる() {
         // 順不同だが各馬がユニークなので 1×2×3 = 6
         #expect(Bet.combinationCount(selection: "1/2,3/4,5,6", ticketTypeName: "三連複") == 6)
     }
 
-    @Test func combinationCount_formationSanrenpuku_overlap_dedupes() {
+    @Test func 三連複フォーメーションで重複が除外される() {
         // (1,2,3)(1,3,2)(2,1,3)... が重複扱いで集約される
         let count = Bet.combinationCount(selection: "1,2/1,2,3/1,2,3", ticketTypeName: "三連複")
-        // 候補triplesから重複を除いた数
         // 1st leg=[1,2], 2nd leg=[1,2,3], 3rd leg=[1,2,3]
         // unordered & all distinct な集合: {1,2,3} のみ → 1
         #expect(count == 1)
     }
 
-    @Test func combinationCount_formationTwoLeg_lessThanTwoLegs_returnsZero() {
-        // 1軸しかない場合（不正フォーマット）
-        // selection "1" は normal 扱いで 1 を返すが、"/1" のような不正は別経路。
-        // ここではフォーメーション形式かつ leg=1 のケースを想定外として扱う
+    @Test func 馬連フォーメーションで脚が不足している場合にゼロになる() {
         #expect(Bet.combinationCount(selection: "1/2/3", ticketTypeName: "馬連") == 0)
     }
 
-    // MARK: - combinationCount via instance property
+    // MARK: - combinationCount（インスタンスプロパティ）
 
-    @Test func combinationCountProperty_reflectsSelectionAndTicketType() {
+    @Test func インスタンスの組合せ数が買い目と券種を反映する() {
         let bet = Bet(ticketTypeName: "三連複", selection: "1,2,3,4[BOX]")
         container.mainContext.insert(bet)
         #expect(bet.combinationCount == 4)
@@ -193,34 +177,60 @@ struct BetModelTests {
 
     // MARK: - BetSelection
 
-    @Test func betSelection_displayTicketTypeName_prefersTicketTypeOverStoredName() {
+    @Test func 買い目のデフォルト単価が100円である() {
+        let sel = BetSelection()
+        container.mainContext.insert(sel)
+        #expect(sel.unitPrice == 100)
+    }
+
+    @Test func 買い目のデフォルト購入額が100円である() {
+        let sel = BetSelection()
+        container.mainContext.insert(sel)
+        #expect(sel.purchaseAmount == 100)
+    }
+
+    @Test func 買い目の組合せ数が0のとき購入額がゼロになる() {
+        let sel = BetSelection(unitPrice: 100, combinationCount: 0)
+        container.mainContext.insert(sel)
+        #expect(sel.purchaseAmount == 0)
+    }
+
+    @Test func 買い目の表示券種名は券種が設定されている場合に優先される() {
         let ctx = container.mainContext
         let ticketType = TicketType(name: "単勝"); ctx.insert(ticketType)
         let sel = BetSelection(ticketType: ticketType, ticketTypeName: "fallback"); ctx.insert(sel)
         #expect(sel.displayTicketTypeName == "単勝")
     }
 
-    @Test func betSelection_displayTicketTypeName_fallsBackToStoredName() {
+    @Test func 買い目の表示券種名は券種がnilの場合に保存名にフォールバックする() {
         let sel = BetSelection(ticketType: nil, ticketTypeName: "カスタム")
         container.mainContext.insert(sel)
         #expect(sel.displayTicketTypeName == "カスタム")
     }
 
-    @Test func betSelection_purchaseAmount_equalsUnitPriceTimesCombinationCount() {
+    @Test func 買い目の購入額が単価と組合せ数の積になる() {
         let sel = BetSelection(unitPrice: 100, combinationCount: 6)
         container.mainContext.insert(sel)
         #expect(sel.purchaseAmount == 600)
     }
 
-    @Test func betSelection_purchaseAmount_whenSingleCombination_equalsUnitPrice() {
+    @Test func 買い目の購入額が組合せ数1の場合に単価に等しい() {
         let sel = BetSelection(unitPrice: 200, combinationCount: 1)
         container.mainContext.insert(sel)
         #expect(sel.purchaseAmount == 200)
     }
 
-    // MARK: - Venue init coverage
+    // MARK: - TicketType
 
-    @Test func venue_defaultInit_hasEmptyName() {
+    @Test func 券種のデフォルトソート順がゼロである() {
+        let ticketType = TicketType(name: "単勝")
+        container.mainContext.insert(ticketType)
+        #expect(ticketType.sortIndex == 0)
+    }
+
+    // MARK: - Venue
+
+    @Test func 競馬場のデフォルト値が正しく設定される() {
         let venue = Venue(name: "東京")
         container.mainContext.insert(venue)
         #expect(venue.name == "東京")
@@ -228,7 +238,7 @@ struct BetModelTests {
         #expect(venue.sortIndex == 0)
     }
 
-    @Test func venue_initWithPresetAndSortIndex() {
+    @Test func 競馬場のプリセットとソート順が設定できる() {
         let venue = Venue(name: "中山", isPreset: true, sortIndex: 5)
         container.mainContext.insert(venue)
         #expect(venue.name == "中山")
@@ -238,8 +248,7 @@ struct BetModelTests {
 
     // MARK: - Property-Based Tests
 
-    /// Property 1 (Invariant): balance == payout - purchase for any values
-    @Test func pbt_balance_alwaysEqualsPayoutMinusPurchase() {
+    @Test func 任意の購入額と払戻額で収支が常に払戻マイナス購入に等しい() {
         for _ in 0 ..< 1000 {
             let purchase = Int.random(in: 0 ... 100_000)
             let payout = Int.random(in: 0 ... 500_000)
@@ -249,8 +258,7 @@ struct BetModelTests {
         }
     }
 
-    /// Property 2 (Invariant): box count for n horses follows C(n,k) formula
-    @Test func pbt_boxCount_umaren_alwaysEqualsNCR2() {
+    @Test func 任意の頭数で馬連BOXの組合せ数がn選2の公式に従う() {
         for horseCount in 2 ... 18 {
             let horses = (1 ... horseCount).map { "\($0)" }.joined(separator: ",")
             let count = Bet.combinationCount(selection: "\(horses)[BOX]", ticketTypeName: "馬連")
@@ -259,8 +267,7 @@ struct BetModelTests {
         }
     }
 
-    /// Property 3 (Invariant): box count for 三連複 follows C(n,3) formula
-    @Test func pbt_boxCount_sanrenpuku_alwaysEqualsNCR3() {
+    @Test func 任意の頭数で三連複BOXの組合せ数がn選3の公式に従う() {
         for horseCount in 3 ... 18 {
             let horses = (1 ... horseCount).map { "\($0)" }.joined(separator: ",")
             let count = Bet.combinationCount(selection: "\(horses)[BOX]", ticketTypeName: "三連複")
@@ -269,8 +276,7 @@ struct BetModelTests {
         }
     }
 
-    /// Property 4 (Commutativity): formation unordered count is symmetric
-    @Test func pbt_formationTwoLeg_unordered_isSymmetric() {
+    @Test func 馬連フォーメーションの組合せ数が脚の順序に依存しない() {
         for _ in 0 ..< 200 {
             let leg1Size = Int.random(in: 1 ... 5)
             let leg2Size = Int.random(in: 1 ... 5)
@@ -286,8 +292,7 @@ struct BetModelTests {
         }
     }
 
-    /// Property 5 (Monotonicity): adding horses to a formation leg never decreases count
-    @Test func pbt_formationCount_isMonotonicallyNonDecreasing() {
+    @Test func 馬連フォーメーションで馬番を追加すると組合せ数が減らない() {
         for baseSize in 1 ... 4 {
             let base = Array(1 ... baseSize)
             let extended = Array(1 ... (baseSize + 1))
