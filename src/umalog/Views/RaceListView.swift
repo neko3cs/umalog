@@ -76,7 +76,7 @@ struct RaceListView: View {
         undoManager?.setActionName("レースを削除")
 
         (race.entries ?? []).forEach { modelContext.delete($0) }
-        (race.bets ?? []).forEach { bet in
+        for bet in race.bets ?? [] {
             (bet.selections ?? []).forEach { modelContext.delete($0) }
             modelContext.delete(bet)
         }
@@ -135,7 +135,7 @@ private struct RaceSnapshot {
             sortIndex: sortIndex
         )
         context.insert(race)
-        entries.forEach { snap in
+        for snap in entries {
             context.insert(RaceEntry(
                 race: race, horseNumber: snap.horseNumber, horseName: snap.horseName,
                 jockeyName: snap.jockeyName, trainerName: snap.trainerName,
@@ -143,7 +143,7 @@ private struct RaceSnapshot {
                 sortIndex: snap.sortIndex
             ))
         }
-        bets.forEach { betSnap in
+        for betSnap in bets {
             let ticketType = betSnap.ticketTypeId.flatMap { id in
                 allTicketTypes.first(where: { $0.persistentModelID == id })
             }
@@ -154,7 +154,7 @@ private struct RaceSnapshot {
                 payoutAmount: betSnap.payoutAmount, sortIndex: betSnap.sortIndex
             )
             context.insert(bet)
-            betSnap.selections.forEach { selSnap in
+            for selSnap in betSnap.selections {
                 let selTicketType = selSnap.ticketTypeId.flatMap { id in
                     allTicketTypes.first(where: { $0.persistentModelID == id })
                 }

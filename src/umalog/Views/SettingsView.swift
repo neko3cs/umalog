@@ -5,6 +5,7 @@
 //  Created by neko3cs on 2026/06/11.
 //
 
+// swiftlint:disable line_length
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
@@ -69,19 +70,6 @@ struct SettingsView: View {
                     .disabled(isExporting || isImporting)
                 }
 
-                Section {
-                    HStack {
-                        Text("iCloud同期")
-                        Spacer()
-                        Text("準備中")
-                            .foregroundStyle(.secondary)
-                    }
-                } header: {
-                    Text("iCloud同期")
-                } footer: {
-                    Text("Apple Developer Account契約後に実装予定です")
-                }
-
                 Section("このアプリについて") {
                     LabeledContent(
                         "バージョン",
@@ -90,6 +78,10 @@ struct SettingsView: View {
                     Link(destination: URL(string: "https://github.com/neko3cs/umalog")!) {
                         Label("ソースコード（GitHub）", systemImage: "chevron.left.forwardslash.chevron.right")
                     }
+                    NavigationLink(destination: LicensesView()) {
+                        Label("ライセンス", systemImage: "doc.text")
+                    }
+                    .accessibilityIdentifier("licenses-link")
                 }
             }
             .navigationTitle("設定")
@@ -165,6 +157,118 @@ struct SettingsView: View {
                 showingImportError = true
             }
         }
+    }
+}
+
+// MARK: - Licenses
+
+struct LicensesView: View {
+    struct Package: Identifiable {
+        let id = UUID()
+        let name: String
+        let version: String
+        let licenseType: String
+        let licenseText: String
+    }
+
+    let packages: [Package] = [
+        Package(
+            name: "swift-markdown-ui",
+            version: "2.4.1",
+            licenseType: "MIT",
+            licenseText: """
+            The MIT License (MIT)
+
+            Copyright (c) 2020 Guillermo Gonzalez
+
+            Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+            The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+            """
+        ),
+        Package(
+            name: "ZIPFoundation",
+            version: "0.9.20",
+            licenseType: "MIT",
+            licenseText: """
+            MIT License
+
+            Copyright (c) 2017-2026 Thomas Zoechling (https://www.peakstep.com)
+
+            Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+            The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+            """
+        ),
+        Package(
+            name: "NetworkImage",
+            version: "6.0.1",
+            licenseType: "MIT",
+            licenseText: """
+            MIT License
+
+            Copyright (c) 2020 Guille Gonzalez
+
+            Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+            The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+            """
+        ),
+        Package(
+            name: "swift-cmark",
+            version: "0.8.0",
+            licenseType: "BSD-2-Clause",
+            licenseText: """
+            Copyright (c) 2014, John MacFarlane
+
+            All rights reserved.
+
+            Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+                * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+                * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+            THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+            """
+        ),
+    ]
+
+    var body: some View {
+        List(packages) { package in
+            NavigationLink(destination: LicenseDetailView(package: package)) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(package.name)
+                    Text("\(package.version)  \(package.licenseType)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 2)
+            }
+        }
+        .navigationTitle("ライセンス")
+    }
+}
+
+struct LicenseDetailView: View {
+    let package: LicensesView.Package
+
+    var body: some View {
+        ScrollView {
+            Text(package.licenseText)
+                .font(.caption)
+                .monospaced()
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .navigationTitle(package.name)
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

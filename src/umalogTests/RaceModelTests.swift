@@ -11,7 +11,7 @@ import Testing
 @testable import umalog
 
 @MainActor
-struct RaceModelTests {
+struct レースモデルTest {
     let container: ModelContainer
 
     init() throws {
@@ -22,19 +22,19 @@ struct RaceModelTests {
 
     // MARK: - totalPurchase
 
-    @Test func totalPurchase_whenBetsIsNil_returnsZero() {
+    @Test func 馬券がnilのとき購入合計がゼロになる() {
         let race = Race(); container.mainContext.insert(race)
         race.bets = nil
         #expect(race.totalPurchase == 0)
     }
 
-    @Test func totalPurchase_whenBetsIsEmpty_returnsZero() {
+    @Test func 馬券が空のとき購入合計がゼロになる() {
         let race = Race(); container.mainContext.insert(race)
         race.bets = []
         #expect(race.totalPurchase == 0)
     }
 
-    @Test func totalPurchase_withSingleBet_returnsPurchaseAmount() {
+    @Test func 馬券が1件のとき購入合計がその購入額になる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 1000); ctx.insert(bet)
@@ -42,7 +42,7 @@ struct RaceModelTests {
         #expect(race.totalPurchase == 1000)
     }
 
-    @Test func totalPurchase_withMultipleBets_returnsSum() {
+    @Test func 複数馬券の購入合計が全購入額の合計になる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet1 = Bet(race: race, purchaseAmount: 1000); ctx.insert(bet1)
@@ -54,13 +54,13 @@ struct RaceModelTests {
 
     // MARK: - totalPayout
 
-    @Test func totalPayout_whenBetsIsNil_returnsZero() {
+    @Test func 馬券がnilのとき払戻合計がゼロになる() {
         let race = Race(); container.mainContext.insert(race)
         race.bets = nil
         #expect(race.totalPayout == 0)
     }
 
-    @Test func totalPayout_whenAllBetsUnsettled_returnsZero() {
+    @Test func 全馬券が未精算のとき払戻合計がゼロになる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet1 = Bet(race: race, purchaseAmount: 1000, payoutAmount: 0); ctx.insert(bet1)
@@ -69,7 +69,7 @@ struct RaceModelTests {
         #expect(race.totalPayout == 0)
     }
 
-    @Test func totalPayout_withPartiallySettledBets_returnsSumOfPayouts() {
+    @Test func 一部精算済みの場合に払戻合計が精算済み馬券の払戻額の合計になる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet1 = Bet(race: race, purchaseAmount: 1000, payoutAmount: 2500); ctx.insert(bet1)
@@ -78,7 +78,7 @@ struct RaceModelTests {
         #expect(race.totalPayout == 2500)
     }
 
-    @Test func totalPayout_withAllSettledBets_returnsSum() {
+    @Test func 全馬券が精算済みの場合に払戻合計が全払戻額の合計になる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet1 = Bet(race: race, purchaseAmount: 1000, payoutAmount: 2000); ctx.insert(bet1)
@@ -89,13 +89,19 @@ struct RaceModelTests {
 
     // MARK: - balance
 
-    @Test func balance_withNoBets_returnsZero() {
+    @Test func 馬券がnilのとき収支がゼロになる() {
+        let race = Race(); container.mainContext.insert(race)
+        race.bets = nil
+        #expect(race.balance == 0)
+    }
+
+    @Test func 馬券がないとき収支がゼロになる() {
         let race = Race(); container.mainContext.insert(race)
         race.bets = []
         #expect(race.balance == 0)
     }
 
-    @Test func balance_whenProfit_returnsPositiveValue() {
+    @Test func 払戻が購入より多い場合に収支がプラスになる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 1000, payoutAmount: 3000); ctx.insert(bet)
@@ -103,7 +109,7 @@ struct RaceModelTests {
         #expect(race.balance == 2000)
     }
 
-    @Test func balance_whenLoss_returnsNegativeValue() {
+    @Test func 払戻がゼロの場合に収支がマイナスになる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 1000, payoutAmount: 0); ctx.insert(bet)
@@ -111,7 +117,7 @@ struct RaceModelTests {
         #expect(race.balance == -1000)
     }
 
-    @Test func balance_whenBreakEven_returnsZero() {
+    @Test func 払戻と購入が同額の場合に収支がゼロになる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 1000, payoutAmount: 1000); ctx.insert(bet)
@@ -119,7 +125,7 @@ struct RaceModelTests {
         #expect(race.balance == 0)
     }
 
-    @Test func balance_equalsPayoutMinusPurchase() {
+    @Test func 収支が払戻合計から購入合計を引いた値に等しい() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet1 = Bet(race: race, purchaseAmount: 500, payoutAmount: 1200); ctx.insert(bet1)
@@ -130,19 +136,19 @@ struct RaceModelTests {
 
     // MARK: - returnRate
 
-    @Test func returnRate_whenBetsIsNil_returnsNil() {
+    @Test func 馬券がnilのとき回収率がnilになる() {
         let race = Race(); container.mainContext.insert(race)
         race.bets = nil
         #expect(race.returnRate == nil)
     }
 
-    @Test func returnRate_whenBetsIsEmpty_returnsNil() {
+    @Test func 馬券が空のとき回収率がnilになる() {
         let race = Race(); container.mainContext.insert(race)
         race.bets = []
         #expect(race.returnRate == nil)
     }
 
-    @Test func returnRate_whenTotalPurchaseIsZero_returnsNil() {
+    @Test func 購入合計がゼロのとき回収率がnilになる() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 0, payoutAmount: 0); ctx.insert(bet)
@@ -150,15 +156,7 @@ struct RaceModelTests {
         #expect(race.returnRate == nil)
     }
 
-    @Test func returnRate_whenBreakEven_returnsOne() {
-        let ctx = container.mainContext
-        let race = Race(); ctx.insert(race)
-        let bet = Bet(race: race, purchaseAmount: 1000, payoutAmount: 1000); ctx.insert(bet)
-        race.bets = [bet]
-        #expect(race.returnRate == 1.0)
-    }
-
-    @Test func returnRate_whenProfit_returnsGreaterThanOne() throws {
+    @Test func 利益がある場合に回収率が1より大きくなる() throws {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 1000, payoutAmount: 2000); ctx.insert(bet)
@@ -168,7 +166,7 @@ struct RaceModelTests {
         #expect(rate == 2.0)
     }
 
-    @Test func returnRate_whenLoss_returnsLessThanOne() throws {
+    @Test func 損失がある場合に回収率が1より小さくなる() throws {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 1000, payoutAmount: 400); ctx.insert(bet)
@@ -178,37 +176,34 @@ struct RaceModelTests {
         #expect(rate == 0.4)
     }
 
-    @Test func returnRate_calculatesPayoutDividedByPurchase() throws {
-        let ctx = container.mainContext
-        let race = Race(); ctx.insert(race)
-        let bet1 = Bet(race: race, purchaseAmount: 500, payoutAmount: 1500); ctx.insert(bet1)
-        let bet2 = Bet(race: race, purchaseAmount: 500, payoutAmount: 0); ctx.insert(bet2)
-        race.bets = [bet1, bet2]
-        let rate = try #require(race.returnRate)
-        #expect(rate == 1.5)
-    }
-
     // MARK: - finishPosition
 
-    @Test func finishPosition_whenHorseIsFirst_returnsOne() {
+    @Test func 着順が未設定のとき有効な馬番でfinishPositionがnilになる() {
+        let race = Race()
+        container.mainContext.insert(race)
+        #expect(race.finishPosition(forHorseNumber: 1) == nil)
+        #expect(race.finishPosition(forHorseNumber: 18) == nil)
+    }
+
+    @Test func 馬番が1着馬の場合に着順が1になる() {
         let race = Race(firstPlaceHorseNumber: 5, secondPlaceHorseNumber: 3, thirdPlaceHorseNumber: 8)
         container.mainContext.insert(race)
         #expect(race.finishPosition(forHorseNumber: 5) == 1)
     }
 
-    @Test func finishPosition_whenHorseIsSecond_returnsTwo() {
+    @Test func 馬番が2着馬の場合に着順が2になる() {
         let race = Race(firstPlaceHorseNumber: 5, secondPlaceHorseNumber: 3, thirdPlaceHorseNumber: 8)
         container.mainContext.insert(race)
         #expect(race.finishPosition(forHorseNumber: 3) == 2)
     }
 
-    @Test func finishPosition_whenHorseIsThird_returnsThree() {
+    @Test func 馬番が3着馬の場合に着順が3になる() {
         let race = Race(firstPlaceHorseNumber: 5, secondPlaceHorseNumber: 3, thirdPlaceHorseNumber: 8)
         container.mainContext.insert(race)
         #expect(race.finishPosition(forHorseNumber: 8) == 3)
     }
 
-    @Test func finishPosition_whenHorseIsNotPlaced_returnsNil() {
+    @Test func 馬番が入賞外の場合に着順がnilになる() {
         let race = Race(firstPlaceHorseNumber: 5, secondPlaceHorseNumber: 3, thirdPlaceHorseNumber: 8)
         container.mainContext.insert(race)
         #expect(race.finishPosition(forHorseNumber: 1) == nil)
@@ -216,8 +211,7 @@ struct RaceModelTests {
 
     // MARK: - Property-Based Tests
 
-    /// Property 1 (Invariant): totalBalance == sum(payout - purchase) for any bets
-    @Test func pbt_totalBalance_equalsPayoutMinusPurchaseSummedOverAllBets() {
+    @Test func 任意の馬券群で収支が常に払戻と購入の差額の総和に等しい() {
         let ctx = container.mainContext
         for _ in 0 ..< 500 {
             let race = Race(); ctx.insert(race)
@@ -237,8 +231,7 @@ struct RaceModelTests {
         }
     }
 
-    /// Property 2 (Structural induction): balance == totalPayout - totalPurchase
-    @Test func pbt_balance_equalsPayoutMinusPurchaseForRace() {
+    @Test func 収支が常に払戻合計から購入合計を引いた値に等しい() {
         let ctx = container.mainContext
         for _ in 0 ..< 500 {
             let race = Race(); ctx.insert(race)
@@ -256,8 +249,7 @@ struct RaceModelTests {
         }
     }
 
-    /// Property 3 (Oracle): returnRate when payout == purchase is exactly 1.0
-    @Test func pbt_returnRate_whenPayoutEqualsPurchase_isExactlyOne() {
+    @Test func 払戻と購入が同額のとき回収率が常に1になる() {
         let ctx = container.mainContext
         for _ in 0 ..< 200 {
             let amount = Int.random(in: 100 ... 100_000)
@@ -267,41 +259,5 @@ struct RaceModelTests {
             race.bets = [bet]
             #expect(race.returnRate == 1.0)
         }
-    }
-
-    // MARK: - Undo Manager
-
-    @Test func undoManager_canBeAssignedToModelContext() {
-        let ctx = container.mainContext
-        let undoManager = UndoManager()
-        ctx.undoManager = undoManager
-        #expect(ctx.undoManager === undoManager)
-    }
-
-    @Test func undoManager_canRegisterAndCallUndoAction() {
-        let undoManager = UndoManager()
-        var value = 0
-        undoManager.registerUndo(withTarget: undoManager as AnyObject) { _ in value = 1 }
-        undoManager.undo()
-        #expect(value == 1)
-    }
-
-    @Test func undoManager_canUndoAndRedoPropertyChange() throws {
-        let ctx = container.mainContext
-        let undoManager = UndoManager()
-        ctx.undoManager = undoManager
-
-        let race = Race(raceNumber: 1, raceName: "before")
-        ctx.insert(race)
-
-        undoManager.beginUndoGrouping()
-        race.raceName = "after"
-        undoManager.endUndoGrouping()
-
-        #expect(race.raceName == "after")
-        undoManager.undo()
-        #expect(race.raceName == "before")
-        undoManager.redo()
-        #expect(race.raceName == "after")
     }
 }

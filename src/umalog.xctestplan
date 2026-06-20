@@ -9,7 +9,8 @@
     }
   ],
   "defaultOptions" : {
-    "codeCoverageEnabled" : true
+    "codeCoverageEnabled" : true,
+    "parallelizationEnabled" : false
   },
   "testTargets" : [
     {
