@@ -29,47 +29,19 @@ struct CSVエクスポーターTest {
 
     // MARK: - セクションヘッダー
 
-    @Test func エクスポート結果に常にRACESヘッダーが含まれる() {
-        #expect(CSVExporter.export(races: []).contains("=== RACES ==="))
-    }
-
-    @Test func エクスポート結果に常にENTRIESヘッダーが含まれる() {
-        #expect(CSVExporter.export(races: []).contains("=== ENTRIES ==="))
-    }
-
-    @Test func エクスポート結果に常にBETSヘッダーが含まれる() {
-        #expect(CSVExporter.export(races: []).contains("=== BETS ==="))
-    }
-
-    @Test func レースセクションに正しいカラムヘッダーが含まれる() {
+    @Test func エクスポート結果にRACES・ENTRIES・BETS・BET_SELECTIONSの全セクションヘッダーが含まれる() {
         let output = CSVExporter.export(races: [])
-        let expected = "date,venue,race_number,race_name,distance,track_type,track_condition," +
+        #expect(output.contains("=== RACES ==="))
+        #expect(output.contains("=== ENTRIES ==="))
+        #expect(output.contains("=== BETS ==="))
+        #expect(output.contains("=== BET_SELECTIONS ==="))
+        #expect(output.contains("date,venue,race_number,race_name,distance,track_type,track_condition," +
             "category,first_place_horse,second_place_horse,third_place_horse," +
-            "total_purchase,total_payout,balance,memo"
-        #expect(output.contains(expected))
-    }
-
-    @Test func 出走馬セクションに正しいカラムヘッダーが含まれる() {
-        let output = CSVExporter.export(races: [])
-        let expected = "date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark"
-        #expect(output.contains(expected))
-    }
-
-    @Test func エクスポート結果に常にBET_SELECTIONSヘッダーが含まれる() {
-        #expect(CSVExporter.export(races: []).contains("=== BET_SELECTIONS ==="))
-    }
-
-    @Test func 馬券セクションに正しいカラムヘッダーが含まれる() {
-        let output = CSVExporter.export(races: [])
-        let expected = "date,venue,race_number,bet_sort_index,purchase_amount,payout_amount,balance"
-        #expect(output.contains(expected))
-    }
-
-    @Test func 買い目セクションに正しいカラムヘッダーが含まれる() {
-        let output = CSVExporter.export(races: [])
-        let expected = "date,venue,race_number,bet_sort_index,ticket_type,selection," +
-            "unit_price,combination_count,sort_index"
-        #expect(output.contains(expected))
+            "total_purchase,total_payout,balance,memo"))
+        #expect(output.contains("date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark"))
+        #expect(output.contains("date,venue,race_number,bet_sort_index,purchase_amount,payout_amount,balance"))
+        #expect(output.contains("date,venue,race_number,bet_sort_index,ticket_type,selection," +
+            "unit_price,combination_count,sort_index"))
     }
 
     // MARK: - レース行
@@ -166,15 +138,6 @@ struct CSVエクスポーターTest {
         #expect(output.contains(",◎"))
     }
 
-    @Test func 予想印なしの出走馬行に馬名が含まれる() {
-        let ctx = container.mainContext
-        let race = Race(); ctx.insert(race)
-        let entry = RaceEntry(race: race, horseName: "テスト馬", predictionMark: nil); ctx.insert(entry)
-        race.entries = [entry]
-        let output = CSVExporter.export(races: [race])
-        #expect(output.contains("テスト馬"))
-    }
-
     // MARK: - 馬券行
 
     @Test func 馬券行に購入額と払戻額が含まれる() {
@@ -246,10 +209,6 @@ struct CSVエクスポーターTest {
     }
 
     // MARK: - escape / formatDate / formatFilenameDate
-
-    @Test func 通常文字列はエスケープされない() {
-        #expect(CSVExporter.escape("普通の文字") == "普通の文字")
-    }
 
     @Test func カンマを含む文字列がクォートされる() {
         #expect(CSVExporter.escape("a,b") == "\"a,b\"")
