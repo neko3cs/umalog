@@ -6,7 +6,7 @@ A personal iOS app for recording horse racing predictions and balance tracking.
 
 ## Key References
 
-- **`Design.md`** — Original design document covering app concept, feature requirements, data model intent, and App Store policy. Written before implementation began and not kept up to date, so treat it as background context rather than a description of current behavior. When it conflicts with the code, trust the code.
+- **`docs/Design.md`** — Original design document covering app concept, feature requirements, data model intent, and App Store policy. Written before implementation began and not kept up to date, so treat it as background context rather than a description of current behavior. When it conflicts with the code, trust the code.
 
 ---
 
