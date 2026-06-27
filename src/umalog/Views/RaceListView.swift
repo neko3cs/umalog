@@ -61,7 +61,7 @@ struct RaceListView: View {
                     ContentUnavailableView(
                         "レースがありません",
                         systemImage: "list.bullet.clipboard",
-                        description: Text("右上の + ボタンからレースを追加してください")
+                        description: Text("右上の + ボタンからレースを追加してください"),
                     )
                 }
             }
@@ -132,7 +132,7 @@ private struct RaceSnapshot {
             firstPlaceHorseNumber: firstPlaceHorseNumber,
             secondPlaceHorseNumber: secondPlaceHorseNumber,
             thirdPlaceHorseNumber: thirdPlaceHorseNumber,
-            sortIndex: sortIndex
+            sortIndex: sortIndex,
         )
         context.insert(race)
         for snap in entries {
@@ -140,7 +140,7 @@ private struct RaceSnapshot {
                 race: race, horseNumber: snap.horseNumber, horseName: snap.horseName,
                 jockeyName: snap.jockeyName, trainerName: snap.trainerName,
                 predictionMark: snap.predictionMark, finishPosition: snap.finishPosition,
-                sortIndex: snap.sortIndex
+                sortIndex: snap.sortIndex,
             ))
         }
         for betSnap in bets {
@@ -151,7 +151,7 @@ private struct RaceSnapshot {
                 race: race, ticketType: ticketType,
                 ticketTypeName: betSnap.ticketTypeName, selection: betSnap.selection,
                 unitPrice: betSnap.unitPrice, purchaseAmount: betSnap.purchaseAmount,
-                payoutAmount: betSnap.payoutAmount, sortIndex: betSnap.sortIndex
+                payoutAmount: betSnap.payoutAmount, sortIndex: betSnap.sortIndex,
             )
             context.insert(bet)
             for selSnap in betSnap.selections {
@@ -162,7 +162,7 @@ private struct RaceSnapshot {
                     bet: bet, ticketType: selTicketType,
                     ticketTypeName: selSnap.ticketTypeName, selection: selSnap.selection,
                     unitPrice: selSnap.unitPrice, combinationCount: selSnap.combinationCount,
-                    sortIndex: selSnap.sortIndex
+                    sortIndex: selSnap.sortIndex,
                 ))
             }
         }

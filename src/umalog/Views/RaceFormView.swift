@@ -103,7 +103,7 @@ struct RaceFormView: View {
                     Button("完了") {
                         UIApplication.shared.sendAction(
                             #selector(UIResponder.resignFirstResponder),
-                            to: nil, from: nil, for: nil
+                            to: nil, from: nil, for: nil,
                         )
                     }
                 }
@@ -138,7 +138,7 @@ struct RaceFormView: View {
             let newRace = Race(
                 date: date, venue: selectedVenue, raceNumber: raceNumber,
                 raceName: raceName, distance: distance, trackType: trackType,
-                trackCondition: trackCondition, category: category
+                trackCondition: trackCondition, category: category,
             )
             modelContext.insert(newRace)
         }

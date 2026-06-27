@@ -64,7 +64,7 @@ struct 馬券モデルTest {
 
     // MARK: - unitPrice / combinationCount
 
-    @Test func デフォルトの単価が100円である() {
+    @Test func `デフォルトの単価が 100 円である`() {
         let bet = Bet()
         container.mainContext.insert(bet)
         #expect(bet.unitPrice == 100)
@@ -76,86 +76,86 @@ struct 馬券モデルTest {
         #expect(Bet.combinationCount(selection: "", ticketTypeName: "単勝") == 0)
     }
 
-    @Test func 単一馬番の場合に組合せ数が1になる() {
+    @Test func `単 一 馬番の場合に組合せ数が 1 になる`() {
         #expect(Bet.combinationCount(selection: "5", ticketTypeName: "単勝") == 1)
     }
 
-    @Test func ハイフン区切り2頭の場合に組合せ数が1になる() {
+    @Test func `ハイフン区切り 2 頭の場合に組合せ数が 1 になる`() {
         #expect(Bet.combinationCount(selection: "1-2", ticketTypeName: "馬連") == 1)
     }
 
-    @Test func ハイフン区切り3頭の場合に組合せ数が1になる() {
+    @Test func `ハイフン区切り 3 頭の場合に組合せ数が 1 になる`() {
         #expect(Bet.combinationCount(selection: "1-2-3", ticketTypeName: "三連単") == 1)
     }
 
     // MARK: - combinationCount: BOX
 
-    @Test func 馬連BOX3頭の組合せ数が3になる() {
+    @Test func `馬連box 3 頭の組合せ数が 3 になる`() {
         // 3C2 = 3
         #expect(Bet.combinationCount(selection: "1,2,3[BOX]", ticketTypeName: "馬連") == 3)
     }
 
-    @Test func ワイドBOX4頭の組合せ数が6になる() {
+    @Test func `ワイドbox 4 頭の組合せ数が 6 になる`() {
         // 4C2 = 6
         #expect(Bet.combinationCount(selection: "1,2,3,4[BOX]", ticketTypeName: "ワイド") == 6)
     }
 
-    @Test func 馬単BOX3頭の組合せ数が6になる() {
+    @Test func `馬単box 3 頭の組合せ数が 6 になる`() {
         // 3P2 = 6
         #expect(Bet.combinationCount(selection: "1,2,3[BOX]", ticketTypeName: "馬単") == 6)
     }
 
-    @Test func 三連複BOX4頭の組合せ数が4になる() {
+    @Test func `三 連複box 4 頭の組合せ数が 4 になる`() {
         // 4C3 = 4
         #expect(Bet.combinationCount(selection: "1,2,3,4[BOX]", ticketTypeName: "三連複") == 4)
     }
 
-    @Test func 三連単BOX4頭の組合せ数が24になる() {
+    @Test func `三 連単box 4 頭の組合せ数が 24 になる`() {
         // 4P3 = 24
         #expect(Bet.combinationCount(selection: "1,2,3,4[BOX]", ticketTypeName: "三連単") == 24)
     }
 
-    @Test func 枠連BOX3頭の組合せ数が3になる() {
+    @Test func `枠連box 3 頭の組合せ数が 3 になる`() {
         #expect(Bet.combinationCount(selection: "1,2,3[BOX]", ticketTypeName: "枠連") == 3)
     }
 
-    @Test func 三連複BOX2頭の組合せ数がゼロになる() {
+    @Test func `三 連複box 2 頭の組合せ数がゼロになる`() {
         // 三連複に2頭BOXは不成立
         #expect(Bet.combinationCount(selection: "1,2[BOX]", ticketTypeName: "三連複") == 0)
     }
 
-    @Test func 未知の券種のBOX組合せ数がゼロになる() {
+    @Test func 未知の券種のbox組合せ数がゼロになる() {
         #expect(Bet.combinationCount(selection: "1,2,3[BOX]", ticketTypeName: "未知の券種") == 0)
     }
 
     // MARK: - combinationCount: フォーメーション
 
-    @Test func 馬連フォーメーション1軸3頭の組合せ数が3になる() {
+    @Test func `馬連フォーメーション 1 軸 3 頭の組合せ数が 3 になる`() {
         // 1×3 = 3、重複なし
         #expect(Bet.combinationCount(selection: "1/2,3,4", ticketTypeName: "馬連") == 3)
     }
 
-    @Test func 馬連フォーメーションで同一馬番ペアが除外される() {
+    @Test func `馬連フォーメーションで同 一 馬番ペアが除外される`() {
         // (1,1),(1,2),(2,1),(2,2) → 順不同で {1,2} のみ
         #expect(Bet.combinationCount(selection: "1,2/1,2", ticketTypeName: "馬連") == 1)
     }
 
-    @Test func 馬単フォーメーションで同一馬番ペアが除外され順序考慮の数になる() {
+    @Test func `馬単フォーメーションで同 一 馬番ペアが除外され順序考慮の数になる`() {
         // (1,2)(2,1) = 2 通り（順序あり）
         #expect(Bet.combinationCount(selection: "1,2/1,2", ticketTypeName: "馬単") == 2)
     }
 
-    @Test func 三連単フォーメーション1軸2x3の組合せ数が6になる() {
+    @Test func `三 連単フォーメーション 1 軸 2 x 3 の組合せ数が 6 になる`() {
         // 1×2×3 = 6、軸とそれ以外がぶつからなければそのまま
         #expect(Bet.combinationCount(selection: "1/2,3/4,5,6", ticketTypeName: "三連単") == 6)
     }
 
-    @Test func 三連複フォーメーション1軸2x3の組合せ数が6になる() {
+    @Test func `三 連複フォーメーション 1 軸 2 x 3 の組合せ数が 6 になる`() {
         // 順不同だが各馬がユニークなので 1×2×3 = 6
         #expect(Bet.combinationCount(selection: "1/2,3/4,5,6", ticketTypeName: "三連複") == 6)
     }
 
-    @Test func 三連複フォーメーションで重複が除外される() {
+    @Test func `三 連複フォーメーションで重複が除外される`() {
         // (1,2,3)(1,3,2)(2,1,3)... が重複扱いで集約される
         let count = Bet.combinationCount(selection: "1,2/1,2,3/1,2,3", ticketTypeName: "三連複")
         // 1st leg=[1,2], 2nd leg=[1,2,3], 3rd leg=[1,2,3]
@@ -177,19 +177,19 @@ struct 馬券モデルTest {
 
     // MARK: - BetSelection
 
-    @Test func 買い目のデフォルト単価が100円である() {
+    @Test func `買い目のデフォルト単価が 100 円である`() {
         let sel = BetSelection()
         container.mainContext.insert(sel)
         #expect(sel.unitPrice == 100)
     }
 
-    @Test func 買い目のデフォルト購入額が100円である() {
+    @Test func `買い目のデフォルト購入額が 100 円である`() {
         let sel = BetSelection()
         container.mainContext.insert(sel)
         #expect(sel.purchaseAmount == 100)
     }
 
-    @Test func 買い目の組合せ数が0のとき購入額がゼロになる() {
+    @Test func `買い目の組合せ数が 0 のとき購入額がゼロになる`() {
         let sel = BetSelection(unitPrice: 100, combinationCount: 0)
         container.mainContext.insert(sel)
         #expect(sel.purchaseAmount == 0)
@@ -214,7 +214,7 @@ struct 馬券モデルTest {
         #expect(sel.purchaseAmount == 600)
     }
 
-    @Test func 買い目の購入額が組合せ数1の場合に単価に等しい() {
+    @Test func `買い目の購入額が組合せ数 1 の場合に単価に等しい`() {
         let sel = BetSelection(unitPrice: 200, combinationCount: 1)
         container.mainContext.insert(sel)
         #expect(sel.purchaseAmount == 200)
@@ -258,7 +258,7 @@ struct 馬券モデルTest {
         }
     }
 
-    @Test func 任意の頭数で馬連BOXの組合せ数がn選2の公式に従う() {
+    @Test func `任意の頭数で馬連boxの組合せ数がn選 2 の公式に従う`() {
         for horseCount in 2 ... 18 {
             let horses = (1 ... horseCount).map { "\($0)" }.joined(separator: ",")
             let count = Bet.combinationCount(selection: "\(horses)[BOX]", ticketTypeName: "馬連")
@@ -267,7 +267,7 @@ struct 馬券モデルTest {
         }
     }
 
-    @Test func 任意の頭数で三連複BOXの組合せ数がn選3の公式に従う() {
+    @Test func `任意の頭数で 三 連複boxの組合せ数がn選 3 の公式に従う`() {
         for horseCount in 3 ... 18 {
             let horses = (1 ... horseCount).map { "\($0)" }.joined(separator: ",")
             let count = Bet.combinationCount(selection: "\(horses)[BOX]", ticketTypeName: "三連複")
