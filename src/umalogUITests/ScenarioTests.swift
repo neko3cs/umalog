@@ -357,7 +357,55 @@ final class 設定Test: UIテストケース {
     }
 }
 
-// MARK: - Scenario 8: エンドツーエンド（レース記録フルフロー）
+// MARK: - Scenario 8: データ初期化
+
+final class データ初期化Test: UIテストケース {
+    private func navigateToSettings() {
+        app.tabBars.firstMatch.buttons["設定"].tap()
+        XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testデータを初期化ボタンをタップすると確認ダイアログが表示される() {
+        navigateToSettings()
+        tapWhenReady(findElement("reset-all-data-button"))
+        XCTAssertTrue(app.alerts["データを初期化"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testキャンセルをタップするとダイアログが閉じる() {
+        navigateToSettings()
+        tapWhenReady(findElement("reset-all-data-button"))
+        XCTAssertTrue(app.alerts["データを初期化"].waitForExistence(timeout: 5))
+        app.alerts["データを初期化"].buttons["キャンセル"].tap()
+        XCTAssertFalse(app.alerts["データを初期化"].exists)
+    }
+
+    @MainActor
+    func test初期化後にレース一覧が空になる() {
+        // レースを追加する
+        app.navigationBars["Umalog"].buttons["Add"].tap()
+        XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
+        let raceNameField = app.textFields["レース名（任意）"]
+        tapWhenReady(raceNameField)
+        raceNameField.typeText("初期化対象レース")
+        app.buttons["追加"].tap()
+        XCTAssertTrue(app.staticTexts["初期化対象レース"].waitForExistence(timeout: 5))
+
+        // 設定画面でデータを初期化する
+        navigateToSettings()
+        tapWhenReady(findElement("reset-all-data-button"))
+        XCTAssertTrue(app.alerts["データを初期化"].waitForExistence(timeout: 5))
+        app.alerts["データを初期化"].buttons["初期化"].tap()
+
+        // レース一覧が空になっていることを確認する
+        app.tabBars.firstMatch.buttons["レース"].tap()
+        XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["初期化対象レース"].waitForExistence(timeout: 3))
+    }
+}
+
+// MARK: - Scenario 9: エンドツーエンド（レース記録フルフロー）
 
 final class フルフローTest: UIテストケース {
     @MainActor
