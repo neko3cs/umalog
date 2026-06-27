@@ -29,10 +29,10 @@ struct BalanceSummaryPeriodCalc {
 
     func interval(for period: SummaryPeriod, date: Date) -> DateInterval? {
         switch period {
-        case .daily: return calendar.dateInterval(of: .day, for: date)
-        case .monthly: return calendar.dateInterval(of: .month, for: date)
-        case .yearly: return calendar.dateInterval(of: .year, for: date)
-        case .range: return nil
+        case .daily: calendar.dateInterval(of: .day, for: date)
+        case .monthly: calendar.dateInterval(of: .month, for: date)
+        case .yearly: calendar.dateInterval(of: .year, for: date)
+        case .range: nil
         }
     }
 
@@ -76,7 +76,7 @@ struct BalanceSummaryPeriodCalc {
         let days = calendar.dateComponents(
             [.day],
             from: calendar.startOfDay(for: from),
-            to: calendar.startOfDay(for: to)
+            to: calendar.startOfDay(for: to),
         ).day.map { $0 + 1 } ?? 1
         return "\(fromStr) 〜 \(toStr) (\(days)日間)"
     }
@@ -110,7 +110,7 @@ struct BalanceSummaryView: View {
     @State private var period: SummaryPeriod = .monthly
     @State private var selectedDate: Date = .init()
     @State private var fromDate: Date = Calendar.current.date(
-        byAdding: .month, value: -1, to: Date()
+        byAdding: .month, value: -1, to: Date(),
     ) ?? Date()
     @State private var toDate: Date = .init()
 
@@ -213,7 +213,7 @@ struct BalanceSummaryView: View {
             HStack {
                 Picker("年", selection: Binding(
                     get: { calc.year(from: selectedDate) },
-                    set: { selectedDate = calc.setYear($0, in: selectedDate) }
+                    set: { selectedDate = calc.setYear($0, in: selectedDate) },
                 )) {
                     ForEach(2000 ... 2050, id: \.self) { year in
                         Text(verbatim: "\(year)年").tag(year)
@@ -222,7 +222,7 @@ struct BalanceSummaryView: View {
                 .frame(maxWidth: .infinity)
                 Picker("月", selection: Binding(
                     get: { calc.month(from: selectedDate) },
-                    set: { selectedDate = calc.setMonth($0, in: selectedDate) }
+                    set: { selectedDate = calc.setMonth($0, in: selectedDate) },
                 )) {
                     ForEach(1 ... 12, id: \.self) { month in
                         Text(verbatim: "\(month)月").tag(month)
@@ -233,7 +233,7 @@ struct BalanceSummaryView: View {
         case .yearly:
             Picker("年", selection: Binding(
                 get: { calc.year(from: selectedDate) },
-                set: { selectedDate = calc.setYear($0, in: selectedDate) }
+                set: { selectedDate = calc.setYear($0, in: selectedDate) },
             )) {
                 ForEach(2000 ... 2050, id: \.self) { year in
                     Text(verbatim: "\(year)年").tag(year)
@@ -269,7 +269,7 @@ struct BalanceSummaryView: View {
             summaryRow(
                 "収支",
                 "\(balance >= 0 ? "+" : "−")¥\(abs(balance).formatted())",
-                color: totalPurchase == 0 ? .primary : balance >= 0 ? .green : .red
+                color: totalPurchase == 0 ? .primary : balance >= 0 ? .green : .red,
             )
             if let rate = returnRate {
                 summaryRow("回収率", String(format: "%.1f%%", rate * 100))

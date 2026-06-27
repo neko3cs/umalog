@@ -34,7 +34,7 @@ struct レースモデルTest {
         #expect(race.totalPurchase == 0)
     }
 
-    @Test func 馬券が1件のとき購入合計がその購入額になる() {
+    @Test func `馬券が 1 件のとき購入合計がその購入額になる`() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 1000); ctx.insert(bet)
@@ -69,7 +69,7 @@ struct レースモデルTest {
         #expect(race.totalPayout == 0)
     }
 
-    @Test func 一部精算済みの場合に払戻合計が精算済み馬券の払戻額の合計になる() {
+    @Test func `一 部精算済みの場合に払戻合計が精算済み馬券の払戻額の合計になる`() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet1 = Bet(race: race, purchaseAmount: 1000, payoutAmount: 2500); ctx.insert(bet1)
@@ -156,7 +156,7 @@ struct レースモデルTest {
         #expect(race.returnRate == nil)
     }
 
-    @Test func 利益がある場合に回収率が1より大きくなる() throws {
+    @Test func `利益がある場合に回収率が 1 より大きくなる`() throws {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 1000, payoutAmount: 2000); ctx.insert(bet)
@@ -166,7 +166,7 @@ struct レースモデルTest {
         #expect(rate == 2.0)
     }
 
-    @Test func 損失がある場合に回収率が1より小さくなる() throws {
+    @Test func `損失がある場合に回収率が 1 より小さくなる`() throws {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 1000, payoutAmount: 400); ctx.insert(bet)
@@ -178,26 +178,26 @@ struct レースモデルTest {
 
     // MARK: - finishPosition
 
-    @Test func 着順が未設定のとき有効な馬番でfinishPositionがnilになる() {
+    @Test func `着順が未設定のとき有効な馬番でfinish positionがnilになる`() {
         let race = Race()
         container.mainContext.insert(race)
         #expect(race.finishPosition(forHorseNumber: 1) == nil)
         #expect(race.finishPosition(forHorseNumber: 18) == nil)
     }
 
-    @Test func 馬番が1着馬の場合に着順が1になる() {
+    @Test func `馬番が 1 着馬の場合に着順が 1 になる`() {
         let race = Race(firstPlaceHorseNumber: 5, secondPlaceHorseNumber: 3, thirdPlaceHorseNumber: 8)
         container.mainContext.insert(race)
         #expect(race.finishPosition(forHorseNumber: 5) == 1)
     }
 
-    @Test func 馬番が2着馬の場合に着順が2になる() {
+    @Test func `馬番が 2 着馬の場合に着順が 2 になる`() {
         let race = Race(firstPlaceHorseNumber: 5, secondPlaceHorseNumber: 3, thirdPlaceHorseNumber: 8)
         container.mainContext.insert(race)
         #expect(race.finishPosition(forHorseNumber: 3) == 2)
     }
 
-    @Test func 馬番が3着馬の場合に着順が3になる() {
+    @Test func `馬番が 3 着馬の場合に着順が 3 になる`() {
         let race = Race(firstPlaceHorseNumber: 5, secondPlaceHorseNumber: 3, thirdPlaceHorseNumber: 8)
         container.mainContext.insert(race)
         #expect(race.finishPosition(forHorseNumber: 8) == 3)
@@ -249,7 +249,7 @@ struct レースモデルTest {
         }
     }
 
-    @Test func 払戻と購入が同額のとき回収率が常に1になる() {
+    @Test func `払戻と購入が同額のとき回収率が常に 1 になる`() {
         let ctx = container.mainContext
         for _ in 0 ..< 200 {
             let amount = Int.random(in: 100 ... 100_000)

@@ -51,7 +51,7 @@ struct 収支集計期間計算Test {
         #expect(interval.contains(makeDate(2026, 6, 30)))
     }
 
-    @Test func 年次の集計期間に1月1日と12月31日が含まれる() throws {
+    @Test func `年次の集計期間に 1 月 1 日と 12 月 31 日が含まれる`() throws {
         let date = makeDate(2026, 6, 15)
         let interval = try #require(calc.interval(for: .yearly, date: date))
         #expect(interval.contains(makeDate(2026, 1, 1)))
@@ -72,42 +72,42 @@ struct 収支集計期間計算Test {
         #expect(result == date)
     }
 
-    @Test func 日次で1進めると翌日になる() {
+    @Test func `日次で 1 進めると翌日になる`() {
         let date = makeDate(2026, 6, 15)
         let next = calc.advance(date, by: 1, unit: .daily)
         let diff = calc.calendar.dateComponents([.day], from: date, to: next)
         #expect(diff.day == 1)
     }
 
-    @Test func 日次でマイナス1進めると前日になる() {
+    @Test func `日次でマイナス 1 進めると前日になる`() {
         let date = makeDate(2026, 6, 15)
         let prev = calc.advance(date, by: -1, unit: .daily)
         let diff = calc.calendar.dateComponents([.day], from: prev, to: date)
         #expect(diff.day == 1)
     }
 
-    @Test func 月次で1進めると翌月になる() {
+    @Test func `月次で 1 進めると翌月になる`() {
         let date = makeDate(2026, 6, 15)
         let next = calc.advance(date, by: 1, unit: .monthly)
         #expect(calc.month(from: next) == 7)
         #expect(calc.year(from: next) == 2026)
     }
 
-    @Test func 月次で12月から1進めると翌年1月になる() {
+    @Test func `月次で 12 月から 1 進めると翌年 1 月になる`() {
         let date = makeDate(2026, 12, 15)
         let next = calc.advance(date, by: 1, unit: .monthly)
         #expect(calc.month(from: next) == 1)
         #expect(calc.year(from: next) == 2027)
     }
 
-    @Test func 月次で1月からマイナス1進めると前年12月になる() {
+    @Test func `月次で 1 月からマイナス 1 進めると前年 12 月になる`() {
         let date = makeDate(2026, 1, 15)
         let prev = calc.advance(date, by: -1, unit: .monthly)
         #expect(calc.month(from: prev) == 12)
         #expect(calc.year(from: prev) == 2025)
     }
 
-    @Test func 年次で1進めると翌年になる() {
+    @Test func `年次で 1 進めると翌年になる`() {
         let date = makeDate(2026, 6, 15)
         let next = calc.advance(date, by: 1, unit: .yearly)
         #expect(calc.year(from: next) == 2027)
@@ -172,7 +172,7 @@ struct 収支集計期間計算Test {
         #expect(calc.rangeInterval(from: from, to: to) == nil)
     }
 
-    @Test func 同一日の期間指定でその日が含まれ翌日が含まれない() throws {
+    @Test func `同 一 日の期間指定でその日が含まれ翌日が含まれない`() throws {
         let date = makeDate(2026, 6, 15)
         let interval = try #require(calc.rangeInterval(from: date, to: date))
         #expect(interval.contains(makeDate(2026, 6, 15)))
@@ -196,7 +196,7 @@ struct 収支集計期間計算Test {
         #expect(title.contains("14日間"))
     }
 
-    @Test func 単日の期間タイトルに1日間が含まれる() {
+    @Test func `単日の期間タイトルに 1 日間が含まれる`() {
         let date = makeDate(2026, 6, 15)
         let title = calc.rangeTitle(from: date, to: date)
         #expect(title.contains("1日間"))

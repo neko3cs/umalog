@@ -28,6 +28,8 @@ struct SettingsView: View {
     @State private var showingExportSuccess = false
     @State private var exportError: String?
     @State private var showingExportError = false
+    @State private var showingDataReset = false
+    @State private var showingDataResetSuccess = false
 
     var body: some View {
         NavigationStack {
@@ -68,12 +70,20 @@ struct SettingsView: View {
                         }
                     }
                     .disabled(isExporting || isImporting)
+
+                    Button(role: .destructive) {
+                        showingDataReset = true
+                    } label: {
+                        Label("データを初期化", systemImage: "trash")
+                    }
+                    .accessibilityIdentifier("reset-all-data-button")
+                    .disabled(isExporting || isImporting)
                 }
 
                 Section("このアプリについて") {
                     LabeledContent(
                         "バージョン",
-                        value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
+                        value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—",
                     )
                     Link(destination: URL(string: "https://github.com/neko3cs/umalog")!) {
                         Label("ソースコード（GitHub）", systemImage: "chevron.left.forwardslash.chevron.right")
@@ -124,7 +134,26 @@ struct SettingsView: View {
             } message: {
                 Text(exportError ?? "不明なエラーが発生しました")
             }
+            .alert("データを初期化", isPresented: $showingDataReset) {
+                Button("初期化", role: .destructive) { resetAllData() }
+                Button("キャンセル", role: .cancel) {}
+            } message: {
+                Text("レース・馬券データをすべて削除します。競馬場・券種データは変更されません。この操作は元に戻せません。")
+            }
+            .alert("初期化完了", isPresented: $showingDataResetSuccess) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("レース・馬券データをすべて削除しました。")
+            }
         }
+    }
+
+    private func resetAllData() {
+        try? modelContext.delete(model: BetSelection.self)
+        try? modelContext.delete(model: Bet.self)
+        try? modelContext.delete(model: RaceEntry.self)
+        try? modelContext.delete(model: Race.self)
+        showingDataResetSuccess = true
     }
 
     private func exportZip() {
@@ -186,7 +215,7 @@ struct LicensesView: View {
             The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
             THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-            """
+            """,
         ),
         Package(
             name: "ZIPFoundation",
@@ -202,7 +231,7 @@ struct LicensesView: View {
             The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
             THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-            """
+            """,
         ),
         Package(
             name: "NetworkImage",
@@ -218,7 +247,7 @@ struct LicensesView: View {
             The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
             THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-            """
+            """,
         ),
         Package(
             name: "swift-cmark",
@@ -236,7 +265,7 @@ struct LicensesView: View {
                 * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
 
             THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-            """
+            """,
         ),
     ]
 
@@ -469,3 +498,5 @@ struct ExportDocumentPicker: UIViewControllerRepresentable {
         }
     }
 }
+
+// swiftlint:enable line_length

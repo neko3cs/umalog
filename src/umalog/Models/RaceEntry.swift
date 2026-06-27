@@ -27,7 +27,7 @@ final class RaceEntry {
         trainerName: String = "",
         predictionMark: String? = nil,
         finishPosition: Int? = nil,
-        sortIndex: Int = 0
+        sortIndex: Int = 0,
     ) {
         self.race = race
         self.horseNumber = horseNumber

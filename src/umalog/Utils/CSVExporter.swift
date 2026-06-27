@@ -20,7 +20,7 @@ enum CSVExporter {
         lines.append(
             "date,venue,race_number,race_name,distance,track_type,track_condition," +
                 "category,first_place_horse,second_place_horse,third_place_horse," +
-                "total_purchase,total_payout,balance,memo"
+                "total_purchase,total_payout,balance,memo",
         )
         for race in sorted {
             let row: [String] = [
@@ -84,7 +84,7 @@ enum CSVExporter {
         lines.append("=== BET_SELECTIONS ===")
         lines.append(
             "date,venue,race_number,bet_sort_index,ticket_type,selection," +
-                "unit_price,combination_count,sort_index"
+                "unit_price,combination_count,sort_index",
         )
         for race in sorted {
             for bet in (race.bets ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
@@ -167,7 +167,7 @@ enum ZipExporter {
     private static func addEntry(_ archive: Archive, name: String, content: String) throws {
         let data = Data(content.utf8)
         try archive.addEntry(
-            with: name, type: .file, uncompressedSize: Int64(data.count)
+            with: name, type: .file, uncompressedSize: Int64(data.count),
         ) { _, size in data.subdata(in: 0 ..< size) }
     }
 
@@ -308,7 +308,7 @@ enum ZipImporter {
                 firstPlaceHorseNumber: firstPlace,
                 secondPlaceHorseNumber: secondPlace,
                 thirdPlaceHorseNumber: thirdPlace,
-                sortIndex: idx
+                sortIndex: idx,
             )
             context.insert(race)
             raceMap[key(date: row[0], venue: row[1], raceNumber: row[2])] = race
@@ -325,7 +325,7 @@ enum ZipImporter {
                 jockeyName: row.count > 5 ? row[5] : "",
                 trainerName: row.count > 6 ? row[6] : "",
                 predictionMark: row.count > 7 && !row[7].isEmpty ? row[7] : nil,
-                sortIndex: idx
+                sortIndex: idx,
             ))
         }
 
@@ -361,7 +361,7 @@ enum ZipImporter {
         archive: Archive,
         betsText: String,
         raceMap: [String: Race],
-        context: ModelContext
+        context: ModelContext,
     ) throws {
         let betSelectionsText = try readEntry(archive, path: "bet_selections.csv")
         var betMap: [String: Bet] = [:]
@@ -373,7 +373,7 @@ enum ZipImporter {
             let payoutAmount = row.count > 5 ? Int(row[5]) ?? 0 : 0
             let newBet = Bet(
                 race: race, purchaseAmount: purchaseAmount,
-                payoutAmount: payoutAmount, sortIndex: betSortIndex
+                payoutAmount: payoutAmount, sortIndex: betSortIndex,
             )
             context.insert(newBet)
             betMap[betKey(date: row[0], venue: row[1], raceNumber: row[2], betSortIndex: row[3])] = newBet
@@ -381,7 +381,7 @@ enum ZipImporter {
         for (selIdx, row) in parseCSV(betSelectionsText).dropFirst().enumerated() {
             guard row.count >= 7,
                   let bet = betMap[betKey(
-                      date: row[0], venue: row[1], raceNumber: row[2], betSortIndex: row[3]
+                      date: row[0], venue: row[1], raceNumber: row[2], betSortIndex: row[3],
                   )] else { continue }
             let count = row.count > 7 ? Int(row[7]) ?? 1 : 1
             let sortIndex = row.count > 8 ? Int(row[8]) ?? selIdx : selIdx
@@ -391,7 +391,7 @@ enum ZipImporter {
                 selection: row[5],
                 unitPrice: Int(row[6]) ?? 100,
                 combinationCount: count,
-                sortIndex: sortIndex
+                sortIndex: sortIndex,
             ))
         }
     }
@@ -399,7 +399,7 @@ enum ZipImporter {
     private static func importBetsLegacyFormat(
         betsText: String,
         raceMap: [String: Race],
-        context: ModelContext
+        context: ModelContext,
     ) {
         let betRows = parseCSV(betsText)
         let betHeader = betRows.first ?? []
@@ -426,7 +426,7 @@ enum ZipImporter {
             let newBet = Bet(
                 race: race, ticketTypeName: ticketTypeName, selection: selection,
                 unitPrice: unitPrice, purchaseAmount: purchaseAmount,
-                payoutAmount: payoutAmount, sortIndex: idx
+                payoutAmount: payoutAmount, sortIndex: idx,
             )
             context.insert(newBet)
             context.insert(BetSelection(
@@ -435,7 +435,7 @@ enum ZipImporter {
                 selection: selection,
                 unitPrice: unitPrice,
                 combinationCount: count,
-                sortIndex: 0
+                sortIndex: 0,
             ))
         }
     }
@@ -509,7 +509,7 @@ extension Date {
                 .locale(Locale(identifier: "ja_JP"))
                 .year(.defaultDigits)
                 .month(.twoDigits)
-                .day(.twoDigits)
+                .day(.twoDigits),
         )
     }
 }
