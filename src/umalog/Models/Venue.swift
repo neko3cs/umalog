@@ -13,6 +13,8 @@ final class Venue {
     var name: String = ""
     var isPreset: Bool = false
     var sortIndex: Int = 0
+    @Relationship(deleteRule: .nullify)
+    var races: [Race]? = nil
 
     init(name: String, isPreset: Bool = false, sortIndex: Int = 0) {
         self.name = name
