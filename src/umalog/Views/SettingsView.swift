@@ -29,6 +29,7 @@ struct SettingsView: View {
     @State private var exportError: String?
     @State private var showingExportError = false
     @State private var showingDataReset = false
+    @State private var showingDataResetSuccess = false
 
     var body: some View {
         NavigationStack {
@@ -139,6 +140,11 @@ struct SettingsView: View {
             } message: {
                 Text("レース・馬券データをすべて削除します。競馬場・券種データは変更されません。この操作は元に戻せません。")
             }
+            .alert("初期化完了", isPresented: $showingDataResetSuccess) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("レース・馬券データをすべて削除しました。")
+            }
         }
     }
 
@@ -147,6 +153,7 @@ struct SettingsView: View {
         try? modelContext.delete(model: Bet.self)
         try? modelContext.delete(model: RaceEntry.self)
         try? modelContext.delete(model: Race.self)
+        showingDataResetSuccess = true
     }
 
     private func exportZip() {
