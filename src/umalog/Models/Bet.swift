@@ -30,7 +30,7 @@ final class Bet {
         unitPrice: Int = 100,
         purchaseAmount: Int = 0,
         payoutAmount: Int = 0,
-        sortIndex: Int = 0
+        sortIndex: Int = 0,
     ) {
         self.race = race
         self.ticketType = ticketType
@@ -119,8 +119,8 @@ final class Bet {
         guard legs.count == 2 else { return 0 }
         var pairs = Set<Set<Int>>()
         for first in legs[0] {
-            for second in legs[1] {
-                if first != second { pairs.insert(Set([first, second])) }
+            for second in legs[1] where first != second {
+                pairs.insert(Set([first, second]))
             }
         }
         return pairs.count
@@ -130,8 +130,8 @@ final class Bet {
         guard legs.count == 2 else { return 0 }
         var count = 0
         for first in legs[0] {
-            for second in legs[1] {
-                if first != second { count += 1 }
+            for second in legs[1] where first != second {
+                count += 1
             }
         }
         return count
@@ -143,7 +143,7 @@ final class Bet {
         for first in legs[0] {
             for second in legs[1] {
                 for third in legs[2] {
-                    if first != second && second != third && first != third {
+                    if first != second, second != third, first != third {
                         triples.insert(Set([first, second, third]))
                     }
                 }
@@ -158,7 +158,7 @@ final class Bet {
         for first in legs[0] {
             for second in legs[1] {
                 for third in legs[2] {
-                    if first != second && second != third && first != third { count += 1 }
+                    if first != second, second != third, first != third { count += 1 }
                 }
             }
         }

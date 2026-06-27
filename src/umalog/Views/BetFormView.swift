@@ -131,7 +131,7 @@ struct BetFormView: View {
             Button("完了") {
                 UIApplication.shared.sendAction(
                     #selector(UIResponder.resignFirstResponder),
-                    to: nil, from: nil, for: nil
+                    to: nil, from: nil, for: nil,
                 )
             }
         }
@@ -168,7 +168,7 @@ struct BetFormView: View {
                 ticketTypeName: sel.ticketTypeName,
                 useCustom: sel.ticketType == nil && !sel.ticketTypeName.isEmpty,
                 selection: sel.selection,
-                unitPrice: sel.unitPrice
+                unitPrice: sel.unitPrice,
             )
         }
     }
@@ -202,7 +202,7 @@ struct BetFormView: View {
                         selection: draft.selection,
                         unitPrice: draft.unitPrice,
                         combinationCount: draft.combinationCount,
-                        sortIndex: idx
+                        sortIndex: idx,
                     ))
                 }
             }
@@ -218,7 +218,7 @@ struct BetFormView: View {
                 race: race,
                 purchaseAmount: totalPurchase,
                 payoutAmount: payoutAmount,
-                sortIndex: sortIndex
+                sortIndex: sortIndex,
             )
             modelContext.insert(newBet)
             for (idx, draft) in draftSelections.enumerated() {
@@ -229,7 +229,7 @@ struct BetFormView: View {
                     selection: draft.selection,
                     unitPrice: draft.unitPrice,
                     combinationCount: draft.combinationCount,
-                    sortIndex: idx
+                    sortIndex: idx,
                 ))
             }
         }
@@ -482,7 +482,7 @@ struct SelectionFormView: View {
             Button("完了") {
                 UIApplication.shared.sendAction(
                     #selector(UIResponder.resignFirstResponder),
-                    to: nil, from: nil, for: nil
+                    to: nil, from: nil, for: nil,
                 )
             }
         }
@@ -615,10 +615,10 @@ struct SelectionFormView: View {
                 let parts = sel.split(separator: "/")
                 formLeg1 = Set(parts.first?.split(separator: ",").compactMap { Int($0) } ?? [])
                 formLeg2 = Set(
-                    parts.dropFirst().first?.split(separator: ",").compactMap { Int($0) } ?? []
+                    parts.dropFirst().first?.split(separator: ",").compactMap { Int($0) } ?? [],
                 )
                 formLeg3 = Set(
-                    parts.dropFirst(2).first?.split(separator: ",").compactMap { Int($0) } ?? []
+                    parts.dropFirst(2).first?.split(separator: ",").compactMap { Int($0) } ?? [],
                 )
                 manualHorseCount = parts.count >= 3 ? 3 : 2
             } else {
@@ -640,7 +640,7 @@ struct SelectionFormView: View {
             ticketTypeName: currentTicketTypeName,
             useCustom: useCustom,
             selection: selection,
-            unitPrice: unitPrice
+            unitPrice: unitPrice,
         )
         onSave(draft)
         dismiss()

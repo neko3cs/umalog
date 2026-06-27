@@ -21,7 +21,7 @@ struct 出走馬モデルTest {
 
     // MARK: - デフォルト値
 
-    @Test func 新規出走馬の馬番デフォルトが0である() {
+    @Test func `新規出走馬の馬番デフォルトが 0 である`() {
         let entry = RaceEntry()
         container.mainContext.insert(entry)
         #expect(entry.horseNumber == 0)
@@ -51,7 +51,7 @@ struct 出走馬モデルTest {
         #expect(entry.predictionMark == nil)
     }
 
-    @Test func 新規出走馬のソート順デフォルトが0である() {
+    @Test func `新規出走馬のソート順デフォルトが 0 である`() {
         let entry = RaceEntry()
         container.mainContext.insert(entry)
         #expect(entry.sortIndex == 0)
@@ -59,55 +59,55 @@ struct 出走馬モデルTest {
 
     // MARK: - mark getter
 
-    @Test func predictionMarkがnilのときmarkがnilを返す() {
+    @Test func `prediction markがnilのときmarkがnilを返す`() {
         let entry = RaceEntry(predictionMark: nil)
         container.mainContext.insert(entry)
         #expect(entry.mark == nil)
     }
 
-    @Test func predictionMarkが本命記号のときmarkが本命を返す() {
+    @Test func `prediction markが本命記号のときmarkが本命を返す`() {
         let entry = RaceEntry(predictionMark: "◎")
         container.mainContext.insert(entry)
         #expect(entry.mark == .honmei)
     }
 
-    @Test func predictionMarkが対抗記号のときmarkが対抗を返す() {
+    @Test func `prediction markが対抗記号のときmarkが対抗を返す`() {
         let entry = RaceEntry(predictionMark: "○")
         container.mainContext.insert(entry)
         #expect(entry.mark == .taikou)
     }
 
-    @Test func predictionMarkが単穴記号のときmarkが単穴を返す() {
+    @Test func `prediction markが単穴記号のときmarkが単穴を返す`() {
         let entry = RaceEntry(predictionMark: "▲")
         container.mainContext.insert(entry)
         #expect(entry.mark == .tanana)
     }
 
-    @Test func predictionMarkが連下記号のときmarkが連下を返す() {
+    @Test func `prediction markが連下記号のときmarkが連下を返す`() {
         let entry = RaceEntry(predictionMark: "△")
         container.mainContext.insert(entry)
         #expect(entry.mark == .renmei)
     }
 
-    @Test func predictionMarkが星記号のときmarkが星を返す() {
+    @Test func `prediction markが星記号のときmarkが星を返す`() {
         let entry = RaceEntry(predictionMark: "☆")
         container.mainContext.insert(entry)
         #expect(entry.mark == .hoshi)
     }
 
-    @Test func predictionMarkが注のときmarkが注を返す() {
+    @Test func `prediction markが注のときmarkが注を返す`() {
         let entry = RaceEntry(predictionMark: "注")
         container.mainContext.insert(entry)
         #expect(entry.mark == .chu)
     }
 
-    @Test func predictionMarkが押のときmarkが押を返す() {
+    @Test func `prediction markが押のときmarkが押を返す`() {
         let entry = RaceEntry(predictionMark: "押")
         container.mainContext.insert(entry)
         #expect(entry.mark == .oshi)
     }
 
-    @Test func predictionMarkが消のときmarkが消を返す() {
+    @Test func `prediction markが消のときmarkが消を返す`() {
         let entry = RaceEntry(predictionMark: "消")
         container.mainContext.insert(entry)
         #expect(entry.mark == .keshi)
@@ -127,14 +127,14 @@ struct 出走馬モデルTest {
 
     // MARK: - mark setter
 
-    @Test func markを設定するとpredictionMarkが更新される() {
+    @Test func `markを設定するとprediction markが更新される`() {
         let entry = RaceEntry(predictionMark: nil)
         container.mainContext.insert(entry)
         entry.mark = .honmei
         #expect(entry.predictionMark == "◎")
     }
 
-    @Test func markにnilを設定するとpredictionMarkがnilになる() {
+    @Test func `markにnilを設定するとprediction markがnilになる`() {
         let entry = RaceEntry(predictionMark: "◎")
         container.mainContext.insert(entry)
         entry.mark = nil
@@ -149,7 +149,7 @@ struct 出走馬モデルTest {
         #expect(entry.mark == .keshi)
     }
 
-    @Test func 全ケースでgetterとsetterが一致する() {
+    @Test func `全ケースでgetterとsetterが 一 致する`() {
         let entry = RaceEntry()
         container.mainContext.insert(entry)
         for mark in PredictionMark.allCases {

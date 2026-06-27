@@ -67,7 +67,7 @@ struct RaceDetailView: View {
                                 race: raceRef, horseNumber: snap.horseNumber, horseName: snap.horseName,
                                 jockeyName: snap.jockeyName, trainerName: snap.trainerName,
                                 predictionMark: snap.predictionMark, finishPosition: snap.finishPosition,
-                                sortIndex: snap.sortIndex
+                                sortIndex: snap.sortIndex,
                             ))
                         }
                         undoManager?.setActionName("出走馬を削除")
@@ -111,7 +111,7 @@ struct RaceDetailView: View {
                                 race: raceRef, ticketType: ticketType,
                                 ticketTypeName: snap.ticketTypeName, selection: snap.selection,
                                 unitPrice: snap.unitPrice, purchaseAmount: snap.purchaseAmount,
-                                payoutAmount: snap.payoutAmount, sortIndex: snap.sortIndex
+                                payoutAmount: snap.payoutAmount, sortIndex: snap.sortIndex,
                             )
                             ctx.insert(restored)
                             for selSnap in snap.selections {
@@ -122,7 +122,7 @@ struct RaceDetailView: View {
                                     bet: restored, ticketType: selTicketType,
                                     ticketTypeName: selSnap.ticketTypeName, selection: selSnap.selection,
                                     unitPrice: selSnap.unitPrice, combinationCount: selSnap.combinationCount,
-                                    sortIndex: selSnap.sortIndex
+                                    sortIndex: selSnap.sortIndex,
                                 ))
                             }
                         }
@@ -411,7 +411,7 @@ struct BetSnapshot {
             SelectionSnapshot(
                 ticketTypeId: sel.ticketType?.persistentModelID, ticketTypeName: sel.ticketTypeName,
                 selection: sel.selection, unitPrice: sel.unitPrice,
-                combinationCount: sel.combinationCount, sortIndex: sel.sortIndex
+                combinationCount: sel.combinationCount, sortIndex: sel.sortIndex,
             )
         }
     }

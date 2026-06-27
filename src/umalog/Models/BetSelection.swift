@@ -25,7 +25,7 @@ final class BetSelection {
         selection: String = "",
         unitPrice: Int = 100,
         combinationCount: Int = 1,
-        sortIndex: Int = 0
+        sortIndex: Int = 0,
     ) {
         self.bet = bet
         self.ticketType = ticketType

@@ -12,7 +12,7 @@ import Testing
 struct 予想印Test {
     // MARK: - CaseIterable
 
-    @Test func 予想印は全部で8種類ある() {
+    @Test func `予想印は全部で 8 種類ある`() {
         #expect(PredictionMark.allCases.count == 8)
     }
 
@@ -23,62 +23,62 @@ struct 予想印Test {
 
     // MARK: - rawValue
 
-    @Test func 本命のrawValueが本命記号の文字列になる() {
+    @Test func `本命のraw valueが本命記号の文字列になる`() {
         #expect(PredictionMark.honmei.rawValue == "◎")
     }
 
-    @Test func 対抗のrawValueが対抗記号の文字列になる() {
+    @Test func `対抗のraw valueが対抗記号の文字列になる`() {
         #expect(PredictionMark.taikou.rawValue == "○")
     }
 
-    @Test func 単穴のrawValueが単穴記号の文字列になる() {
+    @Test func `単穴のraw valueが単穴記号の文字列になる`() {
         #expect(PredictionMark.tanana.rawValue == "▲")
     }
 
-    @Test func 連下のrawValueが連下記号の文字列になる() {
+    @Test func `連下のraw valueが連下記号の文字列になる`() {
         #expect(PredictionMark.renmei.rawValue == "△")
     }
 
-    @Test func 星のrawValueが星記号の文字列になる() {
+    @Test func `星のraw valueが星記号の文字列になる`() {
         #expect(PredictionMark.hoshi.rawValue == "☆")
     }
 
-    @Test func 注のrawValueは注である() {
+    @Test func `注のraw valueは注である`() {
         #expect(PredictionMark.chu.rawValue == "注")
     }
 
-    @Test func 押のrawValueは押である() {
+    @Test func `押のraw valueは押である`() {
         #expect(PredictionMark.oshi.rawValue == "押")
     }
 
-    @Test func 消のrawValueは消である() {
+    @Test func `消のraw valueは消である`() {
         #expect(PredictionMark.keshi.rawValue == "消")
     }
 
-    @Test func 全てのrawValueが一意である() {
-        let rawValues = PredictionMark.allCases.map { $0.rawValue }
+    @Test func `全てのraw valueが 一 意である`() {
+        let rawValues = PredictionMark.allCases.map(\.rawValue)
         #expect(Set(rawValues).count == PredictionMark.allCases.count)
     }
 
     // MARK: - init(rawValue:)
 
-    @Test func 本命記号のrawValueのときに本命が返る() {
+    @Test func `本命記号のraw valueのときに本命が返る`() {
         #expect(PredictionMark(rawValue: "◎") == .honmei)
     }
 
-    @Test func rawValueが消のときに消が返る() {
+    @Test func `raw valueが消のときに消が返る`() {
         #expect(PredictionMark(rawValue: "消") == .keshi)
     }
 
-    @Test func 無効なrawValueのときにnilが返る() {
+    @Test func `無効なraw valueのときにnilが返る`() {
         #expect(PredictionMark(rawValue: "x") == nil)
     }
 
-    @Test func 空文字のrawValueのときにnilが返る() {
+    @Test func `空文字のraw valueのときにnilが返る`() {
         #expect(PredictionMark(rawValue: "") == nil)
     }
 
-    @Test func 全ケースでrawValueのラウンドトリップが成立する() {
+    @Test func `全ケースでraw valueのラウンドトリップが成立する`() {
         for mark in PredictionMark.allCases {
             #expect(PredictionMark(rawValue: mark.rawValue) == mark)
         }

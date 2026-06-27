@@ -39,7 +39,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(
         _: UIApplication,
         configurationForConnecting connectingSceneSession: UISceneSession,
-        options _: UIScene.ConnectionOptions
+        options _: UIScene.ConnectionOptions,
     ) -> UISceneConfiguration {
         let config = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
         config.delegateClass = SceneDelegate.self
@@ -70,7 +70,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             guard (bet.selections ?? []).isEmpty, !bet.selection.isEmpty else { continue }
             let count = max(1, Bet.combinationCount(
                 selection: bet.selection,
-                ticketTypeName: bet.displayTicketTypeName
+                ticketTypeName: bet.displayTicketTypeName,
             ))
             context.insert(BetSelection(
                 bet: bet,
@@ -79,7 +79,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
                 selection: bet.selection,
                 unitPrice: bet.unitPrice,
                 combinationCount: count,
-                sortIndex: 0
+                sortIndex: 0,
             ))
             needsSave = true
         }
