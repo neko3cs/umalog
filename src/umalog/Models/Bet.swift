@@ -119,8 +119,8 @@ final class Bet {
         guard legs.count == 2 else { return 0 }
         var pairs = Set<Set<Int>>()
         for first in legs[0] {
-            for second in legs[1] {
-                if first != second { pairs.insert(Set([first, second])) }
+            for second in legs[1] where first != second {
+                pairs.insert(Set([first, second]))
             }
         }
         return pairs.count
@@ -130,8 +130,8 @@ final class Bet {
         guard legs.count == 2 else { return 0 }
         var count = 0
         for first in legs[0] {
-            for second in legs[1] {
-                if first != second { count += 1 }
+            for second in legs[1] where first != second {
+                count += 1
             }
         }
         return count
