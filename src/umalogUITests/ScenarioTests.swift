@@ -398,6 +398,10 @@ final class データ初期化Test: UIテストケース {
         XCTAssertTrue(app.alerts["データを初期化"].waitForExistence(timeout: 5))
         app.alerts["データを初期化"].buttons["初期化"].tap()
 
+        // 完了アラートが表示されることを確認する
+        XCTAssertTrue(app.alerts["初期化完了"].waitForExistence(timeout: 5))
+        app.alerts["初期化完了"].buttons["OK"].tap()
+
         // レース一覧が空になっていることを確認する
         app.tabBars.firstMatch.buttons["レース"].tap()
         XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
