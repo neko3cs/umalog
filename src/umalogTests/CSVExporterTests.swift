@@ -29,7 +29,7 @@ struct CSVエクスポーターTest {
 
     // MARK: - セクションヘッダー
 
-    @Test func エクスポート結果にRACES・ENTRIES・BETS・BET_SELECTIONSの全セクションヘッダーが含まれる() {
+    @Test func `エクスポート結果にraces・entries・bets・bet selectionsの全セクションヘッダーが含まれる`() {
         let output = CSVExporter.export(races: [])
         #expect(output.contains("=== RACES ==="))
         #expect(output.contains("=== ENTRIES ==="))
@@ -206,7 +206,7 @@ struct CSVエクスポーターTest {
 
     // MARK: - ソート
 
-    @Test func 馬券がsortIndex昇順で出力される() {
+    @Test func `馬券がsort index昇順で出力される`() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet1 = Bet(race: race, purchaseAmount: 100, sortIndex: 1); ctx.insert(bet1)
@@ -238,11 +238,11 @@ struct CSVエクスポーターTest {
 
     // MARK: - horseNumberString
 
-    @Test func horseNumberStringでゼロは空文字になる() {
+    @Test func `horse number stringでゼロは空文字になる`() {
         #expect(CSVExporter.horseNumberString(0) == "")
     }
 
-    @Test func horseNumberStringで正数は文字列になる() {
+    @Test func `horse number stringで正数は文字列になる`() {
         #expect(CSVExporter.horseNumberString(1) == "1")
         #expect(CSVExporter.horseNumberString(18) == "18")
     }
@@ -281,7 +281,7 @@ struct CSVエクスポーターTest {
 
     // MARK: - ZipExporter / ZipImporter
 
-    @Test func ZIPエクスポートで一時ディレクトリにzipファイルが生成される() throws {
+    @Test func `zipエクスポートで 一 時ディレクトリにzipファイルが生成される`() throws {
         let ctx = container.mainContext
         let race = Race(raceNumber: 7); ctx.insert(race)
         let url = try ZipExporter.export(races: [race])
@@ -290,7 +290,7 @@ struct CSVエクスポーターTest {
         #expect(FileManager.default.fileExists(atPath: url.path))
     }
 
-    @Test func ZIPエクスポートとインポートでデータが完全に復元される() throws {
+    @Test func zipエクスポートとインポートでデータが完全に復元される() throws {
         let exportCtx = container.mainContext
         let venue = Venue(name: "東京"); exportCtx.insert(venue)
         let race = Race(
@@ -302,7 +302,7 @@ struct CSVエクスポーターTest {
             trackType: "turf",
             trackCondition: "良",
             category: "central",
-            memo: "テストメモ"
+            memo: "テストメモ",
         )
         exportCtx.insert(race)
         let entry = RaceEntry(race: race, horseNumber: 5, horseName: "テスト馬", predictionMark: "◎")
@@ -312,7 +312,7 @@ struct CSVエクスポーターTest {
         exportCtx.insert(bet)
         let betSelection = BetSelection(
             bet: bet, ticketTypeName: "馬連", selection: "1,2,3[BOX]",
-            unitPrice: 100, combinationCount: 3, sortIndex: 0
+            unitPrice: 100, combinationCount: 3, sortIndex: 0,
         )
         exportCtx.insert(betSelection)
         bet.selections = [betSelection]
@@ -360,7 +360,7 @@ struct CSVエクスポーターTest {
         #expect(restoredSel.combinationCount == 3)
     }
 
-    @Test func ZIPインポートで既存レースデータが新データに置き換わる() throws {
+    @Test func zipインポートで既存レースデータが新データに置き換わる() throws {
         let pre = Race(raceNumber: 99); container.mainContext.insert(pre)
         try container.mainContext.save()
 
@@ -399,7 +399,7 @@ struct CSVエクスポーターTest {
         #expect(output.contains(",馬連,"))
     }
 
-    @Test func 複数の買い目を持つ馬券のZIPエクスポートとインポートで全件が復元される() throws {
+    @Test func 複数の買い目を持つ馬券のzipエクスポートとインポートで全件が復元される() throws {
         let ctx = container.mainContext
         let race = Race(raceNumber: 1); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 700, payoutAmount: 0); ctx.insert(bet)
@@ -428,7 +428,7 @@ struct CSVエクスポーターTest {
         #expect(sels.count == 3)
     }
 
-    @Test func レガシーフォーマットのZIPインポートで馬券から買い目が生成される() throws {
+    @Test func レガシーフォーマットのzipインポートで馬券から買い目が生成される() throws {
         let racesCSV = """
         date,venue,race_number,race_name,distance,track_type,track_condition,category
         2026/06/16,,1,,1600,芝,良,中央
@@ -446,7 +446,7 @@ struct CSVエクスポーターTest {
         func addEntry(name: String, content: String) throws {
             let data = Data(content.utf8)
             try archive.addEntry(
-                with: name, type: .file, uncompressedSize: Int64(data.count)
+                with: name, type: .file, uncompressedSize: Int64(data.count),
             ) { _, size in data.subdata(in: 0 ..< size) }
         }
         try addEntry(name: "races.csv", content: racesCSV)
