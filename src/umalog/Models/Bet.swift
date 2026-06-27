@@ -30,7 +30,7 @@ final class Bet {
         unitPrice: Int = 100,
         purchaseAmount: Int = 0,
         payoutAmount: Int = 0,
-        sortIndex: Int = 0
+        sortIndex: Int = 0,
     ) {
         self.race = race
         self.ticketType = ticketType
@@ -143,7 +143,7 @@ final class Bet {
         for first in legs[0] {
             for second in legs[1] {
                 for third in legs[2] {
-                    if first != second && second != third && first != third {
+                    if first != second, second != third, first != third {
                         triples.insert(Set([first, second, third]))
                     }
                 }
@@ -158,7 +158,7 @@ final class Bet {
         for first in legs[0] {
             for second in legs[1] {
                 for third in legs[2] {
-                    if first != second && second != third && first != third { count += 1 }
+                    if first != second, second != third, first != third { count += 1 }
                 }
             }
         }

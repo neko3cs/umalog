@@ -29,13 +29,13 @@ struct RaceEntryFormView: View {
 
     private var horseNameSuggestions: [String] {
         guard !horseName.isEmpty else { return [] }
-        let names = Set(allEntries.map { $0.horseName }.filter { !$0.isEmpty })
+        let names = Set(allEntries.map(\.horseName).filter { !$0.isEmpty })
         return names.filter { $0.localizedStandardContains(horseName) && $0 != horseName }.sorted()
     }
 
     private var jockeyNameSuggestions: [String] {
         guard !jockeyName.isEmpty else { return [] }
-        let pastNames = Set(allEntries.map { $0.jockeyName }.filter { !$0.isEmpty })
+        let pastNames = Set(allEntries.map(\.jockeyName).filter { !$0.isEmpty })
         let combined = pastNames.union(jockeyPresets)
         return combined
             .filter { $0.localizedStandardContains(jockeyName) && $0 != jockeyName }
@@ -44,7 +44,7 @@ struct RaceEntryFormView: View {
 
     private var trainerNameSuggestions: [String] {
         guard !trainerName.isEmpty else { return [] }
-        let pastNames = Set(allEntries.map { $0.trainerName }.filter { !$0.isEmpty })
+        let pastNames = Set(allEntries.map(\.trainerName).filter { !$0.isEmpty })
         let combined = pastNames.union(trainerPresets)
         return combined
             .filter { $0.localizedStandardContains(trainerName) && $0 != trainerName }
@@ -129,7 +129,7 @@ struct RaceEntryFormView: View {
                                     .background(
                                         selectedMark == mark
                                             ? Color.accentColor.opacity(0.25)
-                                            : Color.secondary.opacity(0.1)
+                                            : Color.secondary.opacity(0.1),
                                     )
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
@@ -165,7 +165,7 @@ struct RaceEntryFormView: View {
     private func dismissKeyboard() {
         UIApplication.shared.sendAction(
             #selector(UIResponder.resignFirstResponder),
-            to: nil, from: nil, for: nil
+            to: nil, from: nil, for: nil,
         )
     }
 
@@ -195,7 +195,7 @@ struct RaceEntryFormView: View {
                 race: race, horseNumber: horseNumber, horseName: horseName,
                 jockeyName: jockeyName, trainerName: trainerName,
                 predictionMark: selectedMark?.rawValue,
-                sortIndex: sortIndex
+                sortIndex: sortIndex,
             ))
         }
     }

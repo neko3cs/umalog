@@ -17,6 +17,6 @@ final class SceneDelegate: NSObject, UIWindowSceneDelegate {
     }
 
     func stateRestorationActivity(for _: UIScene) -> NSUserActivity? {
-        return nil
+        nil
     }
 }

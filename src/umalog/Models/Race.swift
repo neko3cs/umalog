@@ -40,7 +40,7 @@ final class Race {
         firstPlaceHorseNumber: Int = 0,
         secondPlaceHorseNumber: Int = 0,
         thirdPlaceHorseNumber: Int = 0,
-        sortIndex: Int = 0
+        sortIndex: Int = 0,
     ) {
         self.date = date
         self.venue = venue
