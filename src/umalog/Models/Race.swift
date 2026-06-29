@@ -24,7 +24,9 @@ final class Race {
     var firstPlaceHorseNumber: Int = 0
     var secondPlaceHorseNumber: Int = 0
     var thirdPlaceHorseNumber: Int = 0
+    @Relationship(deleteRule: .cascade, inverse: \RaceEntry.race)
     var entries: [RaceEntry]?
+    @Relationship(deleteRule: .cascade, inverse: \Bet.race)
     var bets: [Bet]?
 
     init(
