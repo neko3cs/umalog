@@ -18,6 +18,8 @@ final class Race {
     var trackType: String = "turf" // "turf" | "dirt"
     var trackCondition: String = "良" // 良・稍重・重・不良
     var category: String = "central" // "central" | "local"
+    /// レースのグレード識別子。空文字はグレード未選択を示す。
+    var grade: String = ""
     var memo: String = ""
     var sortIndex: Int = 0
     // 着順（馬番を保持。0 = 未入力）
@@ -38,6 +40,7 @@ final class Race {
         trackType: String = "turf",
         trackCondition: String = "良",
         category: String = "central",
+        grade: String = "",
         memo: String = "",
         firstPlaceHorseNumber: Int = 0,
         secondPlaceHorseNumber: Int = 0,
@@ -52,6 +55,7 @@ final class Race {
         self.trackType = trackType
         self.trackCondition = trackCondition
         self.category = category
+        self.grade = grade
         self.memo = memo
         self.firstPlaceHorseNumber = firstPlaceHorseNumber
         self.secondPlaceHorseNumber = secondPlaceHorseNumber
@@ -82,5 +86,36 @@ final class Race {
     var returnRate: Double? {
         guard totalPurchase > 0 else { return nil }
         return Double(totalPayout) / Double(totalPurchase)
+    }
+}
+
+/// レースのグレードを表す。rawValue はストレージ・CSV に使う文字列識別子。
+enum RaceGrade: String, CaseIterable {
+    /// グレード未選択（空文字）。
+    case unspecified = ""
+    /// G1
+    case g1 = "G1"
+    /// G2
+    case g2 = "G2"
+    /// G3
+    case g3 = "G3"
+    /// リステッド競走
+    case listed = "Listed"
+    /// オープン特別競走
+    case openSpecial = "OpenSpecial"
+    /// 一般競走
+    case general = "General"
+
+    /// ピッカー・ラベルで使う表示名。
+    var displayName: String {
+        switch self {
+        case .unspecified: "未選択"
+        case .g1: "G1"
+        case .g2: "G2"
+        case .g3: "G3"
+        case .listed: "リステッド"
+        case .openSpecial: "オープン特別"
+        case .general: "一般"
+        }
     }
 }
