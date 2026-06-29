@@ -149,10 +149,9 @@ struct SettingsView: View {
     }
 
     private func resetAllData() {
-        try? modelContext.delete(model: BetSelection.self)
-        try? modelContext.delete(model: Bet.self)
-        try? modelContext.delete(model: RaceEntry.self)
-        try? modelContext.delete(model: Race.self)
+        let races = (try? modelContext.fetch(FetchDescriptor<Race>())) ?? []
+        races.forEach { modelContext.delete($0) }
+        try? modelContext.save()
         showingDataResetSuccess = true
     }
 
