@@ -301,4 +301,36 @@ struct レースモデルTest {
         #expect(newRace.totalPayout == 2500)
         #expect(newRace.balance == 1500)
     }
+
+    // MARK: - RaceGrade
+
+    @Test func `全 race gradeケースのraw valueが重複しない`() {
+        let rawValues = RaceGrade.allCases.map(\.rawValue)
+        #expect(Set(rawValues).count == rawValues.count)
+    }
+
+    @Test func `gradeのraw valueから race gradeが生成できる`() {
+        #expect(RaceGrade(rawValue: "") == .unspecified)
+        #expect(RaceGrade(rawValue: "G1") == .g1)
+        #expect(RaceGrade(rawValue: "G2") == .g2)
+        #expect(RaceGrade(rawValue: "G3") == .g3)
+        #expect(RaceGrade(rawValue: "Listed") == .listed)
+        #expect(RaceGrade(rawValue: "OpenSpecial") == .openSpecial)
+        #expect(RaceGrade(rawValue: "General") == .general)
+    }
+
+    @Test func `各 race gradeの表示名が正しい`() {
+        #expect(RaceGrade.unspecified.displayName == "未選択")
+        #expect(RaceGrade.g1.displayName == "G1")
+        #expect(RaceGrade.g2.displayName == "G2")
+        #expect(RaceGrade.g3.displayName == "G3")
+        #expect(RaceGrade.listed.displayName == "リステッド")
+        #expect(RaceGrade.openSpecial.displayName == "オープン特別")
+        #expect(RaceGrade.general.displayName == "一般")
+    }
+
+    @Test func `不正なraw valueからの race grade生成はnilになる`() {
+        #expect(RaceGrade(rawValue: "unknown") == nil)
+        #expect(RaceGrade(rawValue: "g1") == nil)
+    }
 }
