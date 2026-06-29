@@ -36,7 +36,7 @@ struct CSVエクスポーターTest {
         #expect(output.contains("=== BETS ==="))
         #expect(output.contains("=== BET_SELECTIONS ==="))
         #expect(output.contains("date,venue,race_number,race_name,distance,track_type,track_condition," +
-                "category,first_place_horse,second_place_horse,third_place_horse," +
+                "category,grade,first_place_horse,second_place_horse,third_place_horse," +
                 "total_purchase,total_payout,balance,memo"))
         #expect(output.contains("date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark"))
         #expect(output.contains("date,venue,race_number,bet_sort_index,purchase_amount,payout_amount,balance"))
@@ -467,5 +467,58 @@ struct CSVエクスポーターTest {
     private func makeDate(_ year: Int, _ month: Int, _ day: Int) -> Date {
         let calendar = Calendar(identifier: .gregorian)
         return calendar.date(from: DateComponents(year: year, month: month, day: day)) ?? Date()
+    }
+}
+
+// MARK: - グレード
+
+extension CSVエクスポーターTest {
+    @Test func グレードが設定されているレースのcsv行にgradeが含まれる() {
+        let race = Race(grade: "G1"); container.mainContext.insert(race)
+        #expect(CSVExporter.export(races: [race]).contains(",G1,"))
+    }
+
+    @Test func グレードが未設定のレースのcsv行のgradeが空になる() {
+        let race = Race(grade: ""); container.mainContext.insert(race)
+        // grade列が空文字 → category(中央)の直後にカンマが連続する
+        #expect(CSVExporter.export(races: [race]).contains(",中央,,"))
+    }
+
+    @Test func zipエクスポートとインポートでグレードが復元される() throws {
+        let race = Race(raceNumber: 1, grade: "G1"); container.mainContext.insert(race)
+        let url = try ZipExporter.export(races: [race])
+        defer { try? FileManager.default.removeItem(at: url) }
+        let schema = Schema([Race.self, Bet.self, BetSelection.self, RaceEntry.self, Venue.self, TicketType.self])
+        let cfg = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let importContainer = try ModelContainer(for: schema, configurations: [cfg])
+        try ZipImporter.importZip(from: url, context: importContainer.mainContext)
+        let races = try importContainer.mainContext.fetch(FetchDescriptor<Race>())
+        #expect(races.first?.grade == "G1")
+    }
+
+    @Test func gradeカラムのないレガシーzipをインポートしてもgradeが空文字になる() throws {
+        let racesCSV = """
+        date,venue,race_number,race_name,distance,track_type,track_condition,category,first_place_horse,second_place_horse,third_place_horse
+        2026/06/16,,1,,1600,芝,良,中央,,,
+        """
+        let entriesCSV = "date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark"
+        let betsCSV = "date,venue,race_number,bet_sort_index,purchase_amount,payout_amount,balance"
+        let zipURL = FileManager.default.temporaryDirectory.appendingPathComponent("legacy_grade_test.zip")
+        try? FileManager.default.removeItem(at: zipURL)
+        let archive = try Archive(url: zipURL, accessMode: .create)
+        defer { try? FileManager.default.removeItem(at: zipURL) }
+        func addEntry(name: String, content: String) throws {
+            let data = Data(content.utf8)
+            try archive.addEntry(
+                with: name, type: .file, uncompressedSize: Int64(data.count),
+            ) { _, size in data.subdata(in: 0 ..< size) }
+        }
+        try addEntry(name: "races.csv", content: racesCSV)
+        try addEntry(name: "entries.csv", content: entriesCSV)
+        try addEntry(name: "bets.csv", content: betsCSV)
+        try ZipImporter.importZip(from: zipURL, context: container.mainContext)
+        let races = try container.mainContext.fetch(FetchDescriptor<Race>())
+        #expect(races.count == 1)
+        #expect(races.first?.grade == "")
     }
 }

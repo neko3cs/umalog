@@ -95,6 +95,7 @@ private struct RaceSnapshot {
     let trackType: String
     let trackCondition: String
     let category: String
+    let grade: String
     let memo: String
     let sortIndex: Int
     let firstPlaceHorseNumber: Int
@@ -112,6 +113,7 @@ private struct RaceSnapshot {
         trackType = race.trackType
         trackCondition = race.trackCondition
         category = race.category
+        grade = race.grade
         memo = race.memo
         sortIndex = race.sortIndex
         firstPlaceHorseNumber = race.firstPlaceHorseNumber
@@ -128,7 +130,7 @@ private struct RaceSnapshot {
         let race = Race(
             date: date, venue: venue, raceNumber: raceNumber, raceName: raceName,
             distance: distance, trackType: trackType, trackCondition: trackCondition,
-            category: category, memo: memo,
+            category: category, grade: grade, memo: memo,
             firstPlaceHorseNumber: firstPlaceHorseNumber,
             secondPlaceHorseNumber: secondPlaceHorseNumber,
             thirdPlaceHorseNumber: thirdPlaceHorseNumber,
@@ -197,7 +199,18 @@ struct RaceRowView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Text(race.raceName.isEmpty ? "\(race.raceNumber)R" : race.raceName)
+            HStack(spacing: 4) {
+                Text(race.raceName.isEmpty ? "\(race.raceNumber)R" : race.raceName)
+                if !race.grade.isEmpty, let gradeEnum = RaceGrade(rawValue: race.grade) {
+                    Text(gradeEnum.displayName)
+                        .font(.caption2)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(gradeEnum.badgeColor.opacity(0.2))
+                        .foregroundStyle(gradeEnum.badgeColor)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                }
+            }
             HStack(spacing: 12) {
                 Text("購入 ¥\(race.totalPurchase.formatted())")
                     .font(.caption)
@@ -215,5 +228,21 @@ struct RaceRowView: View {
             }
         }
         .padding(.vertical, 2)
+    }
+}
+
+// MARK: - Grade Badge Color
+
+private extension RaceGrade {
+    /// リスト行バッジの背景・前景色。
+    var badgeColor: Color {
+        switch self {
+        case .unspecified: .clear
+        case .g1: .purple
+        case .g2: .blue
+        case .g3: .green
+        case .listed: .orange
+        case .openSpecial, .general: .secondary
+        }
     }
 }

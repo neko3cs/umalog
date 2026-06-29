@@ -24,6 +24,7 @@ struct RaceFormView: View {
     @State private var trackType: String = "turf"
     @State private var trackCondition: String = "良"
     @State private var category: String = "central"
+    @State private var grade: String = ""
 
     private let trackConditions = ["良", "稍重", "重", "不良"]
     private var isEditing: Bool {
@@ -53,6 +54,11 @@ struct RaceFormView: View {
                     }
                     Stepper("R\(raceNumber)", value: $raceNumber, in: 1 ... 12)
                     TextField("レース名（任意）", text: $raceName)
+                    Picker("グレード", selection: $grade) {
+                        ForEach(RaceGrade.allCases, id: \.rawValue) { g in
+                            Text(g.displayName).tag(g.rawValue)
+                        }
+                    }
                 }
 
                 Section("コース") {
@@ -122,6 +128,7 @@ struct RaceFormView: View {
         trackType = race.trackType
         trackCondition = race.trackCondition
         category = race.category
+        grade = race.grade
     }
 
     private func save() {
@@ -134,11 +141,12 @@ struct RaceFormView: View {
             race.trackType = trackType
             race.trackCondition = trackCondition
             race.category = category
+            race.grade = grade
         } else {
             let newRace = Race(
                 date: date, venue: selectedVenue, raceNumber: raceNumber,
                 raceName: raceName, distance: distance, trackType: trackType,
-                trackCondition: trackCondition, category: category,
+                trackCondition: trackCondition, category: category, grade: grade,
             )
             modelContext.insert(newRace)
         }
