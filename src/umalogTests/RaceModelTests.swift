@@ -260,4 +260,45 @@ struct レースモデルTest {
             #expect(race.returnRate == 1.0)
         }
     }
+
+    // MARK: - @Relationship inverse（逆参照自動更新）
+
+    @Test func `馬券挿入時にrace betsが自動更新される`() throws {
+        let ctx = container.mainContext
+        let race = Race(); ctx.insert(race)
+        let bet = Bet(race: race, purchaseAmount: 1000, payoutAmount: 3000)
+        ctx.insert(bet)
+        try ctx.save()
+        #expect(race.bets?.count == 1)
+        #expect(race.totalPurchase == 1000)
+        #expect(race.balance == 2000)
+    }
+
+    @Test func レース削除時に紐づく馬券がカスケード削除される() throws {
+        let ctx = container.mainContext
+        let race = Race(); ctx.insert(race)
+        let bet = Bet(race: race, purchaseAmount: 1000); ctx.insert(bet)
+        try ctx.save()
+        ctx.delete(race)
+        try ctx.save()
+        let remaining = try ctx.fetch(FetchDescriptor<Bet>())
+        #expect(remaining.isEmpty)
+    }
+
+    @Test func 全レース削除後に新規レースと馬券の収支が正しく計算される() throws {
+        let ctx = container.mainContext
+        let oldRace = Race(); ctx.insert(oldRace)
+        let oldBet = Bet(race: oldRace, purchaseAmount: 500); ctx.insert(oldBet)
+        try ctx.save()
+        let races = try ctx.fetch(FetchDescriptor<Race>())
+        races.forEach { ctx.delete($0) }
+        try ctx.save()
+        let newRace = Race(); ctx.insert(newRace)
+        let newBet = Bet(race: newRace, purchaseAmount: 1000, payoutAmount: 2500)
+        ctx.insert(newBet)
+        try ctx.save()
+        #expect(newRace.totalPurchase == 1000)
+        #expect(newRace.totalPayout == 2500)
+        #expect(newRace.balance == 1500)
+    }
 }
