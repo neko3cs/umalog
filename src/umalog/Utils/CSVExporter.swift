@@ -19,7 +19,7 @@ enum CSVExporter {
         lines.append("=== RACES ===")
         lines.append(
             "date,venue,race_number,race_name,distance,track_type,track_condition," +
-                "category,first_place_horse,second_place_horse,third_place_horse," +
+                "category,grade,first_place_horse,second_place_horse,third_place_horse," +
                 "total_purchase,total_payout,balance,memo",
         )
         for race in sorted {
@@ -32,6 +32,7 @@ enum CSVExporter {
                 race.trackType == "turf" ? "芝" : "ダート",
                 race.trackCondition,
                 race.category == "central" ? "中央" : "地方",
+                race.grade,
                 horseNumberString(race.firstPlaceHorseNumber),
                 horseNumberString(race.secondPlaceHorseNumber),
                 horseNumberString(race.thirdPlaceHorseNumber),
@@ -173,7 +174,7 @@ enum ZipExporter {
 
     private static func racesCSV(_ races: [Race]) -> String {
         let header = "date,venue,race_number,race_name,distance,track_type,track_condition," +
-            "category,first_place_horse,second_place_horse,third_place_horse," +
+            "category,grade,first_place_horse,second_place_horse,third_place_horse," +
             "total_purchase,total_payout,balance"
         var lines = [header]
         for race in races {
@@ -186,6 +187,7 @@ enum ZipExporter {
                 race.trackType == "turf" ? "芝" : "ダート",
                 race.trackCondition,
                 race.category == "central" ? "中央" : "地方",
+                race.grade,
                 CSVExporter.horseNumberString(race.firstPlaceHorseNumber),
                 CSVExporter.horseNumberString(race.secondPlaceHorseNumber),
                 CSVExporter.horseNumberString(race.thirdPlaceHorseNumber),
@@ -291,11 +293,14 @@ enum ZipImporter {
         let raceRows = parseCSV(racesText)
         let raceHeader = raceRows.first ?? []
         let hasFinishPlaces = raceHeader.contains("first_place_horse")
+        let hasGrade = raceHeader.contains("grade")
         for (idx, row) in raceRows.dropFirst().enumerated() {
             guard row.count >= 8 else { continue }
-            let firstPlace = hasFinishPlaces && row.count > 8 ? Int(row[8]) ?? 0 : 0
-            let secondPlace = hasFinishPlaces && row.count > 9 ? Int(row[9]) ?? 0 : 0
-            let thirdPlace = hasFinishPlaces && row.count > 10 ? Int(row[10]) ?? 0 : 0
+            let grade = hasGrade && row.count > 8 ? row[8] : ""
+            let placeOffset = hasGrade ? 9 : 8
+            let firstPlace = hasFinishPlaces && row.count > placeOffset ? Int(row[placeOffset]) ?? 0 : 0
+            let secondPlace = hasFinishPlaces && row.count > placeOffset + 1 ? Int(row[placeOffset + 1]) ?? 0 : 0
+            let thirdPlace = hasFinishPlaces && row.count > placeOffset + 2 ? Int(row[placeOffset + 2]) ?? 0 : 0
             let race = Race(
                 date: parseDate(row[0]) ?? Date(),
                 venue: venues.first { $0.name == row[1] },
@@ -305,6 +310,7 @@ enum ZipImporter {
                 trackType: row[5] == "芝" ? "turf" : "dirt",
                 trackCondition: row[6],
                 category: row[7] == "中央" ? "central" : "local",
+                grade: grade,
                 firstPlaceHorseNumber: firstPlace,
                 secondPlaceHorseNumber: secondPlace,
                 thirdPlaceHorseNumber: thirdPlace,

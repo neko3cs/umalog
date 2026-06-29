@@ -44,6 +44,9 @@ struct RaceDetailView: View {
                 if !race.raceName.isEmpty {
                     LabeledContent("レース名", value: race.raceName)
                 }
+                if !race.grade.isEmpty, let gradeEnum = RaceGrade(rawValue: race.grade) {
+                    LabeledContent("グレード", value: gradeEnum.displayName)
+                }
                 LabeledContent("コース") {
                     Text("\(race.trackType == "turf" ? "芝" : "ダート") \(race.distance)m \(race.trackCondition)")
                 }
