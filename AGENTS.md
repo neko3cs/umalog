@@ -86,6 +86,7 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 - **`@MainActor` extension inheritance**: `extension AlreadyMainActorStruct { }` inherits `@MainActor` automatically — re-annotating causes SIGBUS crash in Swift 6.2.
 - **`ModelContainer` must be stored before `.mainContext`**: Inline `try ModelContainer(...).mainContext` releases the container immediately; always store in a named `let` first.
 - **SwiftLint `type_body_length` in tests**: 400-line limit per declaration. Move overflow tests into a bare `extension MyTest { }` — SwiftLint counts each body separately. No `@MainActor` on the extension (see above).
+- **Toolbar buttons must have `.accessibilityIdentifier`**: With multiple `ToolbarItem(.navigationBarTrailing)` items, `app.navigationBars["X"].buttons["Add"]` races against SwiftData's re-render in XCUITest — `waitForExistence` on the bar then `tap()` on a child element can miss. Always set `.accessibilityIdentifier` on toolbar buttons and use `findElement("id")` / `tapWhenReady` in UI tests.
 
 ---
 
@@ -93,14 +94,15 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 
 - [ ] **#1** JRA出走馬自動取得 — plan in `.claude/plans/1-jra-immutable-cascade.md`; blocked: owner must decide on netkeiba URL-paste vs other source, ToS review required.
 - [ ] **#14** マルチプラットフォーム対応（macOS / iPadOS）— low priority.
+- [ ] **#22** 収支画面に「今日」ボタン追加 — `BalanceSummaryView` ナビゲーションバーへの小改善。未着手。
 
 ---
 
 ## Current State & Handoff (2026-07-01)
 
 - Tests: 210 unit, 25 UI — all green. SwiftFormat + SwiftLint clean.
-- Completed: Issue #4 (RaceFilter value type, filter sheet, chips, sort toggle) — PR #21 merged.
-- Next: Issue #1 — owner decision on scraping strategy needed before coding starts. #14 unstarted.
+- In progress: Issue #4 (RaceFilter value type, filter sheet, chips, sort toggle) — PR #21 open, awaiting review.
+- Next: Issue #22 (今日ボタン, simple). Issue #1 blocked on owner scraping strategy decision. #14 unstarted.
 
 ---
 
