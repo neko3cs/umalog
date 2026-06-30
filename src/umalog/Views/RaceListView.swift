@@ -11,59 +11,110 @@ import SwiftUI
 struct RaceListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.undoManager) private var undoManager
-    @Query(sort: \Race.date, order: .reverse) private var races: [Race]
+    @Query private var races: [Race]
+    /// SwiftData から取得した全競馬場。
+    @Query(sort: \Venue.sortIndex) private var venues: [Venue]
     @State private var showingAddRace = false
+    /// フィルターシートの表示状態。
+    @State private var showingFilter = false
+    /// 現在のフィルター条件。
+    @State private var filter = RaceFilter()
+    /// ソート方向。true なら日付昇順、false なら降順。
+    @State private var sortAscending = false
+
+    /// フィルターとソートを適用したレース配列。
+    private var filteredRaces: [Race] {
+        let base = filter.isActive ? filter.apply(to: races) : races
+        return base.sorted { sortAscending ? $0.date < $1.date : $0.date > $1.date }
+    }
 
     private var groupedRaces: [(Date, [Race])] {
         let calendar = Calendar.current
-        let grouped = Dictionary(grouping: races) { race in
+        let grouped = Dictionary(grouping: filteredRaces) { race in
             calendar.startOfDay(for: race.date)
         }
-        return grouped.sorted { $0.key > $1.key }
+        return grouped.sorted { sortAscending ? $0.key < $1.key : $0.key > $1.key }
     }
 
     var body: some View {
         NavigationStack {
-            List {
-                ForEach(groupedRaces, id: \.0) { date, dayRaces in
-                    Section {
-                        ForEach(dayRaces.sorted { $0.raceNumber < $1.raceNumber }) { race in
-                            NavigationLink(destination: RaceDetailView(race: race)) {
-                                RaceRowView(race: race)
+            VStack(spacing: 0) {
+                if filter.isActive {
+                    FilterChipsView(filter: $filter, venues: venues)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+                List {
+                    ForEach(groupedRaces, id: \.0) { date, dayRaces in
+                        Section {
+                            ForEach(dayRaces.sorted { $0.raceNumber < $1.raceNumber }) { race in
+                                NavigationLink(destination: RaceDetailView(race: race)) {
+                                    RaceRowView(race: race)
+                                }
                             }
-                        }
-                        .onDelete { indexSet in
-                            let sorted = dayRaces.sorted { $0.raceNumber < $1.raceNumber }
-                            for index in indexSet {
-                                deleteRace(sorted[index])
+                            .onDelete { indexSet in
+                                let sorted = dayRaces.sorted { $0.raceNumber < $1.raceNumber }
+                                for index in indexSet {
+                                    deleteRace(sorted[index])
+                                }
                             }
+                        } header: {
+                            Text(date.japaneseShortDateString)
                         }
-                    } header: {
-                        Text(date.japaneseShortDateString)
+                    }
+                }
+                .overlay {
+                    if races.isEmpty {
+                        ContentUnavailableView(
+                            "レースがありません",
+                            systemImage: "list.bullet.clipboard",
+                            description: Text("右上の + ボタンからレースを追加してください"),
+                        )
+                    } else if filteredRaces.isEmpty {
+                        ContentUnavailableView(
+                            "条件に一致するレースがありません",
+                            systemImage: "line.3.horizontal.decrease.circle",
+                            description: Text("フィルター条件を変更してください"),
+                        )
                     }
                 }
             }
+            .animation(.easeInOut(duration: 0.2), value: filter.isActive)
             .navigationTitle("Umalog")
             .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        sortAscending.toggle()
+                    } label: {
+                        Image(systemName: sortAscending ? "arrow.up" : "arrow.down")
+                    }
+                    .accessibilityIdentifier("sort-toggle-button")
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showingFilter = true
+                    } label: {
+                        Image(
+                            systemName: filter.isActive
+                                ? "line.3.horizontal.decrease.circle.fill"
+                                : "line.3.horizontal.decrease.circle",
+                        )
+                    }
+                    .accessibilityIdentifier("filter-button")
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         showingAddRace = true
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityIdentifier("add-race-button")
                 }
             }
             .sheet(isPresented: $showingAddRace) {
                 RaceFormView()
             }
-            .overlay {
-                if races.isEmpty {
-                    ContentUnavailableView(
-                        "レースがありません",
-                        systemImage: "list.bullet.clipboard",
-                        description: Text("右上の + ボタンからレースを追加してください"),
-                    )
-                }
+            .sheet(isPresented: $showingFilter) {
+                RaceFilterView(filter: $filter)
             }
         }
     }
