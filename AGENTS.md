@@ -92,16 +92,15 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 ## Open Issues
 
 - [ ] **#1** JRA出走馬自動取得 — plan in `.claude/plans/1-jra-immutable-cascade.md`; blocked: owner must decide on netkeiba URL-paste vs other source, ToS review required.
-- [ ] **#4** レース一覧フィルター機能（競馬場/区分/グレード/日付範囲）
 - [ ] **#14** マルチプラットフォーム対応（macOS / iPadOS）— low priority.
 
 ---
 
-## Current State & Handoff (2026-06-30)
+## Current State & Handoff (2026-07-01)
 
-- Tests: 183 unit, 21 UI — all green. Coverage 99.49%. SwiftFormat + SwiftLint clean.
-- Completed: Issue #3 (RaceGrade enum, grade field, CSV compat, UI badges) — PR #19 merged.
-- Next: Issue #1 — owner decision on scraping strategy needed before coding starts. #4 and #14 unstarted.
+- Tests: 210 unit, 25 UI — all green. SwiftFormat + SwiftLint clean.
+- Completed: Issue #4 (RaceFilter value type, filter sheet, chips, sort toggle) — PR #21 merged.
+- Next: Issue #1 — owner decision on scraping strategy needed before coding starts. #14 unstarted.
 
 ---
 
