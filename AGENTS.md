@@ -86,22 +86,24 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 - **`@MainActor` extension inheritance**: `extension AlreadyMainActorStruct { }` inherits `@MainActor` automatically — re-annotating causes SIGBUS crash in Swift 6.2.
 - **`ModelContainer` must be stored before `.mainContext`**: Inline `try ModelContainer(...).mainContext` releases the container immediately; always store in a named `let` first.
 - **SwiftLint `type_body_length` in tests**: 400-line limit per declaration. Move overflow tests into a bare `extension MyTest { }` — SwiftLint counts each body separately. No `@MainActor` on the extension (see above).
+- **Toolbar buttons must have `.accessibilityIdentifier`**: With multiple `ToolbarItem(.navigationBarTrailing)` items, `app.navigationBars["X"].buttons["Add"]` races against SwiftData's re-render in XCUITest — `waitForExistence` on the bar then `tap()` on a child element can miss. Always set `.accessibilityIdentifier` on toolbar buttons and use `findElement("id")` / `tapWhenReady` in UI tests.
+- **`Toggle` with a custom `Binding(get:set:)` inside `Form`/`List` rows can silently fail to register taps**: confirmed via real mouse clicks in the Simulator (not an XCUITest artifact) — a sibling `Picker` bound directly to `$filter.category` in the same sheet worked fine. Prefer a `Button` + checkmark row over `Toggle` for per-item multi-select rows in a `Form`/`List`.
 
 ---
 
 ## Open Issues
 
 - [ ] **#1** JRA出走馬自動取得 — plan in `.claude/plans/1-jra-immutable-cascade.md`; blocked: owner must decide on netkeiba URL-paste vs other source, ToS review required.
-- [ ] **#4** レース一覧フィルター機能（競馬場/区分/グレード/日付範囲）
 - [ ] **#14** マルチプラットフォーム対応（macOS / iPadOS）— low priority.
+- [ ] **#22** 収支画面に「今日」ボタン追加 — `BalanceSummaryView` ナビゲーションバーへの小改善。未着手。
 
 ---
 
-## Current State & Handoff (2026-06-30)
+## Current State & Handoff (2026-07-01, later)
 
-- Tests: 183 unit, 21 UI — all green. Coverage 99.49%. SwiftFormat + SwiftLint clean.
-- Completed: Issue #3 (RaceGrade enum, grade field, CSV compat, UI badges) — PR #19 merged.
-- Next: Issue #1 — owner decision on scraping strategy needed before coding starts. #4 and #14 unstarted.
+- Tests: 210 unit, 25 UI — all green. SwiftFormat + SwiftLint clean.
+- In progress: Issue #4 — venue/grade filter Toggle rows in PR #21 were completely unresponsive to taps (see Tacit Knowledge); fixed in commit f7627dc (Button+checkmark), verified via manual Simulator clicks. Not yet pushed to PR #21.
+- Next: push fix to `feature/issue-4` / PR #21, then Issue #22 (今日ボタン, simple). Issue #1 blocked on owner scraping strategy decision. #14 unstarted.
 
 ---
 
@@ -110,3 +112,4 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 | Date | What went wrong | Prevention |
 | :--- | :--- | :--- |
 | 2026-06-30 | Committed and pushed before owner confirmed behavior | Never `git commit` / `git push` without explicit owner instruction |
+| 2026-07-01 | PR #21 shipped with venue/grade filter rows completely unresponsive to taps despite 27 passing unit tests | Unit tests on a value type (`RaceFilter`) don't verify View wiring — add an interaction-level UI test or manual Simulator click-through for every new tappable control before merging |
