@@ -87,6 +87,7 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 - **`ModelContainer` must be stored before `.mainContext`**: Inline `try ModelContainer(...).mainContext` releases the container immediately; always store in a named `let` first.
 - **SwiftLint `type_body_length` in tests**: 400-line limit per declaration. Move overflow tests into a bare `extension MyTest { }` — SwiftLint counts each body separately. No `@MainActor` on the extension (see above).
 - **Toolbar buttons must have `.accessibilityIdentifier`**: With multiple `ToolbarItem(.navigationBarTrailing)` items, `app.navigationBars["X"].buttons["Add"]` races against SwiftData's re-render in XCUITest — `waitForExistence` on the bar then `tap()` on a child element can miss. Always set `.accessibilityIdentifier` on toolbar buttons and use `findElement("id")` / `tapWhenReady` in UI tests.
+- **`Toggle` with a custom `Binding(get:set:)` inside `Form`/`List` rows can silently fail to register taps**: confirmed via real mouse clicks in the Simulator (not an XCUITest artifact) — a sibling `Picker` bound directly to `$filter.category` in the same sheet worked fine. Prefer a `Button` + checkmark row over `Toggle` for per-item multi-select rows in a `Form`/`List`.
 
 ---
 
@@ -98,11 +99,11 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 
 ---
 
-## Current State & Handoff (2026-07-01)
+## Current State & Handoff (2026-07-01, later)
 
 - Tests: 210 unit, 25 UI — all green. SwiftFormat + SwiftLint clean.
-- In progress: Issue #4 (RaceFilter value type, filter sheet, chips, sort toggle) — PR #21 open, awaiting review.
-- Next: Issue #22 (今日ボタン, simple). Issue #1 blocked on owner scraping strategy decision. #14 unstarted.
+- In progress: Issue #4 — venue/grade filter Toggle rows in PR #21 were completely unresponsive to taps (see Tacit Knowledge); fixed in commit f7627dc (Button+checkmark), verified via manual Simulator clicks. Not yet pushed to PR #21.
+- Next: push fix to `feature/issue-4` / PR #21, then Issue #22 (今日ボタン, simple). Issue #1 blocked on owner scraping strategy decision. #14 unstarted.
 
 ---
 
@@ -111,3 +112,4 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 | Date | What went wrong | Prevention |
 | :--- | :--- | :--- |
 | 2026-06-30 | Committed and pushed before owner confirmed behavior | Never `git commit` / `git push` without explicit owner instruction |
+| 2026-07-01 | PR #21 shipped with venue/grade filter rows completely unresponsive to taps despite 27 passing unit tests | Unit tests on a value type (`RaceFilter`) don't verify View wiring — add an interaction-level UI test or manual Simulator click-through for every new tappable control before merging |
