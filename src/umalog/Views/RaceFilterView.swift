@@ -115,19 +115,27 @@ struct RaceFilterView: View {
         }
     }
 
-    /// 指定競馬場の選択トグル行。
-    /// - Parameter venue: トグル対象の競馬場。
+    /// 指定競馬場の選択行。タップで選択トグルする。
+    /// - Parameter venue: 対象の競馬場。
     private func venueToggle(for venue: Venue) -> some View {
-        Toggle(venue.name, isOn: Binding(
-            get: { filter.venueIDs.contains(venue.persistentModelID) },
-            set: { on in
-                if on {
-                    filter.venueIDs.insert(venue.persistentModelID)
-                } else {
-                    filter.venueIDs.remove(venue.persistentModelID)
+        let isSelected = filter.venueIDs.contains(venue.persistentModelID)
+        return Button {
+            if isSelected {
+                filter.venueIDs.remove(venue.persistentModelID)
+            } else {
+                filter.venueIDs.insert(venue.persistentModelID)
+            }
+        } label: {
+            HStack {
+                Text(venue.name)
+                    .foregroundStyle(.primary)
+                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(.tint)
                 }
-            },
-        ))
+            }
+        }
     }
 
     /// 区分（中央/地方）選択ピッカー。
@@ -140,28 +148,37 @@ struct RaceFilterView: View {
         .pickerStyle(.segmented)
     }
 
-    /// 指定グレードの選択トグル行。
-    /// - Parameter grade: トグル対象のグレード。
+    /// 指定グレードの選択行。タップで選択トグルする。
+    /// - Parameter grade: 対象のグレード。
     private func gradeToggle(for grade: RaceGrade) -> some View {
-        Toggle(grade.displayName, isOn: Binding(
-            get: { filter.grades.contains(grade) },
-            set: { on in
-                if on {
-                    filter.grades.insert(grade)
-                } else {
-                    filter.grades.remove(grade)
+        let isSelected = filter.grades.contains(grade)
+        return Button {
+            if isSelected {
+                filter.grades.remove(grade)
+            } else {
+                filter.grades.insert(grade)
+            }
+        } label: {
+            HStack {
+                Text(grade.displayName)
+                    .foregroundStyle(.primary)
+                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(.tint)
                 }
-            },
-        ))
+            }
+        }
     }
 
     /// 開始日・終了日を設定する行群。
     @ViewBuilder
     private var dateRangeRows: some View {
-        Toggle("開始日を指定", isOn: Binding(
-            get: { filter.dateFrom != nil },
-            set: { on in filter.dateFrom = on ? Calendar.current.startOfDay(for: Date()) : nil },
-        ))
+        dateBoundaryRow(
+            label: "開始日を指定",
+            isSet: filter.dateFrom != nil,
+            onToggle: { on in filter.dateFrom = on ? Calendar.current.startOfDay(for: Date()) : nil },
+        )
         if let dateFrom = filter.dateFrom {
             DatePicker(
                 "開始日",
@@ -169,16 +186,38 @@ struct RaceFilterView: View {
                 displayedComponents: .date,
             )
         }
-        Toggle("終了日を指定", isOn: Binding(
-            get: { filter.dateTo != nil },
-            set: { on in filter.dateTo = on ? Calendar.current.startOfDay(for: Date()) : nil },
-        ))
+        dateBoundaryRow(
+            label: "終了日を指定",
+            isSet: filter.dateTo != nil,
+            onToggle: { on in filter.dateTo = on ? Calendar.current.startOfDay(for: Date()) : nil },
+        )
         if let dateTo = filter.dateTo {
             DatePicker(
                 "終了日",
                 selection: Binding(get: { dateTo }, set: { filter.dateTo = $0 }),
                 displayedComponents: .date,
             )
+        }
+    }
+
+    /// 日付範囲の開始日・終了日指定有無を切り替える行。
+    /// - Parameters:
+    ///   - label: 行に表示するラベル。
+    ///   - isSet: 現在指定済みかどうか。
+    ///   - onToggle: 指定有無が切り替わったときに呼ばれるハンドラ。
+    private func dateBoundaryRow(label: String, isSet: Bool, onToggle: @escaping (Bool) -> Void) -> some View {
+        Button {
+            onToggle(!isSet)
+        } label: {
+            HStack {
+                Text(label)
+                    .foregroundStyle(.primary)
+                Spacer()
+                if isSet {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(.tint)
+                }
+            }
         }
     }
 }
