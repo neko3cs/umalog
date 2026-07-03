@@ -209,6 +209,25 @@ struct レースモデルTest {
         #expect(race.finishPosition(forHorseNumber: 1) == nil)
     }
 
+    @Test func `馬番 0 は着順が未設定でもnilになる`() {
+        // 着順欄の 0 は「未入力」を意味するため、馬番 0 と誤って一致してはならない
+        let race = Race()
+        container.mainContext.insert(race)
+        #expect(race.finishPosition(forHorseNumber: 0) == nil)
+    }
+
+    @Test func `馬番 0 は着順が設定済みでもnilになる`() {
+        let race = Race(firstPlaceHorseNumber: 5, secondPlaceHorseNumber: 3, thirdPlaceHorseNumber: 8)
+        container.mainContext.insert(race)
+        #expect(race.finishPosition(forHorseNumber: 0) == nil)
+    }
+
+    @Test func 負の馬番では常にnilになる() {
+        let race = Race()
+        container.mainContext.insert(race)
+        #expect(race.finishPosition(forHorseNumber: -1) == nil)
+    }
+
     // MARK: - Property-Based Tests
 
     @Test func 任意の馬券群で収支が常に払戻と購入の差額の総和に等しい() {
