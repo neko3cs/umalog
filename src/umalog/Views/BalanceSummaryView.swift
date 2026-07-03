@@ -92,13 +92,28 @@ struct BalanceSummaryPeriodCalc {
     func setYear(_ year: Int, in date: Date) -> Date {
         var comps = calendar.dateComponents([.year, .month, .day], from: date)
         comps.year = year
-        return calendar.date(from: comps) ?? date
+        return dateClampedToMonthEnd(comps) ?? date
     }
 
     func setMonth(_ month: Int, in date: Date) -> Date {
         var comps = calendar.dateComponents([.year, .month, .day], from: date)
         comps.month = month
-        return calendar.date(from: comps) ?? date
+        return dateClampedToMonthEnd(comps) ?? date
+    }
+
+    /// 日が変更後の年月に存在しない場合（例: 1月31日 → 2月）に月末日へ丸めて Date を生成する。
+    /// 丸めないと Calendar が翌月へ繰り上げるため、ピッカーで選んだ月と表示月がズレてしまう。
+    /// - Parameter components: year・month・day を含む変更後の日付コンポーネント。
+    /// - Returns: 丸め後の日付。生成に失敗した場合は nil。
+    private func dateClampedToMonthEnd(_ components: DateComponents) -> Date? {
+        var comps = components
+        let day = comps.day ?? 1
+        comps.day = 1
+        guard let firstOfMonth = calendar.date(from: comps),
+              let dayRange = calendar.range(of: .day, in: .month, for: firstOfMonth)
+        else { return nil }
+        comps.day = min(day, dayRange.upperBound - 1)
+        return calendar.date(from: comps)
     }
 }
 
