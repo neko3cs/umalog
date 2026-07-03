@@ -313,6 +313,51 @@ final class 収支サマリーTest: UIテストケース {
             .firstMatch
         XCTAssertTrue(purchaseTotalElement.waitForExistence(timeout: 5))
     }
+
+    @MainActor
+    func test今日ボタンが収支画面に表示される() {
+        app.tabBars.firstMatch.buttons["収支"].tap()
+        XCTAssertTrue(app.navigationBars["収支"].waitForExistence(timeout: 5))
+        XCTAssertTrue(findElement("today-button").waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func test日モードで前へボタンで移動後に今日ボタンで今日の日付に戻る() {
+        app.tabBars.firstMatch.buttons["収支"].tap()
+        XCTAssertTrue(app.navigationBars["収支"].waitForExistence(timeout: 5))
+
+        let dailyButton = app.buttons["日"]
+        XCTAssertTrue(dailyButton.waitForExistence(timeout: 5))
+        dailyButton.tap()
+
+        let titleElement = findElement("period-title")
+        XCTAssertTrue(titleElement.waitForExistence(timeout: 5))
+        let todayTitle = titleElement.label
+
+        tapWhenReady(findElement("period-prev-button"))
+        XCTAssertNotEqual(titleElement.label, todayTitle)
+
+        tapWhenReady(findElement("today-button"))
+        XCTAssertEqual(titleElement.label, todayTitle)
+    }
+
+    @MainActor
+    func test期間モードで今日ボタンをタップすると開始日と終了日が今日にリセットされる() {
+        app.tabBars.firstMatch.buttons["収支"].tap()
+        XCTAssertTrue(app.navigationBars["収支"].waitForExistence(timeout: 5))
+
+        let rangeButton = app.buttons["期間"]
+        XCTAssertTrue(rangeButton.waitForExistence(timeout: 5))
+        rangeButton.tap()
+
+        let titleElement = findElement("period-title")
+        XCTAssertTrue(titleElement.waitForExistence(timeout: 5))
+        // "31日間" のように "1日間" を部分文字列として含む日数と誤判定しないよう括弧込みで比較する
+        XCTAssertFalse(titleElement.label.contains("(1日間)"))
+
+        tapWhenReady(findElement("today-button"))
+        XCTAssertTrue(titleElement.label.contains("(1日間)"))
+    }
 }
 
 // MARK: - Scenario 7: 設定画面
