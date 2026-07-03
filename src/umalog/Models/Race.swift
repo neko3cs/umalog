@@ -64,7 +64,9 @@ final class Race {
     }
 
     /// 指定馬番の着順を返す（1〜3 着の中で当該馬番にマッチするものを返す。未入力時 nil）
+    /// - Note: 馬番 0 は「未入力」を意味するため、着順欄が未入力（= 0）でも誤って一致しないよう常に nil を返す。
     func finishPosition(forHorseNumber number: Int) -> Int? {
+        guard number > 0 else { return nil }
         if firstPlaceHorseNumber == number { return 1 }
         if secondPlaceHorseNumber == number { return 2 }
         if thirdPlaceHorseNumber == number { return 3 }
