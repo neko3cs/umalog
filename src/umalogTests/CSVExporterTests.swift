@@ -496,6 +496,89 @@ extension CSVエクスポーターTest {
         #expect(races.first?.grade == "G1")
     }
 
+    @Test func メモファイル名に競馬場とレース番号が含まれる() {
+        let date = makeDate(2026, 6, 13)
+        let name = ZipExporter.memoBaseName(date: date, venueName: "東京", raceNumber: 11, raceName: "天皇賞")
+        #expect(name == "20260613_東京_R11_天皇賞")
+    }
+
+    @Test func メモファイル名の禁止文字がアンダースコアに置換される() {
+        #expect(ZipExporter.sanitizeForFilename("A/B:C\\D") == "A_B_C_D")
+    }
+
+    @Test func 同日同名レースが異なる競馬場でもメモがそれぞれ復元される() throws {
+        let ctx = container.mainContext
+        let tokyo = Venue(name: "東京"); ctx.insert(tokyo)
+        let hanshin = Venue(name: "阪神"); ctx.insert(hanshin)
+        let date = makeDate(2026, 6, 14)
+        let race1 = Race(date: date, venue: tokyo, raceNumber: 1, raceName: "3歳未勝利", memo: "東京のメモ")
+        ctx.insert(race1)
+        let race2 = Race(date: date, venue: hanshin, raceNumber: 1, raceName: "3歳未勝利", memo: "阪神のメモ")
+        ctx.insert(race2)
+
+        let url = try ZipExporter.export(races: [race1, race2])
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let schema = Schema([Race.self, Bet.self, BetSelection.self, RaceEntry.self, Venue.self, TicketType.self])
+        let cfg = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let importContainer = try ModelContainer(for: schema, configurations: [cfg])
+        let importCtx = importContainer.mainContext
+        importCtx.insert(Venue(name: "東京"))
+        importCtx.insert(Venue(name: "阪神"))
+
+        try ZipImporter.importZip(from: url, context: importCtx)
+
+        let races = try importCtx.fetch(FetchDescriptor<Race>())
+        #expect(races.count == 2)
+        #expect(races.first { $0.venue?.name == "東京" }?.memo == "東京のメモ")
+        #expect(races.first { $0.venue?.name == "阪神" }?.memo == "阪神のメモ")
+    }
+
+    @Test func レース名にバックスラッシュを含むメモがエクスポートとインポートで復元される() throws {
+        let ctx = container.mainContext
+        let race = Race(date: makeDate(2026, 6, 15), raceNumber: 3, raceName: "A\\B", memo: "記号入りメモ")
+        ctx.insert(race)
+
+        let url = try ZipExporter.export(races: [race])
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let schema = Schema([Race.self, Bet.self, BetSelection.self, RaceEntry.self, Venue.self, TicketType.self])
+        let cfg = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let importContainer = try ModelContainer(for: schema, configurations: [cfg])
+        try ZipImporter.importZip(from: url, context: importContainer.mainContext)
+
+        let races = try importContainer.mainContext.fetch(FetchDescriptor<Race>())
+        #expect(races.first?.memo == "記号入りメモ")
+    }
+
+    @Test func 旧形式ファイル名のメモがインポートで復元される() throws {
+        let racesCSV = """
+        date,venue,race_number,race_name,distance,track_type,track_condition,category
+        2026/06/16,,1,テストレース,1600,芝,良,中央
+        """
+        let entriesCSV = "date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark"
+        let betsCSV = "date,venue,race_number,bet_sort_index,purchase_amount,payout_amount,balance"
+        let zipURL = FileManager.default.temporaryDirectory.appendingPathComponent("legacy_memo_test.zip")
+        try? FileManager.default.removeItem(at: zipURL)
+        let archive = try Archive(url: zipURL, accessMode: .create)
+        defer { try? FileManager.default.removeItem(at: zipURL) }
+        func addEntry(name: String, content: String) throws {
+            let data = Data(content.utf8)
+            try archive.addEntry(
+                with: name, type: .file, uncompressedSize: Int64(data.count),
+            ) { _, size in data.subdata(in: 0 ..< size) }
+        }
+        try addEntry(name: "races.csv", content: racesCSV)
+        try addEntry(name: "entries.csv", content: entriesCSV)
+        try addEntry(name: "bets.csv", content: betsCSV)
+        try addEntry(name: "memo/20260616_テストレース.md", content: "旧形式メモ")
+
+        try ZipImporter.importZip(from: zipURL, context: container.mainContext)
+
+        let races = try container.mainContext.fetch(FetchDescriptor<Race>())
+        #expect(races.first?.memo == "旧形式メモ")
+    }
+
     @Test func gradeカラムのないレガシーzipをインポートしてもgradeが空文字になる() throws {
         let racesCSV = """
         date,venue,race_number,race_name,distance,track_type,track_condition,category,first_place_horse,second_place_horse,third_place_horse
