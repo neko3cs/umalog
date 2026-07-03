@@ -150,6 +150,30 @@ struct 収支集計期間計算Test {
         #expect(calc.year(from: updated) == 2026)
     }
 
+    @Test func `1 月 31 日から 2 月を設定すると 2 月末日に丸められる`() {
+        // 丸めないと 2/31 が 3/3 に繰り上がり、選択した月と表示月がズレる
+        let date = makeDate(2026, 1, 31)
+        let updated = calc.setMonth(2, in: date)
+        #expect(calc.month(from: updated) == 2)
+        #expect(calc.year(from: updated) == 2026)
+        #expect(calc.calendar.component(.day, from: updated) == 28)
+    }
+
+    @Test func `31 日ある月へ月を設定すると日が保持される`() {
+        let date = makeDate(2026, 1, 31)
+        let updated = calc.setMonth(3, in: date)
+        #expect(calc.month(from: updated) == 3)
+        #expect(calc.calendar.component(.day, from: updated) == 31)
+    }
+
+    @Test func `うるう年 2 月 29 日から平年を設定すると 2 月 28 日に丸められる`() {
+        let date = makeDate(2024, 2, 29)
+        let updated = calc.setYear(2025, in: date)
+        #expect(calc.year(from: updated) == 2025)
+        #expect(calc.month(from: updated) == 2)
+        #expect(calc.calendar.component(.day, from: updated) == 28)
+    }
+
     // MARK: - rangeInterval
 
     @Test func 期間指定の集計区間に開始日が含まれる() throws {
