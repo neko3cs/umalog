@@ -12,18 +12,32 @@ import ZIPFoundation
 // MARK: - CSV Exporter
 
 enum CSVExporter {
+    /// 全セクションをヘッダー付きで 1 つのテキストに連結した CSV を生成する。
+    /// - Parameter races: エクスポート対象のレース配列。日付昇順に並べ替えて出力する。
+    /// - Returns: `=== RACES ===` などのセクション見出しで区切られた CSV テキスト。
     static func export(races: [Race]) -> String {
-        var lines: [String] = []
         let sorted = races.sorted { $0.date < $1.date }
+        return [
+            "=== RACES ===\n" + racesCSV(sorted, includeMemo: true),
+            "=== ENTRIES ===\n" + entriesCSV(sorted),
+            "=== BETS ===\n" + betsCSV(sorted),
+            "=== BET_SELECTIONS ===\n" + betSelectionsCSV(sorted),
+        ].joined(separator: "\n\n")
+    }
 
-        lines.append("=== RACES ===")
-        lines.append(
-            "date,venue,race_number,race_name,distance,track_type,track_condition," +
-                "category,grade,first_place_horse,second_place_horse,third_place_horse," +
-                "total_purchase,total_payout,balance,memo",
-        )
-        for race in sorted {
-            let row: [String] = [
+    /// races セクションの CSV（ヘッダー行 + レース行）を生成する。
+    /// - Parameters:
+    ///   - races: 出力対象のレース配列。呼び出し側で並べ替え済みであること。
+    ///   - includeMemo: memo 列を含めるか。ZIP バックアップではメモを別ファイルに出力するため false を指定する。
+    /// - Returns: races セクションの CSV テキスト。
+    static func racesCSV(_ races: [Race], includeMemo: Bool) -> String {
+        var header = "date,venue,race_number,race_name,distance,track_type,track_condition," +
+            "category,grade,first_place_horse,second_place_horse,third_place_horse," +
+            "total_purchase,total_payout,balance"
+        if includeMemo { header += ",memo" }
+        var lines = [header]
+        for race in races {
+            var row: [String] = [
                 formatDate(race.date),
                 race.venue?.name ?? "",
                 "\(race.raceNumber)",
@@ -39,15 +53,21 @@ enum CSVExporter {
                 "\(race.totalPurchase)",
                 "\(race.totalPayout)",
                 "\(race.balance)",
-                race.memo.replacingOccurrences(of: "\n", with: " "),
             ]
+            if includeMemo {
+                row.append(race.memo.replacingOccurrences(of: "\n", with: " "))
+            }
             lines.append(row.map { escape($0) }.joined(separator: ","))
         }
+        return lines.joined(separator: "\n")
+    }
 
-        lines.append("")
-        lines.append("=== ENTRIES ===")
-        lines.append("date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark")
-        for race in sorted {
+    /// entries セクションの CSV（ヘッダー行 + 出走馬行）を生成する。
+    /// - Parameter races: 出力対象のレース配列。呼び出し側で並べ替え済みであること。
+    /// - Returns: entries セクションの CSV テキスト。
+    static func entriesCSV(_ races: [Race]) -> String {
+        var lines = ["date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark"]
+        for race in races {
             for entry in (race.entries ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
                 let row: [String] = [
                     formatDate(race.date),
@@ -62,11 +82,15 @@ enum CSVExporter {
                 lines.append(row.map { escape($0) }.joined(separator: ","))
             }
         }
+        return lines.joined(separator: "\n")
+    }
 
-        lines.append("")
-        lines.append("=== BETS ===")
-        lines.append("date,venue,race_number,bet_sort_index,purchase_amount,payout_amount,balance")
-        for race in sorted {
+    /// bets セクションの CSV（ヘッダー行 + 馬券行）を生成する。
+    /// - Parameter races: 出力対象のレース配列。呼び出し側で並べ替え済みであること。
+    /// - Returns: bets セクションの CSV テキスト。
+    static func betsCSV(_ races: [Race]) -> String {
+        var lines = ["date,venue,race_number,bet_sort_index,purchase_amount,payout_amount,balance"]
+        for race in races {
             for bet in (race.bets ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
                 let row: [String] = [
                     formatDate(race.date),
@@ -80,14 +104,17 @@ enum CSVExporter {
                 lines.append(row.map { escape($0) }.joined(separator: ","))
             }
         }
+        return lines.joined(separator: "\n")
+    }
 
-        lines.append("")
-        lines.append("=== BET_SELECTIONS ===")
-        lines.append(
-            "date,venue,race_number,bet_sort_index,ticket_type,selection," +
-                "unit_price,combination_count,sort_index",
-        )
-        for race in sorted {
+    /// bet_selections セクションの CSV（ヘッダー行 + 買い目行）を生成する。
+    /// - Parameter races: 出力対象のレース配列。呼び出し側で並べ替え済みであること。
+    /// - Returns: bet_selections セクションの CSV テキスト。
+    static func betSelectionsCSV(_ races: [Race]) -> String {
+        let header = "date,venue,race_number,bet_sort_index,ticket_type,selection," +
+            "unit_price,combination_count,sort_index"
+        var lines = [header]
+        for race in races {
             for bet in (race.bets ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
                 for sel in (bet.selections ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
                     let row: [String] = [
@@ -105,7 +132,6 @@ enum CSVExporter {
                 }
             }
         }
-
         return lines.joined(separator: "\n")
     }
 
@@ -137,6 +163,9 @@ enum CSVExporter {
 // MARK: - ZIP Exporter
 
 enum ZipExporter {
+    /// レースデータを CSV 群とメモファイルにまとめた ZIP バックアップを一時ディレクトリに生成する。
+    /// - Parameter races: エクスポート対象のレース配列。日付昇順に並べ替えて出力する。
+    /// - Returns: 生成した ZIP ファイルの URL。
     static func export(races: [Race]) throws -> URL {
         let sorted = races.sorted { $0.date < $1.date }
 
@@ -146,122 +175,71 @@ enum ZipExporter {
 
         let archive = try Archive(url: zipURL, accessMode: .create)
 
-        try addEntry(archive, name: "races.csv", content: racesCSV(sorted))
-        try addEntry(archive, name: "entries.csv", content: entriesCSV(sorted))
-        try addEntry(archive, name: "bets.csv", content: betsCSV(sorted))
-        try addEntry(archive, name: "bet_selections.csv", content: betSelectionsCSV(sorted))
+        try addEntry(archive, name: "races.csv", content: CSVExporter.racesCSV(sorted, includeMemo: false))
+        try addEntry(archive, name: "entries.csv", content: CSVExporter.entriesCSV(sorted))
+        try addEntry(archive, name: "bets.csv", content: CSVExporter.betsCSV(sorted))
+        try addEntry(archive, name: "bet_selections.csv", content: CSVExporter.betSelectionsCSV(sorted))
 
         for race in sorted {
             guard !race.memo.isEmpty else { continue }
-            let baseName = race.raceName.isEmpty ? "R\(race.raceNumber)" : race.raceName
-            let safeName = baseName
-                .replacingOccurrences(of: "/", with: "_")
-                .replacingOccurrences(of: ":", with: "_")
-                .replacingOccurrences(of: "\\", with: "_")
-            let name = "memo/\(CSVExporter.formatFilenameDate(race.date))_\(safeName).md"
-            try addEntry(archive, name: name, content: race.memo)
+            let baseName = memoBaseName(
+                date: race.date,
+                venueName: race.venue?.name ?? "",
+                raceNumber: race.raceNumber,
+                raceName: race.raceName,
+            )
+            try addEntry(archive, name: "memo/\(baseName).md", content: race.memo)
         }
 
         return zipURL
     }
 
+    /// メモファイルのベース名（拡張子なし）を現行形式「日付_競馬場_R番号_レース名」で組み立てる。
+    /// - Note: 同日・同レース名のレースが複数競馬場に存在してもファイル名が衝突しないよう、競馬場とレース番号を含める。
+    /// - Parameters:
+    ///   - date: レースの開催日。
+    ///   - venueName: 競馬場名。空文字なら省略される。
+    ///   - raceNumber: レース番号。
+    ///   - raceName: レース名。空文字なら省略される。
+    /// - Returns: メモファイルのベース名。
+    static func memoBaseName(date: Date, venueName: String, raceNumber: Int, raceName: String) -> String {
+        var components = [CSVExporter.formatFilenameDate(date)]
+        if !venueName.isEmpty { components.append(sanitizeForFilename(venueName)) }
+        components.append("R\(raceNumber)")
+        if !raceName.isEmpty { components.append(sanitizeForFilename(raceName)) }
+        return components.joined(separator: "_")
+    }
+
+    /// 旧バックアップとの互換用メモファイルベース名「日付_レース名」を組み立てる。
+    /// - Parameters:
+    ///   - date: レースの開催日。
+    ///   - raceNumber: レース番号。レース名が空のときのフォールバックに使う。
+    ///   - raceName: レース名。
+    /// - Returns: 旧形式のメモファイルベース名。
+    static func legacyMemoBaseName(date: Date, raceNumber: Int, raceName: String) -> String {
+        let base = raceName.isEmpty ? "R\(raceNumber)" : sanitizeForFilename(raceName)
+        return "\(CSVExporter.formatFilenameDate(date))_\(base)"
+    }
+
+    /// ファイル名に使えない文字（`/` `:` `\`）を `_` に置換する。
+    /// - Parameter name: 置換対象の文字列。
+    /// - Returns: 置換後の文字列。
+    static func sanitizeForFilename(_ name: String) -> String {
+        name.replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: ":", with: "_")
+            .replacingOccurrences(of: "\\", with: "_")
+    }
+
+    /// アーカイブへ UTF-8 テキストのファイルエントリを追加する。
+    /// - Parameters:
+    ///   - archive: 追加先のアーカイブ。
+    ///   - name: アーカイブ内のパス。
+    ///   - content: ファイル内容のテキスト。
     private static func addEntry(_ archive: Archive, name: String, content: String) throws {
         let data = Data(content.utf8)
         try archive.addEntry(
             with: name, type: .file, uncompressedSize: Int64(data.count),
         ) { _, size in data.subdata(in: 0 ..< size) }
-    }
-
-    private static func racesCSV(_ races: [Race]) -> String {
-        let header = "date,venue,race_number,race_name,distance,track_type,track_condition," +
-            "category,grade,first_place_horse,second_place_horse,third_place_horse," +
-            "total_purchase,total_payout,balance"
-        var lines = [header]
-        for race in races {
-            let row: [String] = [
-                CSVExporter.formatDate(race.date),
-                race.venue?.name ?? "",
-                "\(race.raceNumber)",
-                race.raceName,
-                "\(race.distance)",
-                race.trackType == "turf" ? "芝" : "ダート",
-                race.trackCondition,
-                race.category == "central" ? "中央" : "地方",
-                race.grade,
-                CSVExporter.horseNumberString(race.firstPlaceHorseNumber),
-                CSVExporter.horseNumberString(race.secondPlaceHorseNumber),
-                CSVExporter.horseNumberString(race.thirdPlaceHorseNumber),
-                "\(race.totalPurchase)",
-                "\(race.totalPayout)",
-                "\(race.balance)",
-            ]
-            lines.append(row.map { CSVExporter.escape($0) }.joined(separator: ","))
-        }
-        return lines.joined(separator: "\n")
-    }
-
-    private static func entriesCSV(_ races: [Race]) -> String {
-        var lines = ["date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark"]
-        for race in races {
-            for entry in (race.entries ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
-                let row: [String] = [
-                    CSVExporter.formatDate(race.date),
-                    race.venue?.name ?? "",
-                    "\(race.raceNumber)",
-                    "\(entry.horseNumber)",
-                    entry.horseName,
-                    entry.jockeyName,
-                    entry.trainerName,
-                    entry.predictionMark ?? "",
-                ]
-                lines.append(row.map { CSVExporter.escape($0) }.joined(separator: ","))
-            }
-        }
-        return lines.joined(separator: "\n")
-    }
-
-    private static func betsCSV(_ races: [Race]) -> String {
-        var lines = ["date,venue,race_number,bet_sort_index,purchase_amount,payout_amount,balance"]
-        for race in races {
-            for bet in (race.bets ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
-                let row: [String] = [
-                    CSVExporter.formatDate(race.date),
-                    race.venue?.name ?? "",
-                    "\(race.raceNumber)",
-                    "\(bet.sortIndex)",
-                    "\(bet.purchaseAmount)",
-                    "\(bet.payoutAmount)",
-                    "\(bet.balance)",
-                ]
-                lines.append(row.map { CSVExporter.escape($0) }.joined(separator: ","))
-            }
-        }
-        return lines.joined(separator: "\n")
-    }
-
-    private static func betSelectionsCSV(_ races: [Race]) -> String {
-        let header = "date,venue,race_number,bet_sort_index,ticket_type,selection," +
-            "unit_price,combination_count,sort_index"
-        var lines = [header]
-        for race in races {
-            for bet in (race.bets ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
-                for sel in (bet.selections ?? []).sorted(by: { $0.sortIndex < $1.sortIndex }) {
-                    let row: [String] = [
-                        CSVExporter.formatDate(race.date),
-                        race.venue?.name ?? "",
-                        "\(race.raceNumber)",
-                        "\(bet.sortIndex)",
-                        sel.displayTicketTypeName,
-                        sel.selection,
-                        "\(sel.unitPrice)",
-                        "\(sel.combinationCount)",
-                        "\(sel.sortIndex)",
-                    ]
-                    lines.append(row.map { CSVExporter.escape($0) }.joined(separator: ","))
-                }
-            }
-        }
-        return lines.joined(separator: "\n")
     }
 }
 
@@ -290,6 +268,9 @@ enum ZipImporter {
 
         // レースを作成しキーでマップ
         var raceMap: [String: Race] = [:]
+        // メモファイルのベース名（新旧両形式）→ レースのマップ。
+        // レースの venue が DB に存在しない場合でも復元できるよう、CSV 行の競馬場名から組み立てる。
+        var memoNameMap: [String: Race] = [:]
         let raceRows = parseCSV(racesText)
         let raceHeader = raceRows.first ?? []
         let hasFinishPlaces = raceHeader.contains("first_place_horse")
@@ -318,6 +299,18 @@ enum ZipImporter {
             )
             context.insert(race)
             raceMap[key(date: row[0], venue: row[1], raceNumber: row[2])] = race
+            let memoNames = [
+                ZipExporter.memoBaseName(
+                    date: race.date, venueName: row[1],
+                    raceNumber: race.raceNumber, raceName: race.raceName,
+                ),
+                ZipExporter.legacyMemoBaseName(
+                    date: race.date, raceNumber: race.raceNumber, raceName: race.raceName,
+                ),
+            ]
+            for name in memoNames where memoNameMap[name] == nil {
+                memoNameMap[name] = race
+            }
         }
 
         // 出走馬を作成
@@ -341,23 +334,13 @@ enum ZipImporter {
             importBetsLegacyFormat(betsText: betsText, raceMap: raceMap, context: context)
         }
 
-        // メモファイルをレースに紐付け
+        // メモファイルをレースに紐付け（現行形式・旧形式どちらのファイル名にも対応）
         for entry in archive where entry.path.hasPrefix("memo/") && entry.path.hasSuffix(".md") {
             var data = Data()
             _ = try? archive.extract(entry) { data.append($0) }
             guard let memo = String(data: data, encoding: .utf8), !memo.isEmpty else { continue }
             let filename = String(entry.path.dropFirst("memo/".count).dropLast(".md".count))
-            for race in raceMap.values {
-                let dateStr = CSVExporter.formatFilenameDate(race.date)
-                let baseName = race.raceName.isEmpty ? "R\(race.raceNumber)" : race.raceName
-                let safeName = baseName
-                    .replacingOccurrences(of: "/", with: "_")
-                    .replacingOccurrences(of: ":", with: "_")
-                if filename == "\(dateStr)_\(safeName)" {
-                    race.memo = memo
-                    break
-                }
-            }
+            memoNameMap[filename]?.memo = memo
         }
 
         try context.save()
