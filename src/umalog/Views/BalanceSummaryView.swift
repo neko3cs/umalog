@@ -154,7 +154,23 @@ struct BalanceSummaryView: View {
                 if !filteredRaces.isEmpty { breakdownSection }
             }
             .navigationTitle("収支")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("今日") {
+                        goToToday()
+                    }
+                    .accessibilityIdentifier("today-button")
+                }
+            }
         }
+    }
+
+    /// 日/月/年モードでは選択日を、期間モードでは開始日・終了日を今日にリセットする
+    private func goToToday() {
+        let today = Date()
+        selectedDate = today
+        fromDate = today
+        toDate = today
     }
 
     // MARK: - Period Control Section
@@ -182,6 +198,7 @@ struct BalanceSummaryView: View {
             }
             .buttonStyle(.borderless)
             .disabled(period == .range)
+            .accessibilityIdentifier("period-prev-button")
             Spacer()
             Group {
                 if period == .range {
@@ -192,6 +209,7 @@ struct BalanceSummaryView: View {
                 }
             }
             .font(.headline)
+            .accessibilityIdentifier("period-title")
             Spacer()
             Button {
                 selectedDate = calc.advance(selectedDate, by: 1, unit: period)
@@ -200,6 +218,7 @@ struct BalanceSummaryView: View {
             }
             .buttonStyle(.borderless)
             .disabled(period == .range)
+            .accessibilityIdentifier("period-next-button")
         }
     }
 
