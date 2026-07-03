@@ -88,6 +88,7 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 - **SwiftLint `type_body_length` in tests**: 400-line limit per declaration. Move overflow tests into a bare `extension MyTest { }` — SwiftLint counts each body separately. No `@MainActor` on the extension (see above).
 - **Toolbar buttons must have `.accessibilityIdentifier`**: With multiple `ToolbarItem(.navigationBarTrailing)` items, `app.navigationBars["X"].buttons["Add"]` races against SwiftData's re-render in XCUITest — `waitForExistence` on the bar then `tap()` on a child element can miss. Always set `.accessibilityIdentifier` on toolbar buttons and use `findElement("id")` / `tapWhenReady` in UI tests.
 - **`Toggle` with a custom `Binding(get:set:)` inside `Form`/`List` rows can silently fail to register taps**: confirmed via real mouse clicks in the Simulator (not an XCUITest artifact) — a sibling `Picker` bound directly to `$filter.category` in the same sheet worked fine. Prefer a `Button` + checkmark row over `Toggle` for per-item multi-select rows in a `Form`/`List`.
+- **Japanese day-count strings in UI test assertions must be anchored, not bare-`contains`**: `label.contains("1日間")` false-matches `"21日間"`/`"31日間"` since digits aren't word-bounded. Anchor with surrounding punctuation (e.g. `"(1日間)"`) or use exact string equality.
 
 ---
 
@@ -95,15 +96,14 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 
 - [ ] **#1** JRA出走馬自動取得 — plan in `.claude/plans/1-jra-immutable-cascade.md`; blocked: owner must decide on netkeiba URL-paste vs other source, ToS review required.
 - [ ] **#14** マルチプラットフォーム対応（macOS / iPadOS）— low priority.
-- [ ] **#22** 収支画面に「今日」ボタン追加 — `BalanceSummaryView` ナビゲーションバーへの小改善。未着手。
 
 ---
 
-## Current State & Handoff (2026-07-01, later)
+## Current State & Handoff (2026-07-03)
 
-- Tests: 210 unit, 25 UI — all green. SwiftFormat + SwiftLint clean.
-- In progress: Issue #4 — venue/grade filter Toggle rows in PR #21 were completely unresponsive to taps (see Tacit Knowledge); fixed in commit f7627dc (Button+checkmark), verified via manual Simulator clicks. Not yet pushed to PR #21.
-- Next: push fix to `feature/issue-4` / PR #21, then Issue #22 (今日ボタン, simple). Issue #1 blocked on owner scraping strategy decision. #14 unstarted.
+- Tests: 210 unit, 28 UI — all green. SwiftFormat + SwiftLint clean.
+- In progress: Issue #22 (今日ボタン) implemented on `feature/issue-22`, PR #23 open, awaiting owner review/merge.
+- Next: after PR #23 merges, no queued issue besides #1 (blocked on owner scraping strategy decision) and #14 (low priority, unstarted).
 
 ---
 
@@ -113,3 +113,4 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 | :--- | :--- | :--- |
 | 2026-06-30 | Committed and pushed before owner confirmed behavior | Never `git commit` / `git push` without explicit owner instruction |
 | 2026-07-01 | PR #21 shipped with venue/grade filter rows completely unresponsive to taps despite 27 passing unit tests | Unit tests on a value type (`RaceFilter`) don't verify View wiring — add an interaction-level UI test or manual Simulator click-through for every new tappable control before merging |
+| 2026-07-03 | New UI test asserted `title.contains("1日間")`, which would have silently passed for `"31日間"`/`"21日間"` too — caught locally before merge | Anchor Japanese day-count substring checks with surrounding punctuation or exact match, not bare digit-suffix `contains` |
