@@ -8,12 +8,17 @@
 import SwiftData
 import SwiftUI
 
+/// レース一覧のホーム画面。日付ごとのセクション表示・フィルター・ソート・削除（Undo 対応）を提供する。
 struct RaceListView: View {
+    /// SwiftData のモデルコンテキスト。
     @Environment(\.modelContext) private var modelContext
+    /// ウィンドウの UndoManager。レース削除の取り消しに使う。
     @Environment(\.undoManager) private var undoManager
+    /// SwiftData から取得した全レース。
     @Query private var races: [Race]
     /// SwiftData から取得した全競馬場。
     @Query(sort: \Venue.sortIndex) private var venues: [Venue]
+    /// レース追加シートの表示状態。
     @State private var showingAddRace = false
     /// フィルターシートの表示状態。
     @State private var showingFilter = false
@@ -28,6 +33,7 @@ struct RaceListView: View {
         return base.sorted { sortAscending ? $0.date < $1.date : $0.date > $1.date }
     }
 
+    /// フィルター適用後のレースを日付（その日の 0 時）でグループ化し、ソート方向に従って並べた配列。
     private var groupedRaces: [(Date, [Race])] {
         let calendar = Calendar.current
         let grouped = Dictionary(grouping: filteredRaces) { race in
@@ -119,6 +125,8 @@ struct RaceListView: View {
         }
     }
 
+    /// レースを子データごと削除する。削除前にスナップショットを取り、シェイクで復元できるよう Undo を登録する。
+    /// - Parameter race: 削除対象のレース。
     private func deleteRace(_ race: Race) {
         let snapshot = RaceSnapshot(from: race)
         undoManager?.registerUndo(withTarget: modelContext) { [snapshot] ctx in
@@ -137,6 +145,8 @@ struct RaceListView: View {
 
 // MARK: - Snapshot for Undo
 
+/// レース削除の Undo 復元用スナップショット。各プロパティは `Race` の同名フィールドの写しで、
+/// 子の出走馬・馬券もネストしたスナップショットとして保持する。
 private struct RaceSnapshot {
     let date: Date
     let venueId: PersistentIdentifier?
@@ -155,6 +165,8 @@ private struct RaceSnapshot {
     let entries: [EntrySnapshot]
     let bets: [BetSnapshot]
 
+    /// レースからスナップショットを取る。
+    /// - Parameter race: スナップショット対象のレース。
     init(from race: Race) {
         date = race.date
         venueId = race.venue?.persistentModelID
@@ -174,6 +186,8 @@ private struct RaceSnapshot {
         bets = (race.bets ?? []).map { BetSnapshot(from: $0) }
     }
 
+    /// スナップショットからレースと子データを再作成して挿入する。競馬場・券種は永続 ID で既存マスターと再関連付けする。
+    /// - Parameter context: 復元先の ModelContext。
     func restore(into context: ModelContext) {
         let allVenues = (try? context.fetch(FetchDescriptor<Venue>())) ?? []
         let allTicketTypes = (try? context.fetch(FetchDescriptor<TicketType>())) ?? []
@@ -222,7 +236,9 @@ private struct RaceSnapshot {
     }
 }
 
+/// レース一覧の 1 行。レース番号・競馬場・コース情報・収支サマリーを表示する。
 struct RaceRowView: View {
+    /// 表示対象のレース。
     let race: Race
 
     var body: some View {
