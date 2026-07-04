@@ -11,6 +11,8 @@ import ZIPFoundation
 
 // MARK: - CSV Exporter
 
+/// レースデータを CSV テキストへ変換するユーティリティ。
+/// テキスト共有用の連結形式（`export(races:)`）と、ZIP バックアップ用のセクション別 CSV の両方を生成する。
 enum CSVExporter {
     /// 全セクションをヘッダー付きで 1 つのテキストに連結した CSV を生成する。
     /// - Parameter races: エクスポート対象のレース配列。日付昇順に並べ替えて出力する。
@@ -135,6 +137,9 @@ enum CSVExporter {
         return lines.joined(separator: "\n")
     }
 
+    /// CSV の値をエスケープする。カンマ・ダブルクォート・改行を含む場合のみクォートで囲む。
+    /// - Parameter value: エスケープ対象の値。
+    /// - Returns: エスケープ済みの値。
     static func escape(_ value: String) -> String {
         guard value.contains(",") || value.contains("\"") || value.contains("\n") else {
             return value
@@ -142,12 +147,18 @@ enum CSVExporter {
         return "\"" + value.replacingOccurrences(of: "\"", with: "\"\"") + "\""
     }
 
+    /// CSV の date 列に使う `yyyy/MM/dd` 形式で日付をフォーマットする。
+    /// - Parameter date: フォーマット対象の日付。
+    /// - Returns: フォーマット済み文字列。
     static func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy/MM/dd"
         return formatter.string(from: date)
     }
 
+    /// ファイル名に使う `yyyyMMdd` 形式で日付をフォーマットする。
+    /// - Parameter date: フォーマット対象の日付。
+    /// - Returns: フォーマット済み文字列。
     static func formatFilenameDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd"
@@ -162,6 +173,7 @@ enum CSVExporter {
 
 // MARK: - ZIP Exporter
 
+/// レースデータをセクション別 CSV とメモ Markdown ファイルにまとめた ZIP バックアップを生成するユーティリティ。
 enum ZipExporter {
     /// レースデータを CSV 群とメモファイルにまとめた ZIP バックアップを一時ディレクトリに生成する。
     /// - Parameter races: エクスポート対象のレース配列。日付昇順に並べ替えて出力する。
@@ -245,7 +257,12 @@ enum ZipExporter {
 
 // MARK: - ZIP Importer
 
+/// ZIP バックアップからレースデータを復元するユーティリティ。旧フォーマットのバックアップにも対応する。
 enum ZipImporter {
+    /// ZIP バックアップを読み込み、既存のレースデータをすべて置き換えて復元する。競馬場・券種マスターは保持する。
+    /// - Parameters:
+    ///   - url: 読み込む ZIP ファイルの URL。
+    ///   - context: 復元先の ModelContext。
     static func importZip(from url: URL, context: ModelContext) throws {
         let archive = try Archive(url: url, accessMode: .read)
 
@@ -346,6 +363,12 @@ enum ZipImporter {
         try context.save()
     }
 
+    /// 現行フォーマット（bets.csv + bet_selections.csv）の馬券・買い目を復元する。
+    /// - Parameters:
+    ///   - archive: 読み込み中のアーカイブ。
+    ///   - betsText: bets.csv の内容。
+    ///   - raceMap: レースキー → レースのマップ。
+    ///   - context: 復元先の ModelContext。
     private static func importBetsNewFormat(
         archive: Archive,
         betsText: String,
@@ -385,6 +408,11 @@ enum ZipImporter {
         }
     }
 
+    /// 旧フォーマット（bets.csv に券種・買い目を直接持つ形式）の馬券を復元し、対応する買い目も生成する。
+    /// - Parameters:
+    ///   - betsText: bets.csv の内容。
+    ///   - raceMap: レースキー → レースのマップ。
+    ///   - context: 復元先の ModelContext。
     private static func importBetsLegacyFormat(
         betsText: String,
         raceMap: [String: Race],
@@ -429,14 +457,32 @@ enum ZipImporter {
         }
     }
 
+    /// レースを一意に識別するキー（日付|競馬場|レース番号）を組み立てる。
+    /// - Parameters:
+    ///   - date: CSV の date 列の値。
+    ///   - venue: CSV の venue 列の値。
+    ///   - raceNumber: CSV の race_number 列の値。
+    /// - Returns: レースキー文字列。
     private static func key(date: String, venue: String, raceNumber: String) -> String {
         "\(date)|\(venue)|\(raceNumber)"
     }
 
+    /// 馬券を一意に識別するキー（レースキー|馬券ソート順）を組み立てる。
+    /// - Parameters:
+    ///   - date: CSV の date 列の値。
+    ///   - venue: CSV の venue 列の値。
+    ///   - raceNumber: CSV の race_number 列の値。
+    ///   - betSortIndex: CSV の bet_sort_index 列の値。
+    /// - Returns: 馬券キー文字列。
     private static func betKey(date: String, venue: String, raceNumber: String, betSortIndex: String) -> String {
         "\(date)|\(venue)|\(raceNumber)|\(betSortIndex)"
     }
 
+    /// アーカイブ内の指定パスのエントリを UTF-8 テキストとして読み出す。
+    /// - Parameters:
+    ///   - archive: 読み込み対象のアーカイブ。
+    ///   - path: アーカイブ内のパス。
+    /// - Returns: エントリの内容。存在しない場合は `CocoaError(.fileNoSuchFile)` を投げる。
     private static func readEntry(_ archive: Archive, path: String) throws -> String {
         guard let entry = archive[path] else { throw CocoaError(.fileNoSuchFile) }
         var data = Data()
@@ -444,12 +490,18 @@ enum ZipImporter {
         return String(data: data, encoding: .utf8) ?? ""
     }
 
+    /// CSV の date 列の値（`yyyy/MM/dd`）を Date に変換する。
+    /// - Parameter string: 変換対象の文字列。
+    /// - Returns: 変換結果。形式が不正な場合は nil。
     private static func parseDate(_ string: String) -> Date? {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy/MM/dd"
         return formatter.date(from: string)
     }
 
+    /// CSV テキストを行×列の二次元配列にパースする。クォート・エスケープ・CRLF に対応する。
+    /// - Parameter text: パース対象の CSV テキスト。
+    /// - Returns: 行ごとのフィールド配列。
     private static func parseCSV(_ text: String) -> [[String]] {
         var result: [[String]] = []
         var row: [String] = []
@@ -492,6 +544,7 @@ enum ZipImporter {
 // MARK: - Date Display Helpers
 
 extension Date {
+    /// 日本語ロケールの短縮日付文字列（例: `2026/06/13`）。リストや詳細画面の日付表示に使う。
     var japaneseShortDateString: String {
         formatted(
             Date.FormatStyle()

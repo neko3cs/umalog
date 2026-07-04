@@ -8,18 +8,26 @@
 import SwiftData
 import SwiftUI
 
+/// 収支集計の単位。rawValue はセグメントピッカーの表示名。
 enum SummaryPeriod: String, CaseIterable {
+    /// 日次集計
     case daily = "日"
+    /// 月次集計
     case monthly = "月"
+    /// 年次集計
     case yearly = "年"
+    /// 任意の日付範囲での集計
     case range = "期間"
 }
 
 // MARK: - Period Calculator
 
+/// 収支集計の期間計算ロジック。日本時間（ja_JP / Asia/Tokyo）の暦で計算する。
 struct BalanceSummaryPeriodCalc {
+    /// 期間計算に使うカレンダー（グレゴリオ暦・日本時間）。
     let calendar: Calendar
 
+    /// 日本時間のカレンダーを構築する。
     init() {
         var cal = Calendar(identifier: .gregorian)
         cal.locale = Locale(identifier: "ja_JP")
@@ -27,6 +35,11 @@ struct BalanceSummaryPeriodCalc {
         calendar = cal
     }
 
+    /// 指定日を含む集計期間を返す。
+    /// - Parameters:
+    ///   - period: 集計単位。
+    ///   - date: 基準日。
+    /// - Returns: 集計期間。期間モード（`.range`）の場合は nil。
     func interval(for period: SummaryPeriod, date: Date) -> DateInterval? {
         switch period {
         case .daily: calendar.dateInterval(of: .day, for: date)
@@ -36,6 +49,11 @@ struct BalanceSummaryPeriodCalc {
         }
     }
 
+    /// 開始日から終了日まで（両端の日を含む）の集計期間を返す。
+    /// - Parameters:
+    ///   - from: 開始日。
+    ///   - to: 終了日。
+    /// - Returns: 集計期間。開始日が終了日より後の場合は nil。
     func rangeInterval(from: Date, to: Date) -> DateInterval? {
         guard from <= to else { return nil }
         let start = calendar.startOfDay(for: from)
@@ -43,6 +61,12 @@ struct BalanceSummaryPeriodCalc {
         return DateInterval(start: start, end: end)
     }
 
+    /// 基準日を集計単位で指定ステップ分進めた日付を返す。
+    /// - Parameters:
+    ///   - date: 基準日。
+    ///   - steps: 進めるステップ数。負数で戻す。
+    ///   - period: 集計単位。期間モードの場合は日付を変更しない。
+    /// - Returns: 移動後の日付。
     func advance(_ date: Date, by steps: Int, unit period: SummaryPeriod) -> Date {
         let component: Calendar.Component
         switch period {
@@ -54,6 +78,11 @@ struct BalanceSummaryPeriodCalc {
         return calendar.date(byAdding: component, value: steps, to: date) ?? date
     }
 
+    /// 集計期間のタイトル文字列（例: `2026年6月`）を返す。
+    /// - Parameters:
+    ///   - period: 集計単位。
+    ///   - date: 基準日。
+    /// - Returns: タイトル文字列。期間モードの場合は空文字。
     func title(for period: SummaryPeriod, date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ja_JP")
@@ -66,6 +95,11 @@ struct BalanceSummaryPeriodCalc {
         return formatter.string(from: date)
     }
 
+    /// 期間モードのタイトル文字列（例: `2026年6月1日 〜 2026年6月14日 (14日間)`）を返す。
+    /// - Parameters:
+    ///   - from: 開始日。
+    ///   - to: 終了日。
+    /// - Returns: タイトル文字列。開始日が終了日より後の場合はエラーメッセージ。
     func rangeTitle(from: Date, to: Date) -> String {
         guard from <= to else { return "期間を正しく設定してください" }
         let formatter = DateFormatter()
@@ -81,20 +115,36 @@ struct BalanceSummaryPeriodCalc {
         return "\(fromStr) 〜 \(toStr) (\(days)日間)"
     }
 
+    /// 日付から年を取り出す。
+    /// - Parameter date: 対象の日付。
+    /// - Returns: 年。
     func year(from date: Date) -> Int {
         calendar.component(.year, from: date)
     }
 
+    /// 日付から月を取り出す。
+    /// - Parameter date: 対象の日付。
+    /// - Returns: 月（1〜12）。
     func month(from date: Date) -> Int {
         calendar.component(.month, from: date)
     }
 
+    /// 日付の年だけを変更した日付を返す。変更後の年月に存在しない日は月末日に丸める。
+    /// - Parameters:
+    ///   - year: 設定する年。
+    ///   - date: 基準の日付。
+    /// - Returns: 変更後の日付。
     func setYear(_ year: Int, in date: Date) -> Date {
         var comps = calendar.dateComponents([.year, .month, .day], from: date)
         comps.year = year
         return dateClampedToMonthEnd(comps) ?? date
     }
 
+    /// 日付の月だけを変更した日付を返す。変更後の年月に存在しない日は月末日に丸める。
+    /// - Parameters:
+    ///   - month: 設定する月（1〜12）。
+    ///   - date: 基準の日付。
+    /// - Returns: 変更後の日付。
     func setMonth(_ month: Int, in date: Date) -> Date {
         var comps = calendar.dateComponents([.year, .month, .day], from: date)
         comps.month = month
@@ -119,22 +169,31 @@ struct BalanceSummaryPeriodCalc {
 
 // MARK: - BalanceSummaryView
 
+/// 収支サマリー画面。日・月・年・期間の単位で購入合計・払戻合計・収支・回収率を集計表示する。
 struct BalanceSummaryView: View {
+    /// SwiftData から取得した全レース。
     @Query private var races: [Race]
 
+    /// 選択中の集計単位。
     @State private var period: SummaryPeriod = .monthly
+    /// 日・月・年モードの基準日。
     @State private var selectedDate: Date = .init()
+    /// 期間モードの開始日。初期値は 1 か月前。
     @State private var fromDate: Date = Calendar.current.date(
         byAdding: .month, value: -1, to: Date(),
     ) ?? Date()
+    /// 期間モードの終了日。
     @State private var toDate: Date = .init()
 
+    /// 期間計算ロジック。
     private let calc = BalanceSummaryPeriodCalc()
 
+    /// 期間モードの開始日・終了日が正しい順序かどうか。
     private var isRangeValid: Bool {
         period != .range || fromDate <= toDate
     }
 
+    /// 現在の集計期間に開催日が含まれるレース。
     private var filteredRaces: [Race] {
         if period == .range {
             guard let interval = calc.rangeInterval(from: fromDate, to: toDate) else { return [] }
@@ -144,18 +203,22 @@ struct BalanceSummaryView: View {
         return races.filter { interval.contains($0.date) }
     }
 
+    /// 集計期間内の購入額合計。
     private var totalPurchase: Int {
         filteredRaces.reduce(0) { $0 + $1.totalPurchase }
     }
 
+    /// 集計期間内の払戻額合計。
     private var totalPayout: Int {
         filteredRaces.reduce(0) { $0 + $1.totalPayout }
     }
 
+    /// 集計期間内の収支（払戻合計 − 購入合計）。
     private var balance: Int {
         totalPayout - totalPurchase
     }
 
+    /// 集計期間内の回収率。購入がない場合は nil。
     private var returnRate: Double? {
         guard totalPurchase > 0 else { return nil }
         return Double(totalPayout) / Double(totalPurchase)
@@ -190,6 +253,7 @@ struct BalanceSummaryView: View {
 
     // MARK: - Period Control Section
 
+    /// 集計単位ピッカー・前後移動・日付選択をまとめたセクション。
     private var periodControlSection: some View {
         Section {
             Picker("集計単位", selection: $period) {
@@ -204,6 +268,7 @@ struct BalanceSummaryView: View {
         }
     }
 
+    /// 期間タイトルと前後移動ボタンの行。期間モードでは移動ボタンを無効化する。
     private var navigationRow: some View {
         HStack {
             Button {
@@ -237,6 +302,7 @@ struct BalanceSummaryView: View {
         }
     }
 
+    /// 集計単位に応じた日付選択 UI（日: DatePicker / 月: 年月ピッカー / 年: 年ピッカー / 期間: 範囲指定）。
     @ViewBuilder
     private var periodPickerRow: some View {
         switch period {
@@ -279,6 +345,7 @@ struct BalanceSummaryView: View {
         }
     }
 
+    /// 期間モードの開始日・終了日ピッカーと順序エラーの表示。
     private var rangePickers: some View {
         VStack(spacing: 0) {
             DatePicker("開始日", selection: $fromDate, displayedComponents: .date)
@@ -296,6 +363,7 @@ struct BalanceSummaryView: View {
 
     // MARK: - Summary Section
 
+    /// 購入合計・払戻合計・収支・回収率・レース数の集計セクション。
     private var summarySection: some View {
         Section("集計") {
             summaryRow("購入合計", "¥\(totalPurchase.formatted())")
@@ -314,6 +382,7 @@ struct BalanceSummaryView: View {
 
     // MARK: - Breakdown Section
 
+    /// 集計期間内のレースを日付降順で並べた内訳セクション。
     private var breakdownSection: some View {
         Section("内訳") {
             ForEach(filteredRaces.sorted { $0.date > $1.date }) { race in
@@ -347,6 +416,12 @@ struct BalanceSummaryView: View {
         }
     }
 
+    /// 集計セクションのラベルと値の行を生成する。
+    /// - Parameters:
+    ///   - label: 行ラベル。
+    ///   - value: 表示する値。
+    ///   - color: 値の文字色。
+    /// - Returns: 集計行のビュー。
     private func summaryRow(_ label: String, _ value: String, color: Color = .primary) -> some View {
         HStack {
             Text(label)
