@@ -7,11 +7,15 @@
 
 import Foundation
 
+/// 初期データとして投入する競馬場プリセットの定義。
 struct VenuePresetData {
+    /// 競馬場名。
     let name: String
+    /// 表示順。
     let sortIndex: Int
 }
 
+/// 初回起動時・リセット時に投入する競馬場プリセット（中央 10 場 + 地方主要 14 場）。
 let venuePresets: [VenuePresetData] = [
     // 中央（JRA）
     .init(name: "札幌", sortIndex: 0),
@@ -41,6 +45,7 @@ let venuePresets: [VenuePresetData] = [
     .init(name: "水沢", sortIndex: 23),
 ]
 
+/// 初回起動時・リセット時に投入する券種プリセット。
 let defaultTicketTypeNames: [(name: String, sortIndex: Int)] = [
     ("単勝", 0), ("複勝", 1), ("枠連", 2), ("馬連", 3),
     ("ワイド", 4), ("馬単", 5), ("三連複", 6), ("三連単", 7),
@@ -48,6 +53,7 @@ let defaultTicketTypeNames: [(name: String, sortIndex: Int)] = [
 
 // MARK: - JRA 騎手プリセット（オートコンプリート用）
 
+/// 騎手名入力のオートコンプリート候補に使う JRA 騎手プリセット。
 let jockeyPresets: [String] = [
     // ベテラン・トップ騎手
     "武豊", "横山典弘", "幸英明", "和田竜二", "勝浦正樹",
@@ -73,6 +79,7 @@ let jockeyPresets: [String] = [
 
 // MARK: - JRA 調教師プリセット（オートコンプリート用）
 
+/// 調教師名入力のオートコンプリート候補に使う JRA 調教師プリセット。
 let trainerPresets: [String] = [
     // 大手・有力厩舎
     "国枝栄", "矢作芳人", "池江泰寿", "友道康夫", "安田隆行",

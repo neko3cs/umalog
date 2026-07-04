@@ -8,31 +8,46 @@
 import SwiftData
 import SwiftUI
 
+/// 出走馬の追加・編集フォーム。`entry` が nil なら新規追加、非 nil なら編集として動作する。
+/// 馬名・騎手名・調教師名には過去の入力とプリセットからのオートコンプリート候補を表示する。
 struct RaceEntryFormView: View {
+    /// SwiftData のモデルコンテキスト。
     @Environment(\.modelContext) private var modelContext
+    /// シートを閉じるためのアクション。
     @Environment(\.dismiss) private var dismiss
 
+    /// 出走馬を追加する対象のレース。
     let race: Race
+    /// 編集対象の出走馬。新規追加の場合は nil。
     var entry: RaceEntry?
 
+    /// 全レースの出走馬。オートコンプリート候補の収集に使う。
     @Query private var allEntries: [RaceEntry]
 
+    /// 入力中の馬番。
     @State private var horseNumber: Int = 1
+    /// 入力中の馬名。
     @State private var horseName: String = ""
+    /// 入力中の騎手名。
     @State private var jockeyName: String = ""
+    /// 入力中の調教師名。
     @State private var trainerName: String = ""
+    /// 選択中の予想印。未選択の場合は nil。
     @State private var selectedMark: PredictionMark?
 
+    /// 編集モードかどうか。
     private var isEditing: Bool {
         entry != nil
     }
 
+    /// 過去に入力した馬名からの部分一致候補。
     private var horseNameSuggestions: [String] {
         guard !horseName.isEmpty else { return [] }
         let names = Set(allEntries.map(\.horseName).filter { !$0.isEmpty })
         return names.filter { $0.localizedStandardContains(horseName) && $0 != horseName }.sorted()
     }
 
+    /// 過去の入力と JRA プリセットを合わせた騎手名の部分一致候補。
     private var jockeyNameSuggestions: [String] {
         guard !jockeyName.isEmpty else { return [] }
         let pastNames = Set(allEntries.map(\.jockeyName).filter { !$0.isEmpty })
@@ -42,6 +57,7 @@ struct RaceEntryFormView: View {
             .sorted()
     }
 
+    /// 過去の入力と JRA プリセットを合わせた調教師名の部分一致候補。
     private var trainerNameSuggestions: [String] {
         guard !trainerName.isEmpty else { return [] }
         let pastNames = Set(allEntries.map(\.trainerName).filter { !$0.isEmpty })
@@ -162,6 +178,7 @@ struct RaceEntryFormView: View {
         }
     }
 
+    /// 表示中のキーボードを閉じる。
     private func dismissKeyboard() {
         UIApplication.shared.sendAction(
             #selector(UIResponder.resignFirstResponder),
@@ -169,6 +186,7 @@ struct RaceEntryFormView: View {
         )
     }
 
+    /// 編集モードなら編集対象の値を、新規モードなら既存出走馬の最大馬番 + 1 を入力フィールドに設定する。
     private func loadIfEditing() {
         if let entry {
             horseNumber = entry.horseNumber
@@ -182,6 +200,7 @@ struct RaceEntryFormView: View {
         }
     }
 
+    /// 入力値を保存する。編集モードなら既存出走馬を更新し、新規モードなら出走馬を挿入する。
     private func save() {
         if let entry {
             entry.horseNumber = horseNumber

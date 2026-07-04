@@ -89,6 +89,8 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 - **Toolbar buttons must have `.accessibilityIdentifier`**: With multiple `ToolbarItem(.navigationBarTrailing)` items, `app.navigationBars["X"].buttons["Add"]` races against SwiftData's re-render in XCUITest — `waitForExistence` on the bar then `tap()` on a child element can miss. Always set `.accessibilityIdentifier` on toolbar buttons and use `findElement("id")` / `tapWhenReady` in UI tests.
 - **`Toggle` with a custom `Binding(get:set:)` inside `Form`/`List` rows can silently fail to register taps**: confirmed via real mouse clicks in the Simulator (not an XCUITest artifact) — a sibling `Picker` bound directly to `$filter.category` in the same sheet worked fine. Prefer a `Button` + checkmark row over `Toggle` for per-item multi-select rows in a `Form`/`List`.
 - **Japanese day-count strings in UI test assertions must be anchored, not bare-`contains`**: `label.contains("1日間")` false-matches `"21日間"`/`"31日間"` since digits aren't word-bounded. Anchor with surrounding punctuation (e.g. `"(1日間)"`) or use exact string equality.
+- **ZIP backup memo filenames**: current format is `<yyyyMMdd>_<venue>_R<n>_<raceName>.md` (venue + race number added 2026-07-04 to stop same-named races at different venues from overwriting each other's memo). `ZipImporter` must keep the legacy `<yyyyMMdd>_<raceName>` fallback — users' existing backups depend on it.
+- **`xcodebuild -resultBundlePath` fails if the bundle already exists**: `rm -rf src/TestResults.xcresult` first. A failure "Early unexpected exit, operation never finished bootstrapping" usually means the destination simulator isn't booted — `xcrun simctl boot` it and retry.
 
 ---
 
@@ -99,11 +101,12 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 
 ---
 
-## Current State & Handoff (2026-07-03)
+## Current State & Handoff (2026-07-04)
 
-- Tests: 210 unit, 28 UI — all green. SwiftFormat + SwiftLint clean.
-- In progress: Issue #22 (今日ボタン) implemented on `feature/issue-22`, PR #23 open, awaiting owner review/merge.
-- Next: after PR #23 merges, no queued issue besides #1 (blocked on owner scraping strategy decision) and #14 (low priority, unstarted).
+- Tests: 221 unit, 28 UI — all green. SwiftFormat + SwiftLint clean.
+- In progress: branch `fix/code-review-cleanup` (3 local commits, not pushed): finish-position guard for horse number 0, month-end clamping in balance year/month pickers, ZIP memo restore fixes + CSV builder dedup. Awaiting owner decision on push/PR.
+- Decided: ZIP memo filenames include venue and race number; importer keeps legacy-name fallback for old backups.
+- Next: after the fix branch lands, no queued issue besides #1 (blocked on owner scraping strategy decision) and #14 (low priority, unstarted).
 
 ---
 
