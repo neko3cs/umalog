@@ -8,9 +8,12 @@
 import SwiftData
 import UIKit
 
+/// SwiftData コンテナの生成・初期データ投入・シーン設定を担う AppDelegate。
 final class AppDelegate: NSObject, UIApplicationDelegate {
+    /// 共有インスタンス。`umalogApp` からコンテナ参照に使う。
     private(set) static var shared: AppDelegate!
 
+    /// アプリ全体で共有する SwiftData コンテナ。テスト実行時はインメモリストアに切り替える。
     let modelContainer: ModelContainer = {
         let schema = Schema([
             Venue.self,
@@ -31,11 +34,15 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         }
     }()
 
+    /// 生成と同時に共有インスタンスを登録する。
     override init() {
         super.init()
         AppDelegate.shared = self
     }
 
+    /// シーン接続時に `SceneDelegate` を割り当てる。
+    /// - Parameter connectingSceneSession: 接続されるシーンセッション。
+    /// - Returns: `SceneDelegate` を指定したシーン設定。
     func application(
         _: UIApplication,
         configurationForConnecting connectingSceneSession: UISceneSession,
@@ -46,6 +53,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         return config
     }
 
+    /// 競馬場・券種マスターが空なら初期プリセットを投入し、旧データモデルの移行を行う。
     @MainActor
     func seedInitialDataIfNeeded() async {
         let context = modelContainer.mainContext
@@ -61,6 +69,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         await migrateToSelectionModelIfNeeded()
     }
 
+    /// 買い目（`BetSelection`）を持たない旧形式の馬券に、レガシーフィールドから買い目を生成して移行する。
     @MainActor
     private func migrateToSelectionModelIfNeeded() async {
         let context = modelContainer.mainContext

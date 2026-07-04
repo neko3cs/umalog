@@ -9,24 +9,36 @@ import MarkdownUI
 import SwiftData
 import SwiftUI
 
+/// レース詳細画面。レース情報・出走馬・着順・馬券・メモの閲覧と編集への導線を提供する。
 struct RaceDetailView: View {
+    /// SwiftData のモデルコンテキスト。
     @Environment(\.modelContext) private var modelContext
+    /// ウィンドウの UndoManager。出走馬・馬券削除の取り消しに使う。
     @Environment(\.undoManager) private var undoManager
+    /// 表示対象のレース。
     @Bindable var race: Race
+    /// レース編集シートの表示状態。
     @State private var showingEditRace = false
+    /// 出走馬追加シートの表示状態。
     @State private var showingAddEntry = false
+    /// 馬券追加シートの表示状態。
     @State private var showingAddBet = false
+    /// 編集中の出走馬。非 nil のとき編集シートを表示する。
     @State private var editingEntry: RaceEntry?
+    /// 編集中の馬券。非 nil のとき編集シートを表示する。
     @State private var editingBet: Bet?
-    // @Query で取得することで、SwiftData の変更通知が SwiftUI List に正しく伝わる。
-    // race.entries / race.bets の直接参照では UICollectionView の diff 計算が崩れるため。
+    /// 全出走馬。@Query で取得することで、SwiftData の変更通知が SwiftUI List に正しく伝わる。
+    /// race.entries / race.bets の直接参照では UICollectionView の diff 計算が崩れるため。
     @Query(sort: \RaceEntry.horseNumber) private var allEntries: [RaceEntry]
+    /// 全馬券。`allEntries` と同じ理由で @Query 経由で取得する。
     @Query(sort: \Bet.sortIndex) private var allBets: [Bet]
 
+    /// このレースの出走馬を馬番昇順で返す。
     private var sortedEntries: [RaceEntry] {
         allEntries.filter { $0.race?.persistentModelID == race.persistentModelID }
     }
 
+    /// このレースの馬券をソート順で返す。
     private var sortedBets: [Bet] {
         allBets.filter { $0.race?.persistentModelID == race.persistentModelID }
     }
@@ -192,8 +204,11 @@ struct RaceDetailView: View {
 
 // MARK: - Memo Views
 
+/// メモの Markdown レンダリング表示画面。
 private struct MemoView: View {
+    /// 表示対象のレース。
     @Bindable var race: Race
+    /// メモ編集シートの表示状態。
     @State private var showingEditor = false
 
     var body: some View {
@@ -221,9 +236,13 @@ private struct MemoView: View {
     }
 }
 
+/// メモの編集シート。保存ボタンを押すまで `race.memo` には反映しない。
 private struct MemoEditView: View {
+    /// 編集対象のレース。
     @Bindable var race: Race
+    /// シートを閉じるためのアクション。
     @Environment(\.dismiss) private var dismiss
+    /// 編集中の下書きテキスト。
     @State private var draft = ""
 
     var body: some View {
@@ -251,8 +270,11 @@ private struct MemoEditView: View {
 
 // MARK: - Row Views
 
+/// 出走馬リストの 1 行。馬番・馬名・騎手・予想印・着順を表示する。
 struct EntryRowView: View {
+    /// 表示対象の出走馬。
     let entry: RaceEntry
+    /// この馬の着順（1〜3）。入賞していない場合は nil。
     var position: Int?
 
     var body: some View {
@@ -285,9 +307,12 @@ struct EntryRowView: View {
     }
 }
 
+/// 馬券リストの 1 行。買い目ごとの内訳と購入・払戻のサマリーを表示する。
 struct BetRowView: View {
+    /// 表示対象の馬券。
     let bet: Bet
 
+    /// 買い目をソート順で返す。
     private var sortedSelections: [BetSelection] {
         (bet.selections ?? []).sorted { $0.sortIndex < $1.sortIndex }
     }
@@ -306,6 +331,9 @@ struct BetRowView: View {
         .padding(.vertical, 2)
     }
 
+    /// 買い目 1 件分の行を生成する。
+    /// - Parameter sel: 表示対象の買い目。
+    /// - Returns: 買い目行のビュー。
     private func selectionRow(_ sel: BetSelection) -> some View {
         HStack(spacing: 6) {
             if !sel.displayTicketTypeName.isEmpty {
@@ -330,6 +358,7 @@ struct BetRowView: View {
         }
     }
 
+    /// 買い目レコードを持たない旧形式馬券のための行。レガシーフィールドから表示する。
     private var legacySelectionRow: some View {
         HStack(spacing: 6) {
             if !bet.displayTicketTypeName.isEmpty {
@@ -345,6 +374,7 @@ struct BetRowView: View {
         }
     }
 
+    /// 購入額と払戻額のサマリー行。
     private var summaryRow: some View {
         HStack(spacing: 8) {
             if sortedSelections.count > 1 {
@@ -363,6 +393,7 @@ struct BetRowView: View {
 
 // MARK: - Snapshots for Undo
 
+/// 出走馬削除の Undo 復元用スナップショット。各プロパティは `RaceEntry` の同名フィールドの写し。
 struct EntrySnapshot {
     let horseNumber: Int
     let horseName: String
@@ -372,6 +403,8 @@ struct EntrySnapshot {
     let finishPosition: Int?
     let sortIndex: Int
 
+    /// 出走馬からスナップショットを取る。
+    /// - Parameter entry: スナップショット対象の出走馬。
     init(from entry: RaceEntry) {
         horseNumber = entry.horseNumber
         horseName = entry.horseName
@@ -383,6 +416,8 @@ struct EntrySnapshot {
     }
 }
 
+/// 馬券削除の Undo 復元用スナップショット。各プロパティは `Bet` の同名フィールドの写しで、
+/// 買い目もネストしたスナップショットとして保持する。券種は永続 ID で保持し復元時に再関連付けする。
 struct BetSnapshot {
     let ticketTypeId: PersistentIdentifier?
     let ticketTypeName: String
@@ -393,6 +428,7 @@ struct BetSnapshot {
     let sortIndex: Int
     let selections: [SelectionSnapshot]
 
+    /// 買い目のスナップショット。各プロパティは `BetSelection` の同名フィールドの写し。
     struct SelectionSnapshot {
         let ticketTypeId: PersistentIdentifier?
         let ticketTypeName: String
@@ -402,6 +438,8 @@ struct BetSnapshot {
         let sortIndex: Int
     }
 
+    /// 馬券からスナップショットを取る。
+    /// - Parameter bet: スナップショット対象の馬券。
     init(from bet: Bet) {
         ticketTypeId = bet.ticketType?.persistentModelID
         ticketTypeName = bet.ticketTypeName
@@ -422,9 +460,13 @@ struct BetSnapshot {
 
 // MARK: - Finish Position Picker
 
+/// 着順（1〜3 着）の馬番を出走馬から選択するピッカー行。
 struct FinishPositionPicker: View {
+    /// 行ラベル（例: 「1着」）。
     let label: String
+    /// 選択された馬番。0 は未入力。
     @Binding var selection: Int
+    /// 選択候補となる出走馬。
     let entries: [RaceEntry]
 
     var body: some View {
