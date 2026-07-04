@@ -42,6 +42,7 @@ type_body_length:
 file_length:
   warning: 700
   error: 900
+  ignore_comment_only_lines: true # DocC 全面記載の方針のため、コメント行はファイル長にカウントしない
 
 cyclomatic_complexity:
   warning: 15

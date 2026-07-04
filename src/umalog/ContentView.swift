@@ -7,9 +7,13 @@
 
 import SwiftUI
 
+/// ルートのタブビュー。シェイクによる取り消し（Undo）のハンドリングも担う。
 struct ContentView: View {
+    /// ウィンドウの UndoManager。削除操作の取り消しに使う。
     @Environment(\.undoManager) private var undoManager
+    /// 取り消し確認アラートの表示状態。
     @State private var showUndoAlert = false
+    /// アラートで「取り消す」が選択され、実行待ちであることを示すフラグ。
     @State private var pendingUndo = false
 
     var body: some View {
