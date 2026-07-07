@@ -1,0 +1,59 @@
+<mxfile host="app.diagrams.net" agent="codegen" version="24.0.0">
+  <diagram name="UseCaseDiagram" id="UseCaseDiagram">
+    <mxGraphModel dx="1000" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1620" pageHeight="1050" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+<mxCell id="boundary" value="Umalog（レース記録・収支管理アプリ）" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=center;fontSize=16;fontStyle=1;fillColor=none;strokeColor=#333333;" vertex="1" parent="1"><mxGeometry x="220" y="30" width="1360" height="980" as="geometry"/></mxCell>
+<mxCell id="actor" value="ユーザー
+（利用者本人）" style="shape=umlActor;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;verticalAlign=top;html=1;fontSize=13;" vertex="1" parent="1"><mxGeometry x="60" y="470" width="70" height="100" as="geometry"/></mxCell>
+<mxCell id="uc_add_race" value="レースを登録する" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="260" y="130" width="210" height="60" as="geometry"/></mxCell>
+<mxCell id="uc_edit_race" value="レースを編集する" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="260" y="220" width="210" height="60" as="geometry"/></mxCell>
+<mxCell id="uc_delete_race" value="レースを削除する" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="260" y="310" width="210" height="60" as="geometry"/></mxCell>
+<mxCell id="uc_filter_sort" value="レースを絞り込み・並び替えする" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="260" y="400" width="210" height="60" as="geometry"/></mxCell>
+<mxCell id="group_A" value="レース管理" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;fontSize=13;fontStyle=1;fillColor=none;strokeColor=#999999;dashed=1;spacingLeft=8;spacingTop=6;" vertex="1" parent="1"><mxGeometry x="240" y="90" width="250" height="390" as="geometry"/></mxCell>
+<mxCell id="uc_add_entry" value="出走馬を登録する" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="720" y="130" width="210" height="60" as="geometry"/></mxCell>
+<mxCell id="uc_set_mark" value="予想印を付ける" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="720" y="220" width="210" height="60" as="geometry"/></mxCell>
+<mxCell id="uc_set_finish" value="着順を入力する" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="720" y="310" width="210" height="60" as="geometry"/></mxCell>
+<mxCell id="group_B" value="出走馬・予想管理" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;fontSize=13;fontStyle=1;fillColor=none;strokeColor=#999999;dashed=1;spacingLeft=8;spacingTop=6;" vertex="1" parent="1"><mxGeometry x="700" y="90" width="250" height="300" as="geometry"/></mxCell>
+<mxCell id="uc_add_bet" value="馬券を登録する
+（通常/BOX/フォーメーション）" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="1160" y="130" width="210" height="60" as="geometry"/></mxCell>
+<mxCell id="uc_set_payout" value="払戻額を入力する" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="1160" y="220" width="210" height="60" as="geometry"/></mxCell>
+<mxCell id="uc_calc_combo" value="組合せ点数を自動計算する" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="1160" y="310" width="210" height="60" as="geometry"/></mxCell>
+<mxCell id="group_C" value="馬券管理" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;fontSize=13;fontStyle=1;fillColor=none;strokeColor=#999999;dashed=1;spacingLeft=8;spacingTop=6;" vertex="1" parent="1"><mxGeometry x="1140" y="90" width="250" height="300" as="geometry"/></mxCell>
+<mxCell id="uc_memo" value="レースメモを記録する
+（Markdown）" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="260" y="480" width="210" height="60" as="geometry"/></mxCell>
+<mxCell id="uc_balance" value="収支を確認する
+（日/月/年/期間）" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="260" y="570" width="210" height="60" as="geometry"/></mxCell>
+<mxCell id="group_D" value="メモ・収支確認" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;fontSize=13;fontStyle=1;fillColor=none;strokeColor=#999999;dashed=1;spacingLeft=8;spacingTop=6;" vertex="1" parent="1"><mxGeometry x="240" y="440" width="250" height="210" as="geometry"/></mxCell>
+<mxCell id="uc_export_zip" value="ZIPバックアップを作成する" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="720" y="480" width="210" height="60" as="geometry"/></mxCell>
+<mxCell id="uc_import_zip" value="ZIPから復元する" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="720" y="570" width="210" height="60" as="geometry"/></mxCell>
+<mxCell id="uc_replace_data" value="既存レースデータを置換する" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="720" y="660" width="210" height="60" as="geometry"/></mxCell>
+<mxCell id="uc_reset_data" value="データを初期化する" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="720" y="750" width="210" height="60" as="geometry"/></mxCell>
+<mxCell id="uc_manage_master" value="競馬場・券種マスタを管理する" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="720" y="840" width="210" height="60" as="geometry"/></mxCell>
+<mxCell id="group_E" value="データ管理" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;fontSize=13;fontStyle=1;fillColor=none;strokeColor=#999999;dashed=1;spacingLeft=8;spacingTop=6;" vertex="1" parent="1"><mxGeometry x="700" y="440" width="250" height="480" as="geometry"/></mxCell>
+<mxCell id="uc_undo_shake" value="シェイクで直前操作を取り消す" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="1"><mxGeometry x="1160" y="480" width="210" height="60" as="geometry"/></mxCell>
+<mxCell id="group_F" value="取り消し" style="rounded=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;fontSize=13;fontStyle=1;fillColor=none;strokeColor=#999999;dashed=1;spacingLeft=8;spacingTop=6;" vertex="1" parent="1"><mxGeometry x="1140" y="440" width="250" height="120" as="geometry"/></mxCell>
+<mxCell id="n2" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="actor" target="uc_add_race"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n3" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="actor" target="uc_edit_race"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n4" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="actor" target="uc_delete_race"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n5" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="actor" target="uc_filter_sort"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n6" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="actor" target="uc_add_entry"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n7" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="actor" target="uc_set_mark"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n8" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="actor" target="uc_set_finish"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n9" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="actor" target="uc_add_bet"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n10" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="actor" target="uc_set_payout"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n11" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="actor" target="uc_memo"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n12" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="actor" target="uc_balance"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n13" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="actor" target="uc_export_zip"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n14" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="actor" target="uc_import_zip"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n15" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="actor" target="uc_reset_data"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n16" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="actor" target="uc_manage_master"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n17" value="" style="endArrow=none;html=1;rounded=0;strokeColor=#666666;" edge="1" parent="1" source="actor" target="uc_undo_shake"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n18" value="&amp;laquo;include&amp;raquo;" style="endArrow=open;dashed=1;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="uc_add_bet" target="uc_calc_combo"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n19" value="&amp;laquo;include&amp;raquo;" style="endArrow=open;dashed=1;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="uc_import_zip" target="uc_replace_data"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n20" value="&amp;laquo;extend&amp;raquo;" style="endArrow=open;dashed=1;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="uc_undo_shake" target="uc_delete_race"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
