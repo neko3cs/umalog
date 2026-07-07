@@ -1,0 +1,52 @@
+<mxfile host="app.diagrams.net" agent="codegen" version="24.0.0">
+  <diagram name="ActivityDiagram" id="ActivityDiagram">
+    <mxGraphModel dx="1000" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1280" pageHeight="1380" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+<mxCell id="laneUser" value="ユーザー" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=center;fontSize=14;fontStyle=1;fillColor=#f0f8ff;strokeColor=#333333;" vertex="1" parent="1"><mxGeometry x="40" y="40" width="560" height="1300" as="geometry"/></mxCell>
+<mxCell id="laneSystem" value="システム（SwiftData / CSVExporter 等）" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=center;fontSize=14;fontStyle=1;fillColor=#fff5e6;strokeColor=#333333;" vertex="1" parent="1"><mxGeometry x="640" y="40" width="560" height="1300" as="geometry"/></mxCell>
+<mxCell id="start" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;" vertex="1" parent="1"><mxGeometry x="285" y="100" width="30" height="30" as="geometry"/></mxCell>
+<mxCell id="a1" value="レース情報を入力
+（日付・競馬場・R番号など）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1"><mxGeometry x="110.0" y="160" width="380" height="70" as="geometry"/></mxCell>
+<mxCell id="a2" value="レースを保存" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1"><mxGeometry x="710.0" y="160" width="380" height="70" as="geometry"/></mxCell>
+<mxCell id="a3" value="出走馬を登録する
+（繰り返し）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1"><mxGeometry x="110.0" y="270" width="380" height="70" as="geometry"/></mxCell>
+<mxCell id="dMark" value="予想印を
+付けるか？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1"><mxGeometry x="230" y="380" width="140" height="80" as="geometry"/></mxCell>
+<mxCell id="a4" value="予想印を入力" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1"><mxGeometry x="110.0" y="500" width="380" height="70" as="geometry"/></mxCell>
+<mxCell id="a5" value="馬券を登録する
+（買い目・単価を入力、繰り返し）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1"><mxGeometry x="110.0" y="610" width="380" height="70" as="geometry"/></mxCell>
+<mxCell id="a6" value="組合せ点数・購入額を
+自動計算" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1"><mxGeometry x="710.0" y="610" width="380" height="70" as="geometry"/></mxCell>
+<mxCell id="dResult" value="レース結果が
+出たか？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1"><mxGeometry x="230" y="720" width="140" height="80" as="geometry"/></mxCell>
+<mxCell id="a7" value="着順（1〜3着）を入力" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1"><mxGeometry x="110.0" y="840" width="380" height="70" as="geometry"/></mxCell>
+<mxCell id="a8" value="払戻額を入力" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1"><mxGeometry x="110.0" y="940" width="380" height="70" as="geometry"/></mxCell>
+<mxCell id="a9" value="収支・回収率を自動計算" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1"><mxGeometry x="710.0" y="940" width="380" height="70" as="geometry"/></mxCell>
+<mxCell id="a10" value="収支画面で日/月/年/期間
+ごとに確認" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;" vertex="1" parent="1"><mxGeometry x="110.0" y="1050" width="380" height="70" as="geometry"/></mxCell>
+<mxCell id="end1" value="終了" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;fontColor=#ffffff;" vertex="1" parent="1"><mxGeometry x="280" y="1170" width="40" height="40" as="geometry"/></mxCell>
+<mxCell id="end2" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;fontColor=#ffffff;" vertex="1" parent="1"><mxGeometry x="960" y="838" width="30" height="30" as="geometry"/></mxCell>
+<mxCell id="n2" value="終了（結果待ち。着順・払戻は
+後で改めて入力する）" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;size=12;" vertex="1" parent="1"><mxGeometry x="1010" y="823" width="260" height="60" as="geometry"/></mxCell>
+<mxCell id="n3" value="" style="endArrow=block;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="start" target="a1"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n4" value="" style="endArrow=block;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="a1" target="a2"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n5" value="" style="endArrow=block;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="a2" target="a3"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n6" value="" style="endArrow=block;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="a3" target="dMark"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n7" value="はい" style="endArrow=block;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="dMark" target="a4"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n8" value="いいえ" style="endArrow=block;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="dMark" target="a5"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="550" y="420"/></Array></mxGeometry></mxCell>
+<mxCell id="n9" value="" style="endArrow=block;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="a4" target="a5"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n10" value="" style="endArrow=block;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="a5" target="a6"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n11" value="" style="endArrow=block;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="a6" target="dResult"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n12" value="結果が出た" style="endArrow=block;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="dResult" target="a7"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n13" value="まだ出ていない
+（後で入力）" style="endArrow=block;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="dResult" target="end2"><mxGeometry relative="1" as="geometry"><Array as="points"><mxPoint x="900" y="850"/></Array></mxGeometry></mxCell>
+<mxCell id="n14" value="" style="endArrow=block;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="a7" target="a8"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n15" value="" style="endArrow=block;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="a8" target="a9"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n16" value="" style="endArrow=block;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="a9" target="a10"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+<mxCell id="n17" value="" style="endArrow=block;html=1;rounded=0;fontSize=11;" edge="1" parent="1" source="a10" target="end1"><mxGeometry relative="1" as="geometry"></mxGeometry></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
