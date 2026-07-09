@@ -92,6 +92,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             ))
             needsSave = true
         }
-        if needsSave { try? context.save() }
+        if needsSave {
+            try? context.save()
+        }
     }
 }

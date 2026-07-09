@@ -393,9 +393,15 @@ struct SelectionFormView: View {
         switch effectiveBetStyle {
         case .normal:
             var nums: [Int] = []
-            if horse1 >= 0 { nums.append(horse1) }
-            if effectiveHorseCount >= 2, horse2 >= 0 { nums.append(horse2) }
-            if effectiveHorseCount >= 3, horse3 >= 0 { nums.append(horse3) }
+            if horse1 >= 0 {
+                nums.append(horse1)
+            }
+            if effectiveHorseCount >= 2, horse2 >= 0 {
+                nums.append(horse2)
+            }
+            if effectiveHorseCount >= 3, horse3 >= 0 {
+                nums.append(horse3)
+            }
             return nums.map { "\($0)" }.joined(separator: "-")
         case .box:
             guard !boxHorses.isEmpty else { return "" }
@@ -566,8 +572,12 @@ struct SelectionFormView: View {
         switch effectiveBetStyle {
         case .normal:
             horsePicker(label: "1頭目", selection: $horse1)
-            if effectiveHorseCount >= 2 { horsePicker(label: "2頭目", selection: $horse2) }
-            if effectiveHorseCount >= 3 { horsePicker(label: "3頭目", selection: $horse3) }
+            if effectiveHorseCount >= 2 {
+                horsePicker(label: "2頭目", selection: $horse2)
+            }
+            if effectiveHorseCount >= 3 {
+                horsePicker(label: "3頭目", selection: $horse3)
+            }
 
         case .box:
             ForEach(sortedEntries) { entry in
@@ -593,7 +603,9 @@ struct SelectionFormView: View {
                 Spacer()
                 legLabel("軸1")
                 legLabel("軸2")
-                if effectiveHorseCount >= 3 { legLabel("軸3") }
+                if effectiveHorseCount >= 3 {
+                    legLabel("軸3")
+                }
             }
             ForEach(sortedEntries) { entry in
                 HStack(spacing: 6) {
@@ -668,7 +680,11 @@ struct SelectionFormView: View {
     ///   - set: 対象の集合。
     ///   - value: トグルする値。
     private func toggleSet(_ set: inout Set<Int>, _ value: Int) {
-        if set.contains(value) { set.remove(value) } else { set.insert(value) }
+        if set.contains(value) {
+            set.remove(value)
+        } else {
+            set.insert(value)
+        }
     }
 
     /// ユーザー操作による券種・買い方の変更時に馬番選択をリセットする。初期値読み込み中は何もしない。
@@ -678,7 +694,9 @@ struct SelectionFormView: View {
         horse1 = -1; horse2 = -1; horse3 = -1
         boxHorses = []; formLeg1 = []; formLeg2 = []; formLeg3 = []
         selectionText = ""
-        if resetStyle { betStyle = .normal }
+        if resetStyle {
+            betStyle = .normal
+        }
     }
 
     // MARK: - Load / Save

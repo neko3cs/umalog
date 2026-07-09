@@ -61,10 +61,14 @@ struct RaceFilter: Equatable {
     /// - Parameter race: 評価対象のレース。
     private func matchesDateRange(_ race: Race) -> Bool {
         let cal = Calendar.current
-        if let from = dateFrom, race.date < cal.startOfDay(for: from) { return false }
+        if let from = dateFrom, race.date < cal.startOfDay(for: from) {
+            return false
+        }
         if let to = dateTo {
             guard let nextDay = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: to)) else { return true }
-            if race.date >= nextDay { return false }
+            if race.date >= nextDay {
+                return false
+            }
         }
         return true
     }
