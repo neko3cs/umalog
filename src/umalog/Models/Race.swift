@@ -100,9 +100,15 @@ final class Race {
     /// - Returns: 1〜3 着に該当すればその着順、それ以外は nil。
     func finishPosition(forHorseNumber number: Int) -> Int? {
         guard number > 0 else { return nil }
-        if firstPlaceHorseNumber == number { return 1 }
-        if secondPlaceHorseNumber == number { return 2 }
-        if thirdPlaceHorseNumber == number { return 3 }
+        if firstPlaceHorseNumber == number {
+            return 1
+        }
+        if secondPlaceHorseNumber == number {
+            return 2
+        }
+        if thirdPlaceHorseNumber == number {
+            return 3
+        }
         return nil
     }
 
