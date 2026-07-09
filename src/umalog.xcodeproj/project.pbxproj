@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 100;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -56,26 +56,20 @@
 /* Begin PBXFrameworksBuildPhase section */
 		F33E266A2FFD509E006C2760 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				F32C9FF92FFD55AE002816AF /* MarkdownUI in Frameworks */,
 				F32C9FFC2FFD56A7002816AF /* ZIPFoundation in Frameworks */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		F33E26792FFD509F006C2760 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		F33E26832FFD509F006C2760 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
@@ -122,8 +116,6 @@
 			);
 			buildRules = (
 			);
-			dependencies = (
-			);
 			fileSystemSynchronizedGroups = (
 				F33E266F2FFD509E006C2760 /* umalog */,
 			);
@@ -153,8 +145,6 @@
 				F33E267F2FFD509F006C2760 /* umalogTests */,
 			);
 			name = umalogTests;
-			packageProductDependencies = (
-			);
 			productName = umalogTests;
 			productReference = F33E267C2FFD509F006C2760 /* umalogTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -176,8 +166,6 @@
 				F33E26892FFD509F006C2760 /* umalogUITests */,
 			);
 			name = umalogUITests;
-			packageProductDependencies = (
-			);
 			productName = umalogUITests;
 			productReference = F33E26862FFD509F006C2760 /* umalogUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -218,7 +206,7 @@
 				F32C9FF62FFD5476002816AF /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 				F32C9FF72FFD55AE002816AF /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
 			);
-			preferredProjectObjectVersion = 77;
+			preferredProjectObjectVersion = 100;
 			productRefGroup = F33E266E2FFD509E006C2760 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -233,48 +221,36 @@
 /* Begin PBXResourcesBuildPhase section */
 		F33E266B2FFD509E006C2760 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		F33E267A2FFD509F006C2760 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		F33E26842FFD509F006C2760 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		F33E26692FFD509E006C2760 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		F33E26782FFD509F006C2760 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 		F33E26822FFD509F006C2760 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
@@ -292,7 +268,7 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		F33E268E2FFD509F006C2760 /* Debug */ = {
+		F33E268E2FFD509F006C2760 /* Debug configuration for PBXProject "umalog" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -345,7 +321,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -357,7 +333,7 @@
 			};
 			name = Debug;
 		};
-		F33E268F2FFD509F006C2760 /* Release */ = {
+		F33E268F2FFD509F006C2760 /* Release configuration for PBXProject "umalog" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -404,7 +380,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -415,7 +391,7 @@
 			};
 			name = Release;
 		};
-		F33E26912FFD509F006C2760 /* Debug */ = {
+		F33E26912FFD509F006C2760 /* Debug configuration for PBXNativeTarget "umalog" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -431,7 +407,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -449,7 +425,7 @@
 			};
 			name = Debug;
 		};
-		F33E26922FFD509F006C2760 /* Release */ = {
+		F33E26922FFD509F006C2760 /* Release configuration for PBXNativeTarget "umalog" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -465,7 +441,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -483,7 +459,7 @@
 			};
 			name = Release;
 		};
-		F33E26942FFD509F006C2760 /* Debug */ = {
+		F33E26942FFD509F006C2760 /* Debug configuration for PBXNativeTarget "umalogTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -491,7 +467,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GPCFMDQ767;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.neko3cs.umalogTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -505,7 +481,7 @@
 			};
 			name = Debug;
 		};
-		F33E26952FFD509F006C2760 /* Release */ = {
+		F33E26952FFD509F006C2760 /* Release configuration for PBXNativeTarget "umalogTests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -513,7 +489,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GPCFMDQ767;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.neko3cs.umalogTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -527,14 +503,14 @@
 			};
 			name = Release;
 		};
-		F33E26972FFD509F006C2760 /* Debug */ = {
+		F33E26972FFD509F006C2760 /* Debug configuration for PBXNativeTarget "umalogUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GPCFMDQ767;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.neko3cs.umalogUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -548,14 +524,14 @@
 			};
 			name = Debug;
 		};
-		F33E26982FFD509F006C2760 /* Release */ = {
+		F33E26982FFD509F006C2760 /* Release configuration for PBXNativeTarget "umalogUITests" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GPCFMDQ767;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = net.neko3cs.umalogUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -575,37 +551,33 @@
 		F33E26682FFD509E006C2760 /* Build configuration list for PBXProject "umalog" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				F33E268E2FFD509F006C2760 /* Debug */,
-				F33E268F2FFD509F006C2760 /* Release */,
+				F33E268E2FFD509F006C2760 /* Debug configuration for PBXProject "umalog" */,
+				F33E268F2FFD509F006C2760 /* Release configuration for PBXProject "umalog" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		F33E26902FFD509F006C2760 /* Build configuration list for PBXNativeTarget "umalog" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				F33E26912FFD509F006C2760 /* Debug */,
-				F33E26922FFD509F006C2760 /* Release */,
+				F33E26912FFD509F006C2760 /* Debug configuration for PBXNativeTarget "umalog" */,
+				F33E26922FFD509F006C2760 /* Release configuration for PBXNativeTarget "umalog" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		F33E26932FFD509F006C2760 /* Build configuration list for PBXNativeTarget "umalogTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				F33E26942FFD509F006C2760 /* Debug */,
-				F33E26952FFD509F006C2760 /* Release */,
+				F33E26942FFD509F006C2760 /* Debug configuration for PBXNativeTarget "umalogTests" */,
+				F33E26952FFD509F006C2760 /* Release configuration for PBXNativeTarget "umalogTests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		F33E26962FFD509F006C2760 /* Build configuration list for PBXNativeTarget "umalogUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				F33E26972FFD509F006C2760 /* Debug */,
-				F33E26982FFD509F006C2760 /* Release */,
+				F33E26972FFD509F006C2760 /* Debug configuration for PBXNativeTarget "umalogUITests" */,
+				F33E26982FFD509F006C2760 /* Release configuration for PBXNativeTarget "umalogUITests" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
