@@ -1,7 +1,7 @@
 {
   "configurations" : [
     {
-      "id" : "A1B2C3D4-E5F6-7890-ABCD-EF1234567890",
+      "id" : "84602F59-7BD5-4B6B-BA3E-DC147A96C738",
       "name" : "Test Scheme Action",
       "options" : {
 
@@ -9,21 +9,28 @@
     }
   ],
   "defaultOptions" : {
-    "codeCoverageEnabled" : true,
-    "parallelizationEnabled" : false
+    "codeCoverage" : false,
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:umalog.xcodeproj",
+      "identifier" : "F33E266C2FFD509E006C2760",
+      "name" : "umalog"
+    }
   },
   "testTargets" : [
     {
+      "parallelizable" : true,
       "target" : {
         "containerPath" : "container:umalog.xcodeproj",
-        "identifier" : "F38D25B62FDA8B4000FBE2DD",
+        "identifier" : "F33E267B2FFD509F006C2760",
         "name" : "umalogTests"
       }
     },
     {
+      "parallelizable" : true,
       "target" : {
         "containerPath" : "container:umalog.xcodeproj",
-        "identifier" : "F38D25C02FDA8B4000FBE2DD",
+        "identifier" : "F33E26852FFD509F006C2760",
         "name" : "umalogUITests"
       }
     }
