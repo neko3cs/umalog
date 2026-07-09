@@ -229,7 +229,9 @@ struct BalanceSummaryView: View {
             List {
                 periodControlSection
                 summarySection
-                if !filteredRaces.isEmpty { breakdownSection }
+                if !filteredRaces.isEmpty {
+                    breakdownSection
+                }
             }
             .navigationTitle("収支")
             .toolbar {
