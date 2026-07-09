@@ -36,7 +36,9 @@ enum CSVExporter {
         var header = "date,venue,race_number,race_name,distance,track_type,track_condition," +
             "category,grade,first_place_horse,second_place_horse,third_place_horse," +
             "total_purchase,total_payout,balance"
-        if includeMemo { header += ",memo" }
+        if includeMemo {
+            header += ",memo"
+        }
         var lines = [header]
         for race in races {
             var row: [String] = [
@@ -216,9 +218,13 @@ enum ZipExporter {
     /// - Returns: メモファイルのベース名。
     static func memoBaseName(date: Date, venueName: String, raceNumber: Int, raceName: String) -> String {
         var components = [CSVExporter.formatFilenameDate(date)]
-        if !venueName.isEmpty { components.append(sanitizeForFilename(venueName)) }
+        if !venueName.isEmpty {
+            components.append(sanitizeForFilename(venueName))
+        }
         components.append("R\(raceNumber)")
-        if !raceName.isEmpty { components.append(sanitizeForFilename(raceName)) }
+        if !raceName.isEmpty {
+            components.append(sanitizeForFilename(raceName))
+        }
         return components.joined(separator: "_")
     }
 
@@ -525,18 +531,24 @@ enum ZipImporter {
                 case "\"": inQuotes = true
                 case ",": row.append(field); field = ""
                 case "\r":
-                    if idx + 1 < chars.count, chars[idx + 1] == "\n" { idx += 1 }
+                    if idx + 1 < chars.count, chars[idx + 1] == "\n" {
+                        idx += 1
+                    }
                     fallthrough
                 case "\n":
                     row.append(field); field = ""
-                    if !row.isEmpty { result.append(row) }
+                    if !row.isEmpty {
+                        result.append(row)
+                    }
                     row = []
                 default: field.append(char)
                 }
             }
             idx += 1
         }
-        if !field.isEmpty || !row.isEmpty { row.append(field); result.append(row) }
+        if !field.isEmpty || !row.isEmpty {
+            row.append(field); result.append(row)
+        }
         return result
     }
 }
