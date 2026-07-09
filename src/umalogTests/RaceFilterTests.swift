@@ -300,7 +300,9 @@ struct RaceFilterTest {
             let races = [race]
             var f = RaceFilter()
             f.category = categories.randomElement()
-            if Bool.random() { f.grades = try [#require(RaceGrade.allCases.randomElement())] }
+            if Bool.random() {
+                f.grades = try [#require(RaceGrade.allCases.randomElement())]
+            }
             let result = f.apply(to: races)
             #expect(result.allSatisfy { r in races.contains(where: { $0 === r }) })
         }

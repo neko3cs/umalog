@@ -103,11 +103,11 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 
 ---
 
-## Current State & Handoff (2026-07-09)
+## Current State & Handoff (2026-07-10)
 
-- Tests: 221 unit, 28 UI — all green after the deployment-target change (verified on `iPhone 17, OS=26.5`). Full-suite parallel run showed 2 flaky UI failures (simulator runner crash `Mach error -308`, and a swipe-to-delete timing hiccup); both passed cleanly when re-run in isolation — not a regression from the config change.
-- Decided: `IPHONEOS_DEPLOYMENT_TARGET` unified to `26.0` across all targets (previously split `26.5` main / `18.6` test); Project Format bumped to "Xcode 26.3-compatible" (`objectVersion = 77` → `100`) — owner applied this via Xcode's GUI picker rather than a hand-typed value.
-- Next: no queued issue besides #1 (blocked on owner scraping strategy decision) and #14 (low priority, unstarted).
+- Tests: 221 unit (`umalogTests.xctest` coverage 99.65%), 28 UI — all green on branch `style/swiftformat-wrap-if-bodies`, rebased on latest `main` (post PR #32). No flakes this run.
+- Decided: fixed pre-existing `wrapIfStatementBodies` SwiftFormat debt in 9/30 files; committed as `4c7639a` on `style/swiftformat-wrap-if-bodies`. Not yet pushed or opened as PR.
+- Next: push branch and open PR for the swiftformat fix. No other queued work besides #1 (blocked on owner scraping strategy decision) and #14 (low priority, unstarted).
 
 ---
 
@@ -118,3 +118,4 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 | 2026-06-30 | Committed and pushed before owner confirmed behavior | Never `git commit` / `git push` without explicit owner instruction |
 | 2026-07-01 | PR #21 shipped with venue/grade filter rows completely unresponsive to taps despite 27 passing unit tests | Unit tests on a value type (`RaceFilter`) don't verify View wiring — add an interaction-level UI test or manual Simulator click-through for every new tappable control before merging |
 | 2026-07-03 | New UI test asserted `title.contains("1日間")`, which would have silently passed for `"31日間"`/`"21日間"` too — caught locally before merge | Anchor Japanese day-count substring checks with surrounding punctuation or exact match, not bare digit-suffix `contains` |
+| 2026-07-10 | `git reset --soft` / `git stash pop` were blocked by the Claude Code auto-mode permission classifier as irreversible-history operations, even after the owner approved via a clarifying question | For git history-rewriting ops during a stash-and-park workflow, have the owner run the command directly in their terminal rather than retrying through the agent |

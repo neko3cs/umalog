@@ -73,7 +73,9 @@ struct SettingsView: View {
                         HStack {
                             Label("ZIPバックアップ", systemImage: "archivebox")
                             Spacer()
-                            if isExporting { ProgressView() }
+                            if isExporting {
+                                ProgressView()
+                            }
                         }
                     }
                     .disabled(isExporting || isImporting)
@@ -85,7 +87,9 @@ struct SettingsView: View {
                             Label("ZIPから復元", systemImage: "archivebox.fill")
                                 .foregroundStyle(.orange)
                             Spacer()
-                            if isImporting { ProgressView() }
+                            if isImporting {
+                                ProgressView()
+                            }
                         }
                     }
                     .disabled(isExporting || isImporting)
@@ -127,7 +131,9 @@ struct SettingsView: View {
             }
             .alert("データを復元", isPresented: $showingImportConfirm) {
                 Button("復元", role: .destructive) {
-                    if let url = pendingImportURL { performImport(from: url) }
+                    if let url = pendingImportURL {
+                        performImport(from: url)
+                    }
                 }
                 Button("キャンセル", role: .cancel) { pendingImportURL = nil }
             } message: {
@@ -517,7 +523,11 @@ struct ImportDocumentPicker: UIViewControllerRepresentable {
         func documentPicker(_: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             guard let url = urls.first else { return }
             let accessing = url.startAccessingSecurityScopedResource()
-            defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+            defer {
+                if accessing {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
 
             // セキュリティスコープが解放されると元URLを後で読めなくなるため、
             // 取得直後にアプリのtmpへコピーする

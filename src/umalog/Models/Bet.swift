@@ -87,7 +87,9 @@ final class Bet {
     ///   - ticketTypeName: 券種名（例: `"馬連"`）。
     /// - Returns: 組合せ点数。買い目が空・不成立の場合は 0。
     static func combinationCount(selection: String, ticketTypeName: String) -> Int {
-        if selection.isEmpty { return 0 }
+        if selection.isEmpty {
+            return 0
+        }
 
         // Box (e.g. "1,2,3[BOX]")
         if let range = selection.range(of: "[BOX]") {
@@ -205,7 +207,9 @@ final class Bet {
         for first in legs[0] {
             for second in legs[1] {
                 for third in legs[2] {
-                    if first != second, second != third, first != third { count += 1 }
+                    if first != second, second != third, first != third {
+                        count += 1
+                    }
                 }
             }
         }
