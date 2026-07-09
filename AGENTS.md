@@ -19,7 +19,7 @@ App Store: Japan only, age rating 18+. Description and Review Notes must state "
 
 ## Architecture & Data Model
 
-- **UI**: SwiftUI (iOS 18+, Swift 6.2) — **Persistence**: SwiftData — **UIKit**: `ShakeWindow` only (shake-to-undo; SwiftUI has no native shake API)
+- **UI**: SwiftUI (iOS 26+, Swift 6.2) — **Persistence**: SwiftData — **UIKit**: `ShakeWindow` only (shake-to-undo; SwiftUI has no native shake API)
 - **Screens**: `RaceListView` (home), `RaceDetailView`, `RaceFormView` / `RaceEntryFormView` / `BetFormView`, `BalanceSummaryView`, `SettingsView`
 - **Models**: `Race` → `RaceEntry` (出走馬), `Race` → `Bet` → `BetSelection` (買い目). Master: `Venue`, `TicketType`. `PredictionMark` is an enum (8 fixed values).
 
@@ -36,12 +36,12 @@ swiftlint lint --config .swiftlint.yml
 
 # Unit tests
 xcodebuild test -project src/umalog.xcodeproj -scheme umalog \
-  -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.6' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.5' \
   -only-testing:umalogTests
 
 # UI tests
 xcodebuild test -project src/umalog.xcodeproj -scheme umalog \
-  -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.6' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.5' \
   -only-testing:umalogUITests
 
 # Coverage
@@ -91,6 +91,8 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 - **Japanese day-count strings in UI test assertions must be anchored, not bare-`contains`**: `label.contains("1日間")` false-matches `"21日間"`/`"31日間"` since digits aren't word-bounded. Anchor with surrounding punctuation (e.g. `"(1日間)"`) or use exact string equality.
 - **ZIP backup memo filenames**: current format is `<yyyyMMdd>_<venue>_R<n>_<raceName>.md` (venue + race number added 2026-07-04 to stop same-named races at different venues from overwriting each other's memo). `ZipImporter` must keep the legacy `<yyyyMMdd>_<raceName>` fallback — users' existing backups depend on it.
 - **`xcodebuild -resultBundlePath` fails if the bundle already exists**: `rm -rf src/TestResults.xcresult` first. A failure "Early unexpected exit, operation never finished bootstrapping" usually means the destination simulator isn't booted — `xcrun simctl boot` it and retry.
+- **`IPHONEOS_DEPLOYMENT_TARGET = 26.0` but test destination says `OS=26.5`**: this machine only has the `18.6` and `26.5` simulator runtimes installed — there is no `26.0` runtime, so `26.5` is the lowest available OS that still satisfies the `26.0` minimum. The `iPhone 16` device model only exists under the `18.6` runtime; `26.5` only has `iPhone 17`-generation devices. Don't "fix" the destination back to `iPhone 16`/`18.6` — it will build but is below the actual deployment target.
+- **Project Format bumps must go through Xcode's GUI picker, never a hand-typed `objectVersion`**: owner wanted "Xcode 26.3" format; there was no documented mapping to confirm the right integer, and guessing risked the exact silent-corruption failure mode this file already warns about. Owner selected it in Xcode's Project Document inspector instead, which wrote `objectVersion = 100` (jumped from `77` — nowhere near a linear guess, confirming the caution was warranted). Xcode also dropped several now-implicit-default keys (`buildActionMask`, `runOnlyForDeploymentPostprocessing`, `defaultConfigurationIsVisible`, empty `dependencies`/`packageProductDependencies` arrays) as part of the same format upgrade — that's expected format normalization, not data loss.
 
 ---
 
@@ -101,12 +103,11 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 
 ---
 
-## Current State & Handoff (2026-07-04)
+## Current State & Handoff (2026-07-09)
 
-- Tests: 221 unit, 28 UI — all green. SwiftFormat + SwiftLint clean.
-- In progress: branch `fix/code-review-cleanup` (3 local commits, not pushed): finish-position guard for horse number 0, month-end clamping in balance year/month pickers, ZIP memo restore fixes + CSV builder dedup. Awaiting owner decision on push/PR.
-- Decided: ZIP memo filenames include venue and race number; importer keeps legacy-name fallback for old backups.
-- Next: after the fix branch lands, no queued issue besides #1 (blocked on owner scraping strategy decision) and #14 (low priority, unstarted).
+- Tests: 221 unit, 28 UI — all green after the deployment-target change (verified on `iPhone 17, OS=26.5`). Full-suite parallel run showed 2 flaky UI failures (simulator runner crash `Mach error -308`, and a swipe-to-delete timing hiccup); both passed cleanly when re-run in isolation — not a regression from the config change.
+- Decided: `IPHONEOS_DEPLOYMENT_TARGET` unified to `26.0` across all targets (previously split `26.5` main / `18.6` test); Project Format bumped to "Xcode 26.3-compatible" (`objectVersion = 77` → `100`) — owner applied this via Xcode's GUI picker rather than a hand-typed value.
+- Next: no queued issue besides #1 (blocked on owner scraping strategy decision) and #14 (low priority, unstarted).
 
 ---
 
