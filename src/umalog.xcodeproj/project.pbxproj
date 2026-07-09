@@ -32,6 +32,7 @@
 		F33E266D2FFD509E006C2760 /* umalog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = umalog.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F33E267C2FFD509F006C2760 /* umalogTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = umalogTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F33E26862FFD509F006C2760 /* umalogUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = umalogUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F3AA42582FFFCD32003E7366 /* umalog.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = umalog.xctestplan; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -89,6 +90,7 @@
 		F33E26642FFD509E006C2760 = {
 			isa = PBXGroup;
 			children = (
+				F3AA42582FFFCD32003E7366 /* umalog.xctestplan */,
 				F33E266F2FFD509E006C2760 /* umalog */,
 				F33E267F2FFD509F006C2760 /* umalogTests */,
 				F33E26892FFD509F006C2760 /* umalogUITests */,
@@ -421,6 +423,7 @@
 				DEVELOPMENT_TEAM = GPCFMDQ767;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -454,6 +457,7 @@
 				DEVELOPMENT_TEAM = GPCFMDQ767;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
