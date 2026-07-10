@@ -268,11 +268,15 @@ final class レース削除Test: UIテストケース {
         let hittable = NSPredicate(format: "isHittable == true")
         _ = XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: hittable, object: raceCell)], timeout: 5)
 
-        raceCell.swipeLeft()
         // iOS 26 ではシステム生成の削除ボタンを identifier ではなくラベルで検索する
         let deleteButton = app.descendants(matching: .any)
             .matching(NSPredicate(format: "label == 'Delete' OR label == '削除'"))
             .firstMatch
+        // swipeLeft() の合成ジェスチャーは NavigationLink 行に対して稀に不発・即座に閉じることがあるため再試行する
+        raceCell.swipeLeft()
+        for _ in 0 ..< 2 where !deleteButton.waitForExistence(timeout: 2) {
+            raceCell.swipeLeft()
+        }
         XCTAssertTrue(deleteButton.waitForExistence(timeout: 3))
         deleteButton.tap()
 
