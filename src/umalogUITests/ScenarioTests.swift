@@ -272,12 +272,17 @@ final class レース削除Test: UIテストケース {
         let deleteButton = app.descendants(matching: .any)
             .matching(NSPredicate(format: "label == 'Delete' OR label == '削除'"))
             .firstMatch
-        // swipeLeft() の合成ジェスチャーは NavigationLink 行に対して稀に不発・即座に閉じることがあるため再試行する
-        raceCell.swipeLeft()
-        for _ in 0 ..< 2 where !deleteButton.waitForExistence(timeout: 2) {
+        // swipeLeft() の合成ジェスチャーは NavigationLink 行に対して稀に不発・即座に閉じることがあるため
+        // 出現を検知したらそのタイミングで即座にタップする（検知後に別途待ち直すと閉じる瞬間を取りこぼす）
+        var revealed = false
+        for _ in 0 ..< 3 {
             raceCell.swipeLeft()
+            if deleteButton.waitForExistence(timeout: 2) {
+                revealed = true
+                break
+            }
         }
-        XCTAssertTrue(deleteButton.waitForExistence(timeout: 3))
+        XCTAssertTrue(revealed)
         deleteButton.tap()
 
         XCTAssertFalse(app.staticTexts["削除対象レース"].waitForExistence(timeout: 3))
