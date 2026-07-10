@@ -35,9 +35,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     }()
 
     /// 生成と同時に共有インスタンスを登録する。
+    /// UIテスト実行時は List のアニメーションが途中のフレームを XCUITest が参照し
+    /// "Invalid frame dimension" 警告が出るため、アニメーションを無効化する。
     override init() {
         super.init()
         AppDelegate.shared = self
+        if CommandLine.arguments.contains("--UITesting") {
+            UIView.setAnimationsEnabled(false)
+        }
     }
 
     /// シーン接続時に `SceneDelegate` を割り当てる。
