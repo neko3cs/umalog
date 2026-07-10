@@ -93,6 +93,8 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 - **`xcodebuild -resultBundlePath` fails if the bundle already exists**: `rm -rf src/TestResults.xcresult` first. A failure "Early unexpected exit, operation never finished bootstrapping" usually means the destination simulator isn't booted — `xcrun simctl boot` it and retry.
 - **`IPHONEOS_DEPLOYMENT_TARGET = 26.0` but test destination says `OS=26.5`**: this machine only has the `18.6` and `26.5` simulator runtimes installed — there is no `26.0` runtime, so `26.5` is the lowest available OS that still satisfies the `26.0` minimum. The `iPhone 16` device model only exists under the `18.6` runtime; `26.5` only has `iPhone 17`-generation devices. Don't "fix" the destination back to `iPhone 16`/`18.6` — it will build but is below the actual deployment target.
 - **Project Format bumps must go through Xcode's GUI picker, never a hand-typed `objectVersion`**: owner wanted "Xcode 26.3" format; there was no documented mapping to confirm the right integer, and guessing risked the exact silent-corruption failure mode this file already warns about. Owner selected it in Xcode's Project Document inspector instead, which wrote `objectVersion = 100` (jumped from `77` — nowhere near a linear guess, confirming the caution was warranted). Xcode also dropped several now-implicit-default keys (`buildActionMask`, `runOnlyForDeploymentPostprocessing`, `defaultConfigurationIsVisible`, empty `dependencies`/`packageProductDependencies` arrays) as part of the same format upgrade — that's expected format normalization, not data loss.
+- **`swipeLeft()` on a `List` row wrapping a `NavigationLink` can silently fail or reveal-then-collapse the delete action within ~1s** on the iOS 26 simulator — confirmed via `xcresulttool` screen-recording frame extraction (`ffmpeg -ss <t> -i recording.mp4 ...`), not an app bug (standard `List` + `ForEach.onDelete` + `NavigationLink`, no custom gesture code). Retry the swipe (see `レース削除Test.testレースをスワイプして削除できる()`) instead of trusting a single `swipeLeft()`.
+- **Dev machine upgraded Intel 8GB → Apple M5 32GB (2026-07-10)**: `umalog.xctestplan`'s `parallelizable: true` is intentional on this hardware. The Intel-era `parallelizationEnabled: false` (added in `1657934` for RAM-constrained stability) must not be reintroduced from stale references to that commit.
 
 ---
 
@@ -105,9 +107,9 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 
 ## Current State & Handoff (2026-07-10)
 
-- Tests: 221 unit (`umalogTests.xctest` coverage 99.65%), 28 UI — all green on branch `style/swiftformat-wrap-if-bodies`, rebased on latest `main` (post PR #32). No flakes this run.
-- Decided: fixed pre-existing `wrapIfStatementBodies` SwiftFormat debt in 9/30 files; committed as `4c7639a` on `style/swiftformat-wrap-if-bodies`. Not yet pushed or opened as PR.
-- Next: push branch and open PR for the swiftformat fix. No other queued work besides #1 (blocked on owner scraping strategy decision) and #14 (low priority, unstarted).
+- Tests: 221 unit, 28 UI — all green on `main` and on branch `fix/xctestplan-disable-parallelization`, including the previously flaky `testレースをスワイプして削除できる()` (fixed with a swipe retry), verified stable under parallel test execution.
+- Decided: root cause was `swipeLeft()` gesture flakiness on a `NavigationLink` row, not the `parallelizationEnabled` regression from `f05166f` initially suspected — see Tacit Knowledge. `umalog.xctestplan` parallelization stays enabled (M5 32GB machine).
+- Next: awaiting owner review/merge of PR #35. No other queued work besides #1 (blocked on owner scraping strategy decision) and #14 (low priority, unstarted).
 
 ---
 
@@ -119,3 +121,4 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 | 2026-07-01 | PR #21 shipped with venue/grade filter rows completely unresponsive to taps despite 27 passing unit tests | Unit tests on a value type (`RaceFilter`) don't verify View wiring — add an interaction-level UI test or manual Simulator click-through for every new tappable control before merging |
 | 2026-07-03 | New UI test asserted `title.contains("1日間")`, which would have silently passed for `"31日間"`/`"21日間"` too — caught locally before merge | Anchor Japanese day-count substring checks with surrounding punctuation or exact match, not bare digit-suffix `contains` |
 | 2026-07-10 | `git reset --soft` / `git stash pop` were blocked by the Claude Code auto-mode permission classifier as irreversible-history operations, even after the owner approved via a clarifying question | For git history-rewriting ops during a stash-and-park workflow, have the owner run the command directly in their terminal rather than retrying through the agent |
+| 2026-07-10 | Suspected `f05166f`'s accidental `parallelizationEnabled` regression as the root cause of a flaky UI test based on git-history alone; the real cause (swipeLeft gesture flakiness) only surfaced after extracting screen-recording frames from the xcresult bundle | A plausible git-history hypothesis is not confirmation — reproduce and inspect actual failure evidence (xcresult screen recording / accessibility tree) before committing to a root cause |
