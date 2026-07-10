@@ -10,7 +10,6 @@
   ],
   "defaultOptions" : {
     "codeCoverage" : false,
-    "parallelizationEnabled" : false,
     "performanceAntipatternCheckerEnabled" : true,
     "targetForVariableExpansion" : {
       "containerPath" : "container:umalog.xcodeproj",
@@ -20,6 +19,7 @@
   },
   "testTargets" : [
     {
+      "parallelizable" : true,
       "target" : {
         "containerPath" : "container:umalog.xcodeproj",
         "identifier" : "F33E267B2FFD509F006C2760",
@@ -27,6 +27,7 @@
       }
     },
     {
+      "parallelizable" : true,
       "target" : {
         "containerPath" : "container:umalog.xcodeproj",
         "identifier" : "F33E26852FFD509F006C2760",
