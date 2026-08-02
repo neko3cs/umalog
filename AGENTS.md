@@ -56,6 +56,7 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 
 ## Development Rules
 
+- **No git worktrees in this repo** — this overrides the global "work in a worktree" default. Branch in the main working directory (`git checkout -b`) instead. Reason: the owner reviews changes in Xcode, which is open on this checkout; a separate worktree path puts the code where they can't see it. Branch + PR still apply — don't commit to `main`.
 - **Never edit `.pbxproj`** — malformed edits silently break the build with no actionable error.
 - **New Swift files**: owner adds via Xcode GUI first, then AI writes the code content.
 - **DocC comments** (`///`) required on all types, properties, and functions. Use `- Returns:`, `- Parameter:`, `- Note:` keywords for Xcode Quick Help.
