@@ -1,6 +1,6 @@
 # Umalog — AGENTS.md
 
-A personal iOS app for recording horse racing predictions and balance tracking. `docs/Concept.md` is background context only — when it conflicts with the code, trust the code.
+A personal iOS app for recording horse racing predictions and balance tracking. Design docs live in `docs/`: `requirements.md` (why/for whom), `specification.md` (what to build), `architecture.md` (how — policy, ADRs, invariants), `design.md` (how — per-feature detail). When a doc conflicts with the code, trust the code.
 
 ---
 
