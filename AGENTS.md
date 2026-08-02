@@ -1,6 +1,6 @@
 # Umalog — AGENTS.md
 
-A personal iOS app for recording horse racing predictions and balance tracking. `docs/Concept.md` is background context only — when it conflicts with the code, trust the code.
+A personal iOS app for recording horse racing predictions and balance tracking. Design docs live in `docs/`: `requirements.md` (why/for whom), `specification.md` (what to build), `architecture.md` (how — policy, ADRs, invariants), `design.md` (how — per-feature detail). When a doc conflicts with the code, trust the code.
 
 ---
 
@@ -19,7 +19,7 @@ App Store: Japan only, age rating 18+. Description and Review Notes must state "
 
 ## Architecture & Data Model
 
-- **UI**: SwiftUI (iOS 26+, Swift 6.2) — **Persistence**: SwiftData — **UIKit**: `ShakeWindow` only (shake-to-undo; SwiftUI has no native shake API)
+- **UI**: SwiftUI (`IPHONEOS_DEPLOYMENT_TARGET = 26.0`) — **Persistence**: SwiftData — **UIKit**: `ShakeWindow` only (shake-to-undo; SwiftUI has no native shake API)
 - **Screens**: `RaceListView` (home), `RaceDetailView`, `RaceFormView` / `RaceEntryFormView` / `BetFormView`, `BalanceSummaryView`, `SettingsView`
 - **Models**: `Race` → `RaceEntry` (出走馬), `Race` → `Bet` → `BetSelection` (買い目). Master: `Venue`, `TicketType`. `PredictionMark` is an enum (8 fixed values).
 
@@ -47,7 +47,7 @@ xcodebuild test -project src/umalog.xcodeproj -scheme umalog \
 # Coverage
 xcrun xccov view --report --only-targets umalogTests src/TestResults.xcresult
 
-# Mutation tests — skip; Muter crashes (SIGBUS exit 138) on Xcode 26 beta
+# Mutation tests — skip; Muter crashes (SIGBUS exit 138) on Xcode 26
 ```
 
 For Claude Code: use the `/test-ios-project` skill to run the full sequence above.
@@ -56,6 +56,7 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 
 ## Development Rules
 
+- **No git worktrees in this repo** — this overrides the global "work in a worktree" default. Branch in the main working directory (`git checkout -b`) instead. Reason: the owner reviews changes in Xcode, which is open on this checkout; a separate worktree path puts the code where they can't see it. Branch + PR still apply — don't commit to `main`.
 - **Never edit `.pbxproj`** — malformed edits silently break the build with no actionable error.
 - **New Swift files**: owner adds via Xcode GUI first, then AI writes the code content.
 - **DocC comments** (`///`) required on all types, properties, and functions. Use `- Returns:`, `- Parameter:`, `- Note:` keywords for Xcode Quick Help.
@@ -74,7 +75,7 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 **Other invariants:**
 - Balance aggregation keyed by race **date**, not insert time. Unsettled bets = ¥0 payout.
 - Prediction marks: exactly 8 fixed values (`◎ ○ ▲ △ ☆ 注 押 消`). Must not add or remove.
-- `identifier_name` SwiftLint rule is disabled: test functions are Japanese specification sentences (e.g. `払戻が購入より多い場合に収支がプラスになる()`); SwiftLint v0.63.3 cannot suppress non-ASCII violations any other way.
+- `identifier_name` SwiftLint rule is disabled: test functions are Japanese specification sentences (e.g. `払戻が購入より多い場合に収支がプラスになる()`); SwiftLint has no other way to suppress non-ASCII violations (established on v0.63.3; not re-verified since).
 - iCloud sync: not yet implemented. Default OFF when added. User's private iCloud only.
 - Apple Developer Account: not yet subscribed — CloudKit and App Store submission blocked.
 
@@ -95,21 +96,25 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 - **Project Format bumps must go through Xcode's GUI picker, never a hand-typed `objectVersion`**: owner wanted "Xcode 26.3" format; there was no documented mapping to confirm the right integer, and guessing risked the exact silent-corruption failure mode this file already warns about. Owner selected it in Xcode's Project Document inspector instead, which wrote `objectVersion = 100` (jumped from `77` — nowhere near a linear guess, confirming the caution was warranted). Xcode also dropped several now-implicit-default keys (`buildActionMask`, `runOnlyForDeploymentPostprocessing`, `defaultConfigurationIsVisible`, empty `dependencies`/`packageProductDependencies` arrays) as part of the same format upgrade — that's expected format normalization, not data loss.
 - **`swipeLeft()` on a `List` row wrapping a `NavigationLink` can silently fail or reveal-then-collapse the delete action within ~1s** on the iOS 26 simulator — confirmed via `xcresulttool` screen-recording frame extraction (`ffmpeg -ss <t> -i recording.mp4 ...`), not an app bug (standard `List` + `ForEach.onDelete` + `NavigationLink`, no custom gesture code). Retry the swipe (see `レース削除Test.testレースをスワイプして削除できる()`) instead of trusting a single `swipeLeft()`.
 - **Dev machine upgraded Intel 8GB → Apple M5 32GB (2026-07-10)**: `umalog.xctestplan`'s `parallelizable: true` is intentional on this hardware. The Intel-era `parallelizationEnabled: false` (added in `1657934` for RAM-constrained stability) must not be reintroduced from stale references to that commit.
+- **`SWIFT_VERSION = 5.0` in the pbxproj — the build does NOT run in Swift 6 language mode**: measured 2026-08-02 against a Swift 6.3.3 toolchain. Strict concurrency is therefore not enforced at compile time, so `@MainActor`/`Sendable` mistakes surface at runtime rather than as build errors — don't assume a clean build means concurrency-correct. `swiftformat --swiftversion 6.2` is only a formatter dialect flag and does not change the language mode. Never bump `SWIFT_VERSION` as a drive-by fix: it lives in the pbxproj, which must not be hand-edited (see Development Rules).
+- **ADR numbers in `docs/architecture.md` must follow actual chronological decision order, not topical adjacency**: when drafting ADR-006 (iOS 18 target) / ADR-007 / ADR-008, grouping the two deployment-target ADRs adjacently (007 = iOS 26 replacing 006, 008 = App Store distribution) read more naturally but put 007/008 out of the order the decisions were actually made in. Owner reordered them to match decision chronology (PR #37 review, 2026-08-02). Before assigning a new ADR number, check commit/PR history for when the decision actually happened — don't group by topic.
 
 ---
 
 ## Open Issues
 
-- [ ] **#1** JRA出走馬自動取得 — plan in `.claude/plans/1-jra-immutable-cascade.md`; blocked: owner must decide on netkeiba URL-paste vs other source, ToS review required.
+- [ ] **#34** レース検索機能（キーワード検索）— integrate into the existing `RaceFilterView` sheet, not a separate search screen. Spec settled, unblocked.
+- [ ] **#25** iCloud同期 — blocked: Apple Developer Account not subscribed.
 - [ ] **#14** マルチプラットフォーム対応（macOS / iPadOS）— low priority.
+- [ ] **#1** JRA出走馬自動取得 — blocked: owner must decide on netkeiba URL-paste vs other source, ToS review required.
 
 ---
 
-## Current State & Handoff (2026-07-10)
+## Current State & Handoff (2026-08-02)
 
-- Tests: 221 unit, 28 UI — all green on `main` and on branch `fix/xctestplan-disable-parallelization`, including the previously flaky `testレースをスワイプして削除できる()` (fixed with a swipe retry), verified stable under parallel test execution.
-- Decided: root cause was `swipeLeft()` gesture flakiness on a `NavigationLink` row, not the `parallelizationEnabled` regression from `f05166f` initially suspected — see Tacit Knowledge. `umalog.xctestplan` parallelization stays enabled (M5 32GB machine).
-- Next: awaiting owner review/merge of PR #35. No other queued work besides #1 (blocked on owner scraping strategy decision) and #14 (low priority, unstarted).
+- **PR #37 open** (`docs/restructure-design-docs` → `main`): design docs restructured into requirements/specification/architecture/design.md, drawio UML replaced with mermaid, AGENTS.md synced, PLAN.md added, worktree policy documented. Under owner review — do not merge without explicit instruction.
+- Next after #37 merges: **#34** (レース検索機能). See `PLAN.md` for the approach and the one open decision.
+- Toolchain drifted since the last handoff (Xcode 26.6, Swift 6.3.3, SwiftLint 0.65.0, SwiftFormat 0.62.1). Unit tests re-verified green on it (2026-08-02); UI tests not yet re-run against it.
 
 ---
 
@@ -122,3 +127,4 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 | 2026-07-03 | New UI test asserted `title.contains("1日間")`, which would have silently passed for `"31日間"`/`"21日間"` too — caught locally before merge | Anchor Japanese day-count substring checks with surrounding punctuation or exact match, not bare digit-suffix `contains` |
 | 2026-07-10 | `git reset --soft` / `git stash pop` were blocked by the Claude Code auto-mode permission classifier as irreversible-history operations, even after the owner approved via a clarifying question | For git history-rewriting ops during a stash-and-park workflow, have the owner run the command directly in their terminal rather than retrying through the agent |
 | 2026-07-10 | Suspected `f05166f`'s accidental `parallelizationEnabled` regression as the root cause of a flaky UI test based on git-history alone; the real cause (swipeLeft gesture flakiness) only surfaced after extracting screen-recording frames from the xcresult bundle | A plausible git-history hypothesis is not confirmation — reproduce and inspect actual failure evidence (xcresult screen recording / accessibility tree) before committing to a root cause |
+| 2026-08-02 | This file pointed at `.claude/plans/1-jra-immutable-cascade.md`, which was never git-tracked and had since been lost, and its Open Issues list had gone two issues stale (#34, #25 missing) | Only reference paths that are committed to the repo; anything under an untracked dir must be linked as a GitHub Issue instead |
