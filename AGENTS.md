@@ -97,6 +97,7 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 - **`swipeLeft()` on a `List` row wrapping a `NavigationLink` can silently fail or reveal-then-collapse the delete action within ~1s** on the iOS 26 simulator — confirmed via `xcresulttool` screen-recording frame extraction (`ffmpeg -ss <t> -i recording.mp4 ...`), not an app bug (standard `List` + `ForEach.onDelete` + `NavigationLink`, no custom gesture code). Retry the swipe (see `レース削除Test.testレースをスワイプして削除できる()`) instead of trusting a single `swipeLeft()`.
 - **Dev machine upgraded Intel 8GB → Apple M5 32GB (2026-07-10)**: `umalog.xctestplan`'s `parallelizable: true` is intentional on this hardware. The Intel-era `parallelizationEnabled: false` (added in `1657934` for RAM-constrained stability) must not be reintroduced from stale references to that commit.
 - **`SWIFT_VERSION = 5.0` in the pbxproj — the build does NOT run in Swift 6 language mode**: measured 2026-08-02 against a Swift 6.3.3 toolchain. Strict concurrency is therefore not enforced at compile time, so `@MainActor`/`Sendable` mistakes surface at runtime rather than as build errors — don't assume a clean build means concurrency-correct. `swiftformat --swiftversion 6.2` is only a formatter dialect flag and does not change the language mode. Never bump `SWIFT_VERSION` as a drive-by fix: it lives in the pbxproj, which must not be hand-edited (see Development Rules).
+- **ADR numbers in `docs/architecture.md` must follow actual chronological decision order, not topical adjacency**: when drafting ADR-006 (iOS 18 target) / ADR-007 / ADR-008, grouping the two deployment-target ADRs adjacently (007 = iOS 26 replacing 006, 008 = App Store distribution) read more naturally but put 007/008 out of the order the decisions were actually made in. Owner reordered them to match decision chronology (PR #37 review, 2026-08-02). Before assigning a new ADR number, check commit/PR history for when the decision actually happened — don't group by topic.
 
 ---
 
@@ -111,8 +112,8 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 
 ## Current State & Handoff (2026-08-02)
 
-- `main` is clean, no open PRs; PR #35 / #36 (UI test animation disable + swipe-delete retry) are merged. Nothing is in flight.
-- Next: **#34** (レース検索機能). See `PLAN.md` for the approach and the one open decision.
+- **PR #37 open** (`docs/restructure-design-docs` → `main`): design docs restructured into requirements/specification/architecture/design.md, drawio UML replaced with mermaid, AGENTS.md synced, PLAN.md added, worktree policy documented. Under owner review — do not merge without explicit instruction.
+- Next after #37 merges: **#34** (レース検索機能). See `PLAN.md` for the approach and the one open decision.
 - Toolchain drifted since the last handoff (Xcode 26.6, Swift 6.3.3, SwiftLint 0.65.0, SwiftFormat 0.62.1). Unit tests re-verified green on it (2026-08-02); UI tests not yet re-run against it.
 
 ---
