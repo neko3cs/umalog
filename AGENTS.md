@@ -46,19 +46,19 @@ xcodebuild test -project src/umalog.xcodeproj -scheme umalog \
 
 # Coverage
 xcrun xccov view --report --only-targets umalogTests src/TestResults.xcresult
+# ↑ currently reports "No coverage data": umalog.xctestplan has "codeCoverage": false
+#   (flipped in 33c7ce9). Not an Xcode 27 regression.
 
 # Mutation tests — skip; Muter crashes (SIGBUS exit 138) on Xcode 26
 ```
 
-For Claude Code: use the `/test-ios-project` skill to run the full sequence above.
+For Claude Code: use the `/test-ios-project` skill to run the full sequence above, but override its default destination (`iPhone 16,OS=latest`) with the one above — no `iPhone 16` exists under iOS 26.5/27.0 runtimes.
 
 ---
 
 ## Development Rules
 
 - **No git worktrees in this repo** — this overrides the global "work in a worktree" default. Branch in the main working directory (`git checkout -b`) instead. Reason: the owner reviews changes in Xcode, which is open on this checkout; a separate worktree path puts the code where they can't see it. Branch + PR still apply — don't commit to `main`.
-- **Never edit `.pbxproj`** — malformed edits silently break the build with no actionable error.
-- **New Swift files**: owner adds via Xcode GUI first, then AI writes the code content.
 - **DocC comments** (`///`) required on all types, properties, and functions. Use `- Returns:`, `- Parameter:`, `- Note:` keywords for Xcode Quick Help.
 - **Inline `//`** only for logic a reader would likely misread — never narrate obvious code.
 - **Commits**: must not commit until the owner explicitly confirms behavior ("コミットして" or equivalent).
@@ -91,12 +91,13 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 - **`Toggle` with a custom `Binding(get:set:)` inside `Form`/`List` rows can silently fail to register taps**: confirmed via real mouse clicks in the Simulator (not an XCUITest artifact) — a sibling `Picker` bound directly to `$filter.category` in the same sheet worked fine. Prefer a `Button` + checkmark row over `Toggle` for per-item multi-select rows in a `Form`/`List`.
 - **Japanese day-count strings in UI test assertions must be anchored, not bare-`contains`**: `label.contains("1日間")` false-matches `"21日間"`/`"31日間"` since digits aren't word-bounded. Anchor with surrounding punctuation (e.g. `"(1日間)"`) or use exact string equality.
 - **ZIP backup memo filenames**: current format is `<yyyyMMdd>_<venue>_R<n>_<raceName>.md` (venue + race number added 2026-07-04 to stop same-named races at different venues from overwriting each other's memo). `ZipImporter` must keep the legacy `<yyyyMMdd>_<raceName>` fallback — users' existing backups depend on it.
-- **`xcodebuild -resultBundlePath` fails if the bundle already exists**: `rm -rf src/TestResults.xcresult` first. A failure "Early unexpected exit, operation never finished bootstrapping" usually means the destination simulator isn't booted — `xcrun simctl boot` it and retry.
-- **`IPHONEOS_DEPLOYMENT_TARGET = 26.0` but test destination says `OS=26.5`**: this machine only has the `18.6` and `26.5` simulator runtimes installed — there is no `26.0` runtime, so `26.5` is the lowest available OS that still satisfies the `26.0` minimum. The `iPhone 16` device model only exists under the `18.6` runtime; `26.5` only has `iPhone 17`-generation devices. Don't "fix" the destination back to `iPhone 16`/`18.6` — it will build but is below the actual deployment target.
-- **Project Format bumps must go through Xcode's GUI picker, never a hand-typed `objectVersion`**: owner wanted "Xcode 26.3" format; there was no documented mapping to confirm the right integer, and guessing risked the exact silent-corruption failure mode this file already warns about. Owner selected it in Xcode's Project Document inspector instead, which wrote `objectVersion = 100` (jumped from `77` — nowhere near a linear guess, confirming the caution was warranted). Xcode also dropped several now-implicit-default keys (`buildActionMask`, `runOnlyForDeploymentPostprocessing`, `defaultConfigurationIsVisible`, empty `dependencies`/`packageProductDependencies` arrays) as part of the same format upgrade — that's expected format normalization, not data loss.
+- **`xcodebuild -resultBundlePath` fails if the bundle already exists**: `rm -rf src/TestResults.xcresult` first. A failure "Early unexpected exit, operation never finished bootstrapping" usually means the destination simulator isn't booted — `xcrun simctl boot` it and retry. On the iOS 27.0 runtime an unbooted destination can instead hang `xcodebuild` silently for 10+ min (0% CPU, no output) — boot it first (`xcrun simctl boot <udid> && xcrun simctl bootstatus <udid> -b`).
+- **`IPHONEOS_DEPLOYMENT_TARGET = 26.0` but test destination says `OS=26.5`**: this machine has the `18.6`, `26.5` and `27.0` simulator runtimes — there is no `26.0` runtime, so `26.5` is the lowest available OS that still satisfies the `26.0` minimum. The `iPhone 16` device model only exists under the `18.6` runtime; `26.5`/`27.0` only have `iPhone 17`-generation (and later) devices. Don't "fix" the destination back to `iPhone 16`/`18.6` — it will build but is below the actual deployment target. `27.0` also passes, but was kept off the default destination because UI tests there are several times slower and flakier (see next item).
+- **iOS 27.0 parallel UI tests: "Lost connection to the application" is a simulator-clone flake, not an app bug**: seen 2026-09-27 on Xcode 27.0 (1/27 failed with that message plus one `xctrunner` launch-denied error on a clone); the same test passed 3/3 when rerun alone with `-parallel-testing-enabled NO`. Rerun the single test before investigating app code.
+- **Project Format bumps must go through Xcode's GUI picker, never a hand-typed `objectVersion`**: owner wanted "Xcode 26.3" format; there was no documented mapping to confirm the right integer, and a wrong guess can silently break the project. Owner selected it in Xcode's Project Document inspector instead, which wrote `objectVersion = 100` (jumped from `77` — nowhere near a linear guess, confirming the caution was warranted). Xcode also dropped several now-implicit-default keys (`buildActionMask`, `runOnlyForDeploymentPostprocessing`, `defaultConfigurationIsVisible`, empty `dependencies`/`packageProductDependencies` arrays) as part of the same format upgrade — that's expected format normalization, not data loss.
 - **`swipeLeft()` on a `List` row wrapping a `NavigationLink` can silently fail or reveal-then-collapse the delete action within ~1s** on the iOS 26 simulator — confirmed via `xcresulttool` screen-recording frame extraction (`ffmpeg -ss <t> -i recording.mp4 ...`), not an app bug (standard `List` + `ForEach.onDelete` + `NavigationLink`, no custom gesture code). Retry the swipe (see `レース削除Test.testレースをスワイプして削除できる()`) instead of trusting a single `swipeLeft()`.
 - **Dev machine upgraded Intel 8GB → Apple M5 32GB (2026-07-10)**: `umalog.xctestplan`'s `parallelizable: true` is intentional on this hardware. The Intel-era `parallelizationEnabled: false` (added in `1657934` for RAM-constrained stability) must not be reintroduced from stale references to that commit.
-- **`SWIFT_VERSION = 5.0` in the pbxproj — the build does NOT run in Swift 6 language mode**: measured 2026-08-02 against a Swift 6.3.3 toolchain. Strict concurrency is therefore not enforced at compile time, so `@MainActor`/`Sendable` mistakes surface at runtime rather than as build errors — don't assume a clean build means concurrency-correct. `swiftformat --swiftversion 6.2` is only a formatter dialect flag and does not change the language mode. Never bump `SWIFT_VERSION` as a drive-by fix: it lives in the pbxproj, which must not be hand-edited (see Development Rules).
+- **`SWIFT_VERSION = 5.0` in the pbxproj — the build does NOT run in Swift 6 language mode**: measured 2026-08-02 against a Swift 6.3.3 toolchain. Strict concurrency is therefore not enforced at compile time, so `@MainActor`/`Sendable` mistakes surface at runtime rather than as build errors — don't assume a clean build means concurrency-correct. `swiftformat --swiftversion 6.2` is only a formatter dialect flag and does not change the language mode. Never bump `SWIFT_VERSION` as a drive-by fix: switching to Swift 6 mode turns on strict concurrency project-wide and is a deliberate, owner-approved change.
 - **ADR numbers in `docs/architecture.md` must follow actual chronological decision order, not topical adjacency**: when drafting ADR-006 (iOS 18 target) / ADR-007 / ADR-008, grouping the two deployment-target ADRs adjacently (007 = iOS 26 replacing 006, 008 = App Store distribution) read more naturally but put 007/008 out of the order the decisions were actually made in. Owner reordered them to match decision chronology (PR #37 review, 2026-08-02). Before assigning a new ADR number, check commit/PR history for when the decision actually happened — don't group by topic.
 
 ---
@@ -114,7 +115,8 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 
 - No work in progress (`PLAN.md` is empty). Next: **#34** (レース検索機能).
 - A #34 plan was drafted early, then withdrawn from `PLAN.md` in `6ba43a6`. Recover it with `git show 6ba43a6^:PLAN.md` when starting #34. It covers the in-memory `RaceFilter.matchesKeyword` approach, the rejected alternatives, and the one open spec decision (case, diacritic and kana normalization), which must go to Issue #34 as a comment before the matcher is implemented.
-- Toolchain drifted since the last handoff (Xcode 26.6, Swift 6.3.3, SwiftLint 0.65.0, SwiftFormat 0.62.1). Unit tests re-verified green on it (2026-08-02); UI tests not yet re-run against it.
+- Toolchain moved to macOS 27 / Xcode 27.0 / Swift 6.4 / SwiftLint 0.65.1 / SwiftFormat 0.63.0 (2026-09-27). Format, lint and unit tests (iOS 26.5 and 27.0) are green on it, and UI tests pass 27/27 on iOS 26.5. `SWIFT_VERSION` is still `5.0`.
+- Pending owner decision: Xcode 27's "Update to recommended settings" (project/schemes still record `LastUpgradeCheck = 2660`).
 
 ---
 
