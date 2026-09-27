@@ -110,10 +110,10 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 
 ---
 
-## Current State & Handoff (2026-08-02)
+## Current State & Handoff (2026-09-27)
 
-- **PR #37 open** (`docs/restructure-design-docs` → `main`): design docs restructured into requirements/specification/architecture/design.md, drawio UML replaced with mermaid, AGENTS.md synced, PLAN.md added, worktree policy documented. Under owner review — do not merge without explicit instruction.
-- Next after #37 merges: **#34** (レース検索機能). See `PLAN.md` for the approach and the one open decision.
+- No work in progress (`PLAN.md` is empty). Next: **#34** (レース検索機能).
+- A #34 plan was drafted early, then withdrawn from `PLAN.md` in `6ba43a6`. Recover it with `git show 6ba43a6^:PLAN.md` when starting #34. It covers the in-memory `RaceFilter.matchesKeyword` approach, the rejected alternatives, and the one open spec decision (case, diacritic and kana normalization), which must go to Issue #34 as a comment before the matcher is implemented.
 - Toolchain drifted since the last handoff (Xcode 26.6, Swift 6.3.3, SwiftLint 0.65.0, SwiftFormat 0.62.1). Unit tests re-verified green on it (2026-08-02); UI tests not yet re-run against it.
 
 ---
