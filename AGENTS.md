@@ -37,7 +37,8 @@ swiftlint lint --config .swiftlint.yml
 # Unit tests
 xcodebuild test -project src/umalog.xcodeproj -scheme umalog \
   -destination 'platform=iOS Simulator,name=iPhone 18 Pro,OS=27.0' \
-  -only-testing:umalogTests
+  -only-testing:umalogTests \
+  -enableCodeCoverage YES -resultBundlePath src/TestResults.xcresult
 
 # UI tests
 xcodebuild test -project src/umalog.xcodeproj -scheme umalog \
@@ -45,9 +46,11 @@ xcodebuild test -project src/umalog.xcodeproj -scheme umalog \
   -only-testing:umalogUITests
 
 # Coverage
-xcrun xccov view --report --only-targets umalogTests src/TestResults.xcresult
-# ↑ currently reports "No coverage data": umalog.xctestplan has "codeCoverage": false
-#   (flipped in 33c7ce9). Not an Xcode 27 regression.
+xcrun xccov view --report --only-targets src/TestResults.xcresult
+# umalog.xctestplan has "codeCoverage": false (since 33c7ce9), so without
+# -enableCodeCoverage YES on the unit-test run this reports "No coverage data".
+# --only-targets takes no argument; `--only-targets umalogTests` fails with
+# "unrecognized file format". Line coverage only — xccov has no branch coverage.
 
 # Mutation tests — skip; Muter crashes (SIGBUS exit 138) on Xcode 26
 ```
@@ -106,6 +109,7 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 
 - [ ] **#34** レース検索機能（キーワード検索）— integrate into the existing `RaceFilterView` sheet, not a separate search screen. Spec settled, unblocked.
 - [ ] **#42** JSON 形式プロジェクトファイル（`project.xcproj`）へ移行 — blocked: needs Xcode 27.2+ (27.0's `-convert-project` has no JSON format).
+- [ ] **#43** View 層のテストカバレッジ向上 — measure unit+UI combined first; unit-only `umalog.app` line coverage is 18.45% (Views mostly 0%).
 - [ ] **#25** iCloud同期 — blocked: Apple Developer Account not subscribed.
 - [ ] **#14** マルチプラットフォーム対応（macOS / iPadOS）— low priority.
 - [ ] **#1** JRA出走馬自動取得 — blocked: owner must decide on netkeiba URL-paste vs other source, ToS review required.
