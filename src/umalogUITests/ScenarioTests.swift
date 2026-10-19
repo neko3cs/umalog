@@ -244,6 +244,85 @@ final class 馬券追加Test: UIテストケース {
         app.buttons["追加"].tap()
         XCTAssertTrue(app.navigationBars["馬券テストレース"].waitForExistence(timeout: 5))
     }
+
+    @MainActor
+    func test保存済み馬券の買い目をタップすると登録済みの値で編集シートが開き上書き保存できる() {
+        setupRaceAndNavigateToDetail(name: "編集再現レース")
+        tapWhenReady(findElement("add-bet-button"))
+        XCTAssertTrue(app.navigationBars["馬券を追加"].waitForExistence(timeout: 5))
+
+        app.buttons["買い目を追加"].tap()
+        XCTAssertTrue(app.navigationBars["買い目を追加"].waitForExistence(timeout: 5))
+        let selectionTextField = app.textFields["買い目（例: 1-2-3）"]
+        tapWhenReady(selectionTextField)
+        selectionTextField.typeText("1-2")
+        app.navigationBars["買い目を追加"].buttons["追加"].tap()
+        XCTAssertTrue(app.navigationBars["馬券を追加"].waitForExistence(timeout: 5))
+        app.navigationBars["馬券を追加"].buttons["追加"].tap()
+        XCTAssertTrue(app.navigationBars["編集再現レース"].waitForExistence(timeout: 5))
+
+        tapWhenReady(app.staticTexts["1-2"])
+        XCTAssertTrue(app.navigationBars["馬券を編集"].waitForExistence(timeout: 5))
+
+        // シート背後のレース詳細にも「1-2」が残るため、前面のシート上で触れる要素を選ぶ
+        let rows = app.staticTexts.matching(identifier: "1-2")
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 5))
+        let countBeforeEdit = rows.count
+        let sheetRow = rows.allElementsBoundByIndex.filter(\.isHittable).last
+        XCTAssertNotNil(sheetRow)
+        sheetRow?.tap()
+
+        XCTAssertTrue(app.navigationBars["買い目を編集"].waitForExistence(timeout: 5))
+        let editField = app.textFields["買い目（例: 1-2-3）"]
+        XCTAssertEqual(editField.value as? String, "1-2")
+
+        tapWhenReady(editField)
+        editField.typeText("-3")
+        app.navigationBars["買い目を編集"].buttons["更新"].tap()
+        XCTAssertTrue(app.navigationBars["馬券を編集"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["1-2-3"].waitForExistence(timeout: 5))
+        // 上書きなのでシート上の「1-2」行だけが消える（背後のレース詳細は未保存のため「1-2」のまま）
+        XCTAssertEqual(rows.count, countBeforeEdit - 1)
+    }
+
+    @MainActor
+    func test出走馬ありの保存済み馬券の買い目をタップすると選択済みの馬番で編集シートが開く() {
+        setupRaceAndNavigateToDetail(name: "馬番編集レース")
+        tapWhenReady(findElement("add-entry-button"))
+        XCTAssertTrue(app.navigationBars["出走馬を追加"].waitForExistence(timeout: 5))
+        let horseNameField = app.textFields["馬名"]
+        tapWhenReady(horseNameField)
+        horseNameField.typeText("テスト馬")
+        app.navigationBars["出走馬を追加"].buttons["追加"].tap()
+        XCTAssertTrue(app.navigationBars["馬番編集レース"].waitForExistence(timeout: 5))
+
+        app.swipeUp()
+        tapWhenReady(findElement("add-bet-button"))
+        XCTAssertTrue(app.navigationBars["馬券を追加"].waitForExistence(timeout: 5))
+        app.buttons["買い目を追加"].tap()
+        XCTAssertTrue(app.navigationBars["買い目を追加"].waitForExistence(timeout: 5))
+
+        let horsePicker = app.buttons.matching(NSPredicate(format: "label BEGINSWITH '1頭目'")).firstMatch
+        tapWhenReady(horsePicker)
+        tapWhenReady(app.buttons["1番 テスト馬"])
+        app.navigationBars["買い目を追加"].buttons["追加"].tap()
+        XCTAssertTrue(app.navigationBars["馬券を追加"].waitForExistence(timeout: 5))
+        app.navigationBars["馬券を追加"].buttons["追加"].tap()
+        XCTAssertTrue(app.navigationBars["馬番編集レース"].waitForExistence(timeout: 5))
+
+        // 出走馬行の馬番「1」より下にある馬券行の「1」をタップする
+        let betRow = app.staticTexts.matching(identifier: "1").allElementsBoundByIndex.filter(\.isHittable).last
+        XCTAssertNotNil(betRow)
+        betRow?.tap()
+        XCTAssertTrue(app.navigationBars["馬券を編集"].waitForExistence(timeout: 5))
+
+        let sheetRow = app.staticTexts.matching(identifier: "1").allElementsBoundByIndex.filter(\.isHittable).last
+        XCTAssertNotNil(sheetRow)
+        sheetRow?.tap()
+        XCTAssertTrue(app.navigationBars["買い目を編集"].waitForExistence(timeout: 5))
+        let selectedPicker = app.buttons.matching(NSPredicate(format: "label CONTAINS '1番 テスト馬'")).firstMatch
+        XCTAssertTrue(selectedPicker.waitForExistence(timeout: 5))
+    }
 }
 
 // MARK: - Scenario 5: レース削除
