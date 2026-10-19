@@ -87,6 +87,32 @@ struct BetSelectionDraft: Identifiable {
     }
 }
 
+/// 買い目入力シートの対象。`.sheet(item:)` に渡し、表示時点の編集対象を確実にシートへ渡すために使う。
+/// - Note: `.sheet(isPresented:)` と別の `@State` で編集対象を持つと、初回表示時に古い値が読まれることがある（Issue #46）。
+enum SelectionFormTarget: Identifiable {
+    /// 買い目を新規追加する。
+    case new
+    /// 指定 ID のドラフトを編集する。
+    case edit(UUID)
+
+    /// シートの識別子。編集対象が変われば別のシートとして扱われる。
+    var id: String {
+        switch self {
+        case .new: "new"
+        case let .edit(draftId): draftId.uuidString
+        }
+    }
+
+    /// 編集対象のドラフト ID。新規追加の場合は nil。
+    var editingDraftId: UUID? {
+        if case let .edit(draftId) = self {
+            draftId
+        } else {
+            nil
+        }
+    }
+}
+
 // MARK: - BetFormView
 
 /// 馬券の追加・編集フォーム。複数の買い目ドラフトと払戻額をまとめて 1 枚の馬券として保存する。
@@ -106,10 +132,8 @@ struct BetFormView: View {
     @State private var draftSelections: [BetSelectionDraft] = []
     /// 入力中の払戻額（円）。0 は未精算。
     @State private var payoutAmount: Int = 0
-    /// 買い目入力シートの表示状態。
-    @State private var showingSelectionForm = false
-    /// 編集中のドラフト ID。nil の場合は新規追加として買い目シートを開く。
-    @State private var editingDraftId: UUID?
+    /// 表示中の買い目入力シートの対象。nil ならシートは閉じている。
+    @State private var selectionFormTarget: SelectionFormTarget?
 
     /// 編集モードかどうか。
     private var isEditing: Bool {
@@ -130,8 +154,8 @@ struct BetFormView: View {
             .navigationTitle(isEditing ? "馬券を編集" : "馬券を追加")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbarContent }
-            .sheet(isPresented: $showingSelectionForm) {
-                selectionFormSheet
+            .sheet(item: $selectionFormTarget) { target in
+                selectionFormSheet(for: target)
             }
             .onAppear { loadIfEditing() }
         }
@@ -145,15 +169,11 @@ struct BetFormView: View {
             ForEach(draftSelections) { draft in
                 BetSelectionDraftRowView(draft: draft)
                     .contentShape(Rectangle())
-                    .onTapGesture {
-                        editingDraftId = draft.id
-                        showingSelectionForm = true
-                    }
+                    .onTapGesture { selectionFormTarget = .edit(draft.id) }
             }
             .onDelete { indexSet in draftSelections.remove(atOffsets: indexSet) }
             Button {
-                editingDraftId = nil
-                showingSelectionForm = true
+                selectionFormTarget = .new
             } label: {
                 Label("買い目を追加", systemImage: "plus")
             }
@@ -204,21 +224,20 @@ struct BetFormView: View {
 
     // MARK: - Sheet
 
-    /// 買い目入力シート。編集中のドラフトがあればその内容を初期値として渡す。
-    @ViewBuilder
-    private var selectionFormSheet: some View {
-        let editDraft = editingDraftId.flatMap { id in draftSelections.first { $0.id == id } }
-        SelectionFormView(race: race, existing: editDraft) { savedDraft in
-            if let editId = editingDraftId,
-               let idx = draftSelections.firstIndex(where: { $0.id == editId })
-            {
+    /// 買い目入力シートを生成する。編集対象のドラフトがあればその内容を初期値として渡す。
+    /// - Parameter target: シートの対象（新規追加または編集するドラフト）。
+    /// - Returns: 買い目入力シートのビュー。
+    private func selectionFormSheet(for target: SelectionFormTarget) -> some View {
+        let editId = target.editingDraftId
+        let editDraft = editId.flatMap { id in draftSelections.first { $0.id == id } }
+        return SelectionFormView(race: race, existing: editDraft) { savedDraft in
+            if let editId, let idx = draftSelections.firstIndex(where: { $0.id == editId }) {
                 var updated = savedDraft
                 updated.id = editId
                 draftSelections[idx] = updated
             } else {
                 draftSelections.append(savedDraft)
             }
-            editingDraftId = nil
         }
     }
 
