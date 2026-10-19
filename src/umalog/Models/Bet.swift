@@ -82,13 +82,19 @@ final class Bet {
     /// - normal: 常に 1
     /// - box: 券種ごとに n から組合せ数を算出
     /// - formation: 各軸の積（重複馬を除外、券種が unordered なら順序差を解消）
+    /// - nagashi: 軸と相手から展開した組の数（`NagashiSelection` を参照）
     /// - Parameters:
-    ///   - selection: 買い目文字列（例: `"1-2-3"` / `"1,2,3[BOX]"` / `"1,2/3,4,5"`）。
+    ///   - selection: 買い目文字列（例: `"1-2-3"` / `"1,2,3[BOX]"` / `"1,2/3,4,5"` / `"1>2,3[流し]"`）。
     ///   - ticketTypeName: 券種名（例: `"馬連"`）。
     /// - Returns: 組合せ点数。買い目が空・不成立の場合は 0。
     static func combinationCount(selection: String, ticketTypeName: String) -> Int {
         if selection.isEmpty {
             return 0
+        }
+
+        // Nagashi (e.g. "1>2,3,4[流し]")
+        if let nagashi = NagashiSelection(selection: selection) {
+            return nagashi.combinationCount(ticketTypeName: ticketTypeName)
         }
 
         // Box (e.g. "1,2,3[BOX]")
