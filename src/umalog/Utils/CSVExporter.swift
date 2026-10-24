@@ -288,6 +288,7 @@ enum ZipImporter {
         existingRaces.forEach { context.delete($0) }
 
         let venues = try context.fetch(FetchDescriptor<Venue>())
+        let ticketTypes = try context.fetch(FetchDescriptor<TicketType>())
 
         // レースを作成しキーでマップ
         var raceMap: [String: Race] = [:]
@@ -352,9 +353,11 @@ enum ZipImporter {
         }
 
         if hasBetSelections {
-            try importBetsNewFormat(archive: archive, betsText: betsText, raceMap: raceMap, context: context)
+            try importBetsNewFormat(
+                archive: archive, betsText: betsText, raceMap: raceMap, ticketTypes: ticketTypes, context: context,
+            )
         } else {
-            importBetsLegacyFormat(betsText: betsText, raceMap: raceMap, context: context)
+            importBetsLegacyFormat(betsText: betsText, raceMap: raceMap, ticketTypes: ticketTypes, context: context)
         }
 
         // メモファイルをレースに紐付け（現行形式・旧形式どちらのファイル名にも対応）
@@ -374,11 +377,13 @@ enum ZipImporter {
     ///   - archive: 読み込み中のアーカイブ。
     ///   - betsText: bets.csv の内容。
     ///   - raceMap: レースキー → レースのマップ。
+    ///   - ticketTypes: 復元先の券種マスター。買い目の券種名と同名の券種に紐付ける。
     ///   - context: 復元先の ModelContext。
     private static func importBetsNewFormat(
         archive: Archive,
         betsText: String,
         raceMap: [String: Race],
+        ticketTypes: [TicketType],
         context: ModelContext,
     ) throws {
         let betSelectionsText = try readEntry(archive, path: "bet_selections.csv")
@@ -405,6 +410,7 @@ enum ZipImporter {
             let sortIndex = row.count > 8 ? Int(row[8]) ?? selIdx : selIdx
             context.insert(BetSelection(
                 bet: bet,
+                ticketType: ticketTypes.first { $0.name == row[4] },
                 ticketTypeName: row[4],
                 selection: row[5],
                 unitPrice: Int(row[6]) ?? 100,
@@ -418,10 +424,12 @@ enum ZipImporter {
     /// - Parameters:
     ///   - betsText: bets.csv の内容。
     ///   - raceMap: レースキー → レースのマップ。
+    ///   - ticketTypes: 復元先の券種マスター。買い目の券種名と同名の券種に紐付ける。
     ///   - context: 復元先の ModelContext。
     private static func importBetsLegacyFormat(
         betsText: String,
         raceMap: [String: Race],
+        ticketTypes: [TicketType],
         context: ModelContext,
     ) {
         let betRows = parseCSV(betsText)
@@ -454,6 +462,7 @@ enum ZipImporter {
             context.insert(newBet)
             context.insert(BetSelection(
                 bet: newBet,
+                ticketType: ticketTypes.first { $0.name == ticketTypeName },
                 ticketTypeName: ticketTypeName,
                 selection: selection,
                 unitPrice: unitPrice,
