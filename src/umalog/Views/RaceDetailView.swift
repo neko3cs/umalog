@@ -24,9 +24,9 @@ struct RaceDetailView: View {
     /// 馬券追加シートの表示状態。
     @State private var showingAddBet = false
     /// 編集中の出走馬。非 nil のとき編集シートを表示する。
-    @State private var editingEntry: RaceEntry?
+    @State private var editingEntry: EditTarget<RaceEntry>?
     /// 編集中の馬券。非 nil のとき編集シートを表示する。
-    @State private var editingBet: Bet?
+    @State private var editingBet: EditTarget<Bet>?
     /// 全出走馬。@Query で取得することで、SwiftData の変更通知が SwiftUI List に正しく伝わる。
     /// race.entries / race.bets の直接参照では UICollectionView の diff 計算が崩れるため。
     @Query(sort: \RaceEntry.horseNumber) private var allEntries: [RaceEntry]
@@ -69,7 +69,7 @@ struct RaceDetailView: View {
                 ForEach(sortedEntries) { entry in
                     EntryRowView(entry: entry, position: race.finishPosition(forHorseNumber: entry.horseNumber))
                         .contentShape(Rectangle())
-                        .onTapGesture { editingEntry = entry }
+                        .onTapGesture { editingEntry = EditTarget(model: entry) }
                 }
                 .onDelete { indexSet in
                     for i in indexSet {
@@ -107,7 +107,7 @@ struct RaceDetailView: View {
                 ForEach(sortedBets) { bet in
                     BetRowView(bet: bet)
                         .contentShape(Rectangle())
-                        .onTapGesture { editingBet = bet }
+                        .onTapGesture { editingBet = EditTarget(model: bet) }
                 }
                 .onDelete { indexSet in
                     for i in indexSet {
@@ -197,9 +197,19 @@ struct RaceDetailView: View {
         .sheet(isPresented: $showingEditRace) { RaceFormView(race: race) }
         .sheet(isPresented: $showingAddEntry) { RaceEntryFormView(race: race) }
         .sheet(isPresented: $showingAddBet) { BetFormView(race: race) }
-        .sheet(item: $editingEntry) { entry in RaceEntryFormView(race: race, entry: entry) }
-        .sheet(item: $editingBet) { bet in BetFormView(race: race, bet: bet) }
+        .sheet(item: $editingEntry) { target in RaceEntryFormView(race: race, entry: target.model) }
+        .sheet(item: $editingBet) { target in BetFormView(race: race, bet: target.model) }
     }
+}
+
+/// `.sheet(item:)` に渡す編集対象。シートの識別子を編集開始時点で固定する。
+/// - Note: 追加直後の SwiftData モデルは一時 ID を持ち、自動保存で恒久 ID に変わる。モデルをそのまま `.sheet(item:)` に渡すと、
+///   編集中に ID が変わった時点で別のシートとして作り直され、フォームの入力内容が失われる（Issue #53）。
+struct EditTarget<Model>: Identifiable {
+    /// シートの識別子。編集開始ごとに新しく採番する。
+    let id = UUID()
+    /// 編集対象のモデル。
+    let model: Model
 }
 
 // MARK: - Memo Views
