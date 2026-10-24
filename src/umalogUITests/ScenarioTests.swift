@@ -325,6 +325,99 @@ final class 馬券追加Test: UIテストケース {
     }
 }
 
+// MARK: - Scenario 4b: 馬券追加（出走馬あり・流し）
+
+final class 流し馬券追加Test: UIテストケース {
+    /// レースと出走馬を登録し、買い目入力シートを開いて券種と買い方「流し」を選ぶ。
+    private func openNagashiSelectionForm(ticketTypeName: String, horseCount: Int) {
+        let raceName = "流しテストレース"
+        tapWhenReady(findElement("add-race-button"))
+        XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
+        let raceNameField = app.textFields["レース名（任意）"]
+        tapWhenReady(raceNameField)
+        raceNameField.typeText(raceName)
+        app.buttons["追加"].tap()
+        tapWhenReady(app.staticTexts[raceName])
+        XCTAssertTrue(app.navigationBars[raceName].waitForExistence(timeout: 5))
+
+        // 馬番は登録済みの最大馬番 + 1 で自動採番される
+        for idx in 1 ... horseCount {
+            tapWhenReady(findElement("add-entry-button"))
+            XCTAssertTrue(app.navigationBars["出走馬を追加"].waitForExistence(timeout: 5))
+            let horseNameField = app.textFields["馬名"]
+            tapWhenReady(horseNameField)
+            horseNameField.typeText("流し馬\(idx)")
+            app.buttons["追加"].tap()
+            XCTAssertTrue(app.staticTexts["流し馬\(idx)"].waitForExistence(timeout: 5))
+        }
+
+        app.swipeUp()
+        tapWhenReady(findElement("add-bet-button"))
+        XCTAssertTrue(app.navigationBars["馬券を追加"].waitForExistence(timeout: 5))
+        app.buttons["買い目を追加"].tap()
+        XCTAssertTrue(app.navigationBars["買い目を追加"].waitForExistence(timeout: 5))
+
+        tapWhenReady(findElement("ticket-type-picker"))
+        tapWhenReady(app.buttons[ticketTypeName])
+        tapWhenReady(app.buttons["流し"])
+    }
+
+    /// 買い目入力シートの `LabeledContent` 行。ラベルと値が「ラベル, 値」の 1 要素として公開される。
+    private func sheetValue(_ label: String, _ value: String) -> XCUIElement {
+        app.staticTexts["\(label), \(value)"]
+    }
+
+    @MainActor
+    func test馬連の軸1頭流しを入力して保存すると点数と購入額が反映される() {
+        openNagashiSelectionForm(ticketTypeName: "馬連", horseCount: 3)
+
+        tapWhenReady(findElement("nagashi-axis1-1"))
+        tapWhenReady(findElement("nagashi-opponent-2"))
+        tapWhenReady(findElement("nagashi-opponent-3"))
+        XCTAssertTrue(sheetValue("買い目", "1>2,3[流し]").waitForExistence(timeout: 5))
+        XCTAssertTrue(sheetValue("この買い目の購入額", "¥100 × 2点 = ¥200").waitForExistence(timeout: 5))
+
+        app.navigationBars["買い目を追加"].buttons["追加"].tap()
+        XCTAssertTrue(app.navigationBars["馬券を追加"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["1>2,3[流し]"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["¥100 × 2点 = ¥200"].waitForExistence(timeout: 5))
+
+        // 保存済みの買い目を開き直すと流しの選択状態が復元される
+        tapWhenReady(app.staticTexts["1>2,3[流し]"])
+        XCTAssertTrue(app.navigationBars["買い目を編集"].waitForExistence(timeout: 5))
+        XCTAssertTrue(sheetValue("買い目", "1>2,3[流し]").waitForExistence(timeout: 5))
+        app.navigationBars["買い目を編集"].buttons["キャンセル"].tap()
+        XCTAssertTrue(app.navigationBars["馬券を追加"].waitForExistence(timeout: 5))
+
+        app.navigationBars["馬券を追加"].buttons["追加"].tap()
+        XCTAssertTrue(app.navigationBars["流しテストレース"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["1>2,3[流し]"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func test三連単の軸2頭着順指定流しを入力すると点数が算出される() {
+        openNagashiSelectionForm(ticketTypeName: "三連単", horseCount: 4)
+
+        tapWhenReady(app.buttons["軸2頭"])
+        tapWhenReady(app.buttons["1・3着"])
+        tapWhenReady(findElement("nagashi-axis1-1"))
+        tapWhenReady(findElement("nagashi-axis2-2"))
+        tapWhenReady(findElement("nagashi-opponent-3"))
+        tapWhenReady(findElement("nagashi-opponent-4"))
+        XCTAssertTrue(sheetValue("買い目", "1,2>3,4[1・3着流し]").waitForExistence(timeout: 5))
+        // 出走馬 4 頭だと金額セクションが画面外になり、Form の画面外の行は要素ツリーに現れない
+        app.swipeUp()
+        XCTAssertTrue(sheetValue("この買い目の購入額", "¥100 × 2点 = ¥200").waitForExistence(timeout: 5))
+
+        // 着順指定の切り替えでは軸・相手の選択を保ったまま点数だけが変わる
+        app.swipeDown()
+        tapWhenReady(app.buttons["マルチ"])
+        XCTAssertTrue(sheetValue("買い目", "1,2>3,4[流しマルチ]").waitForExistence(timeout: 5))
+        app.swipeUp()
+        XCTAssertTrue(sheetValue("この買い目の購入額", "¥100 × 12点 = ¥1,200").waitForExistence(timeout: 5))
+    }
+}
+
 // MARK: - Scenario 5: レース削除
 
 final class レース削除Test: UIテストケース {

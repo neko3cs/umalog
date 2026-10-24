@@ -17,7 +17,7 @@ final class BetSelection {
     var ticketType: TicketType?
     /// 券種名。`ticketType` が nil のときの表示にも使う。
     var ticketTypeName: String = ""
-    /// 買い目文字列（例: `"1-2-3"` / `"1,2,3[BOX]"` / `"1,2/3,4,5"`）。
+    /// 買い目文字列（例: `"1-2-3"` / `"1,2,3[BOX]"` / `"1,2/3,4,5"` / `"1>2,3[流し]"`）。
     var selection: String = ""
     /// 1 口あたりの金額（円）。
     var unitPrice: Int = 100
