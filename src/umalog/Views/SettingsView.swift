@@ -387,6 +387,8 @@ private struct VenueManagementView: View {
             Button("追加") {
                 guard !newName.isEmpty else { return }
                 modelContext.insert(Venue(name: newName, isPreset: false, sortIndex: venues.count))
+                // Picker の選択肢が一時 ID のまま保存されるとクラッシュするため、すぐに確定させる（Issue #55）
+                try? modelContext.save()
                 newName = ""
             }
             Button("キャンセル", role: .cancel) { newName = "" }
@@ -405,6 +407,8 @@ private struct VenueManagementView: View {
         for preset in venuePresets {
             modelContext.insert(Venue(name: preset.name, isPreset: true, sortIndex: preset.sortIndex))
         }
+        // Picker の選択肢が一時 ID のまま保存されるとクラッシュするため、すぐに確定させる（Issue #55）
+        try? modelContext.save()
     }
 }
 
@@ -456,6 +460,8 @@ private struct TicketTypeManagementView: View {
             Button("追加") {
                 guard !newName.isEmpty else { return }
                 modelContext.insert(TicketType(name: newName, sortIndex: ticketTypes.count))
+                // Picker の選択肢が一時 ID のまま保存されるとクラッシュするため、すぐに確定させる（Issue #55）
+                try? modelContext.save()
                 newName = ""
             }
             Button("キャンセル", role: .cancel) { newName = "" }
@@ -474,6 +480,8 @@ private struct TicketTypeManagementView: View {
         for (name, index) in defaultTicketTypeNames {
             modelContext.insert(TicketType(name: name, sortIndex: index))
         }
+        // Picker の選択肢が一時 ID のまま保存されるとクラッシュするため、すぐに確定させる（Issue #55）
+        try? modelContext.save()
     }
 }
 
