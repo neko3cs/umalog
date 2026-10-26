@@ -43,7 +43,11 @@ xcodebuild test -project src/umalog.xcodeproj -scheme umalog \
 # UI tests
 xcodebuild test -project src/umalog.xcodeproj -scheme umalog \
   -destination 'platform=iOS Simulator,name=iPhone 18 Pro,OS=27.0' \
-  -only-testing:umalogUITests
+  -only-testing:umalogUITests \
+  -parallel-testing-worker-count 5
+# Diagnostics are off in umalog.xctestplan. On a failure, rerun just that test
+# (-only-testing:umalogUITests/<Class>/<test>()) with -collect-test-diagnostics
+# on-failure — the flag overrides the test plan — to get simulator logs and crash reports.
 
 # Coverage
 xcrun xccov view --report --only-targets src/TestResults.xcresult
@@ -107,6 +111,7 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 - **XCUITest sees a `LabeledContent` row as one element labelled `"<label>, <value>"`**: query `app.staticTexts["買い目, 1>2,3[流し]"]`, not the bare value (see `流し馬券追加Test.sheetValue`). Rows scrolled out of a `Form` are not in the accessibility tree at all — `swipeUp()` before asserting on lower sections. A sheet over the race detail leaves the same `StaticText` in the tree behind it — filter by `isHittable`.
 - **ZIP backups carry no master data**: `TicketType` / `Venue` are not exported; `ZipImporter` re-links records to the target device's masters by name. A selection imported without that link opens as "カスタム券種" on edit (#48). Owner decision (2026-10-20): enforce this only at ZIP import — do not add launch-time scans or save-time integrity checks (custom ticket types are being removed in #40). Already-imported unlinked data is fixed by exporting and re-importing.
 - **ZIPFoundation 0.9.20 deprecation warning** (`'v4' is deprecated: watchOS 9.0 is the oldest supported version`) comes from its `Package@swift-5.9.swift`, not our code. Fixed upstream in `676ffa3` but unreleased; owner chose to wait for the next release — don't pin to `main`.
+- **Test diagnostics are off in `umalog.xctestplan` (`"diagnosticCollectionPolicy" : "Never"`); UI tests run with 5 workers (#50, measured 2026-10-26 on the M5 32GB machine)**: under the default, xcodebuild collected simulator diagnostics even on all-pass runs (4 of 5 runs; iOS 27 simulator system processes such as PosterBoard / intelligencetasksd crash constantly) and then hit a 600 s timeout (`Failure collecting diagnostics from simulator`). Wall time for all 33 UI tests, build excluded: diagnostics on — 5 workers 863 s, 4: 310 s (no timeout that run), 3: 933 s, 2: 1023 s, 1: 1335 s; off — 5: 287–293 s, 4: 295 s, 3: 330 s, 2: 414 s, 1: 726 s. The policy was set through Xcode's test plan editor (Configurations › Shared Settings › Diagnostics) — it wrote `"Never"`, capitalised; don't hand-type it. It applies to unit tests too (owner's choice, 2026-10-26); `never` still keeps failure messages, activity logs, screenshots, UI hierarchy, screen recordings and the app's own crash log, and drops CoreSimulator / Simulator logs and simulator system-process crash reports. The worker count cannot live in the test plan or the scheme — only `-parallel-testing-worker-count` sets it, so Xcode's GUI picks its own count. Test plan options are baked into the `.xctestrun` by `build-for-testing`, so rebuild before `test-without-building` after changing them. Splitting the heavy classes (`流し馬券追加Test`, `馬券追加Test`) made no measurable difference and was reverted.
 - **Save explicitly right after inserting a record that is shown at once — and only then**: a just-inserted SwiftData model has a temporary ID until autosave (observed 5–11 s later, or on backgrounding) swaps it for a permanent one. At the swap, `ForEach` rows keyed by that ID are torn down and rebuilt (UI tests then see `{{inf, inf}, {0, 0}}` frames and fail with "Activation point invalid", #55); a model passed straight to `.sheet(item:)` rebuilds the sheet and wipes its `@State` (#53, hence `EditTarget`); a master used as a `Picker` option changes hash and crashes with `KEY_TYPE_OF_DICTIONARY_VIOLATES_HASHABLE_REQUIREMENTS`. In-place edits keep their IDs — leave those to autosave. Every explicit save carries a comment saying why it can't wait.
 
 ---
