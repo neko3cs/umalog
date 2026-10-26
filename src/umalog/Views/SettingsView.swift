@@ -387,6 +387,9 @@ private struct VenueManagementView: View {
             Button("追加") {
                 guard !newName.isEmpty else { return }
                 modelContext.insert(Venue(name: newName, isPreset: false, sortIndex: venues.count))
+                // 追加したマスターは Picker の選択肢になる。自動保存を待つと、Picker の表示中に一時 ID が恒久 ID に変わり、
+                // ハッシュ値が変わって Picker がクラッシュする。表示前に ID を確定させるため、ここで保存する（Issue #55）
+                try? modelContext.save()
                 newName = ""
             }
             Button("キャンセル", role: .cancel) { newName = "" }
@@ -405,6 +408,9 @@ private struct VenueManagementView: View {
         for preset in venuePresets {
             modelContext.insert(Venue(name: preset.name, isPreset: true, sortIndex: preset.sortIndex))
         }
+        // 追加したマスターは Picker の選択肢になる。自動保存を待つと、Picker の表示中に一時 ID が恒久 ID に変わり、
+        // ハッシュ値が変わって Picker がクラッシュする。表示前に ID を確定させるため、ここで保存する（Issue #55）
+        try? modelContext.save()
     }
 }
 
@@ -456,6 +462,9 @@ private struct TicketTypeManagementView: View {
             Button("追加") {
                 guard !newName.isEmpty else { return }
                 modelContext.insert(TicketType(name: newName, sortIndex: ticketTypes.count))
+                // 追加したマスターは Picker の選択肢になる。自動保存を待つと、Picker の表示中に一時 ID が恒久 ID に変わり、
+                // ハッシュ値が変わって Picker がクラッシュする。表示前に ID を確定させるため、ここで保存する（Issue #55）
+                try? modelContext.save()
                 newName = ""
             }
             Button("キャンセル", role: .cancel) { newName = "" }
@@ -474,6 +483,9 @@ private struct TicketTypeManagementView: View {
         for (name, index) in defaultTicketTypeNames {
             modelContext.insert(TicketType(name: name, sortIndex: index))
         }
+        // 追加したマスターは Picker の選択肢になる。自動保存を待つと、Picker の表示中に一時 ID が恒久 ID に変わり、
+        // ハッシュ値が変わって Picker がクラッシュする。表示前に ID を確定させるため、ここで保存する（Issue #55）
+        try? modelContext.save()
     }
 }
 

@@ -167,6 +167,9 @@ struct RaceFormView: View {
                 trackCondition: trackCondition, category: category, grade: grade,
             )
             modelContext.insert(newRace)
+            // 自動保存を待つと、追加したレースがレース一覧に出たあとで一時 ID が恒久 ID に変わり、行が作り直される。
+            // 表示前に ID を確定させるため、ここで保存する（Issue #55）
+            try? modelContext.save()
         }
     }
 }

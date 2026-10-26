@@ -70,6 +70,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             for (name, index) in defaultTicketTypeNames {
                 context.insert(TicketType(name: name, sortIndex: index))
             }
+            // マスターは Picker の選択肢になる。自動保存を待つと、Picker の表示中に一時 ID が恒久 ID に変わり、
+            // ハッシュ値が変わって Picker がクラッシュする。表示前に ID を確定させるため、ここで保存する（Issue #55）
+            try? context.save()
         }
         await migrateToSelectionModelIfNeeded()
     }
