@@ -233,6 +233,8 @@ private struct RaceSnapshot {
                 ))
             }
         }
+        // 一時 ID による行の作り直しを防ぐため、すぐに確定させる（Issue #55）
+        try? context.save()
     }
 }
 

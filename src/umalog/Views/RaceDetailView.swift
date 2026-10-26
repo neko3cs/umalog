@@ -84,6 +84,8 @@ struct RaceDetailView: View {
                                 predictionMark: snap.predictionMark, finishPosition: snap.finishPosition,
                                 sortIndex: snap.sortIndex,
                             ))
+                            // 一時 ID による行の作り直しを防ぐため、すぐに確定させる（Issue #55）
+                            try? ctx.save()
                         }
                         undoManager?.setActionName("出走馬を削除")
                         modelContext.delete(entry)
@@ -140,6 +142,8 @@ struct RaceDetailView: View {
                                     sortIndex: selSnap.sortIndex,
                                 ))
                             }
+                            // 一時 ID による行の作り直しを防ぐため、すぐに確定させる（Issue #55）
+                            try? ctx.save()
                         }
                         undoManager?.setActionName("馬券を削除")
                         (bet.selections ?? []).forEach { modelContext.delete($0) }
