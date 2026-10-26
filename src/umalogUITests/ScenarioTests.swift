@@ -285,6 +285,45 @@ final class 馬券追加Test: UIテストケース {
         XCTAssertEqual(rows.count, countBeforeEdit - 1)
     }
 
+    /// 追加直後の馬券は一時 ID を持ち、自動保存で恒久 ID に変わる。編集中に ID が変わっても入力内容が残ることを確かめる（Issue #53）。
+    @MainActor
+    func test追加直後の馬券を編集中に自動保存されても入力した買い目が失われない() {
+        setupRaceAndNavigateToDetail(name: "自動保存レース")
+        tapWhenReady(findElement("add-bet-button"))
+        XCTAssertTrue(app.navigationBars["馬券を追加"].waitForExistence(timeout: 5))
+        app.buttons["買い目を追加"].tap()
+        XCTAssertTrue(app.navigationBars["買い目を追加"].waitForExistence(timeout: 5))
+        let selectionTextField = app.textFields["買い目（例: 1-2-3）"]
+        tapWhenReady(selectionTextField)
+        selectionTextField.typeText("1-2")
+        app.navigationBars["買い目を追加"].buttons["追加"].tap()
+        XCTAssertTrue(app.navigationBars["馬券を追加"].waitForExistence(timeout: 5))
+        app.navigationBars["馬券を追加"].buttons["追加"].tap()
+        XCTAssertTrue(app.navigationBars["自動保存レース"].waitForExistence(timeout: 5))
+
+        tapWhenReady(app.staticTexts["1-2"])
+        XCTAssertTrue(app.navigationBars["馬券を編集"].waitForExistence(timeout: 5))
+        let sheetRow = app.staticTexts.matching(identifier: "1-2").allElementsBoundByIndex.filter(\.isHittable).last
+        XCTAssertNotNil(sheetRow)
+        sheetRow?.tap()
+        XCTAssertTrue(app.navigationBars["買い目を編集"].waitForExistence(timeout: 5))
+        let editField = app.textFields["買い目（例: 1-2-3）"]
+        tapWhenReady(editField)
+        editField.typeText("-3")
+        app.navigationBars["買い目を編集"].buttons["更新"].tap()
+        XCTAssertTrue(app.navigationBars["馬券を編集"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["1-2-3"].waitForExistence(timeout: 5))
+
+        // バックグラウンドへの移行で SwiftData の自動保存を確実に走らせる
+        XCUIDevice.shared.press(.home)
+        XCTAssertTrue(app.wait(for: .runningBackground, timeout: 10))
+        app.activate()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+
+        XCTAssertTrue(app.navigationBars["馬券を編集"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["1-2-3"].waitForExistence(timeout: 5))
+    }
+
     @MainActor
     func test出走馬ありの保存済み馬券の買い目をタップすると選択済みの馬番で編集シートが開く() {
         setupRaceAndNavigateToDetail(name: "馬番編集レース")
