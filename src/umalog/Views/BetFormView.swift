@@ -292,6 +292,9 @@ struct BetFormView: View {
                         sortIndex: idx,
                     ))
                 }
+                // 自動保存を待つと、追加した買い目が詳細画面に出たあとで一時 ID が恒久 ID に変わり、行が作り直される。
+                // 表示前に ID を確定させるため、ここで保存する（既存レコードの上書きだけなら ID は変わらないので不要）（Issue #55）
+                try? modelContext.save()
             }
             // ドラフトが減った分は余剰レコードを削除する
             if existingCount > draftCount {
@@ -319,9 +322,10 @@ struct BetFormView: View {
                     sortIndex: idx,
                 ))
             }
+            // 自動保存を待つと、追加した馬券が詳細画面に出たあとで一時 ID が恒久 ID に変わり、行が作り直される。
+            // 表示前に ID を確定させるため、ここで保存する（Issue #55）
+            try? modelContext.save()
         }
-        // 一時 ID のまま一覧に出すと、自動保存で恒久 ID に変わった時点で行が作り直されるため、すぐに確定させる（Issue #55）
-        try? modelContext.save()
     }
 }
 
