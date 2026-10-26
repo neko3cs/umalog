@@ -43,7 +43,10 @@ xcodebuild test -project src/umalog.xcodeproj -scheme umalog \
 # UI tests
 xcodebuild test -project src/umalog.xcodeproj -scheme umalog \
   -destination 'platform=iOS Simulator,name=iPhone 18 Pro,OS=27.0' \
-  -only-testing:umalogUITests
+  -only-testing:umalogUITests \
+  -parallel-testing-worker-count 5 -collect-test-diagnostics never
+# On a failure, rerun just that test (-only-testing:umalogUITests/<Class>/<test>())
+# with -collect-test-diagnostics on-failure to get simulator logs and crash reports.
 
 # Coverage
 xcrun xccov view --report --only-targets src/TestResults.xcresult
@@ -107,6 +110,7 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 - **XCUITest sees a `LabeledContent` row as one element labelled `"<label>, <value>"`**: query `app.staticTexts["買い目, 1>2,3[流し]"]`, not the bare value (see `流し馬券追加Test.sheetValue`). Rows scrolled out of a `Form` are not in the accessibility tree at all — `swipeUp()` before asserting on lower sections. A sheet over the race detail leaves the same `StaticText` in the tree behind it — filter by `isHittable`.
 - **ZIP backups carry no master data**: `TicketType` / `Venue` are not exported; `ZipImporter` re-links records to the target device's masters by name. A selection imported without that link opens as "カスタム券種" on edit (#48). Owner decision (2026-10-20): enforce this only at ZIP import — do not add launch-time scans or save-time integrity checks (custom ticket types are being removed in #40). Already-imported unlinked data is fixed by exporting and re-importing.
 - **ZIPFoundation 0.9.20 deprecation warning** (`'v4' is deprecated: watchOS 9.0 is the oldest supported version`) comes from its `Package@swift-5.9.swift`, not our code. Fixed upstream in `676ffa3` but unreleased; owner chose to wait for the next release — don't pin to `main`.
+- **UI tests run with 5 workers and `-collect-test-diagnostics never` (#50, measured 2026-10-24/26 on the M5 32GB machine)**: under the default `on-failure`, xcodebuild collected simulator diagnostics even on all-pass runs (iOS 27 simulator system processes such as PosterBoard / intelligencetasksd crash constantly) and then hit a 600 s timeout (`Failure collecting diagnostics from simulator`) — most of the old ~10.5 min. Wall time for all UI tests, build excluded: diagnostics on — 5 workers 437 s, 3: 928 s, 2: 999 s, 1: 1296 s; off — 5: 268–293 s, 4: 285–328 s, 3: 312 s, 2: 401 s, 1: 691 s. The machine handles 5 clones without trouble; more than 5 was not measured (the heaviest class, `流し馬券追加Test`, ~170 s serial, is expected to bound wall time). Splitting the heavy classes (`流し馬券追加Test`, `馬券追加Test`) made no measurable difference and was reverted. `never` still keeps the failure message, activity log, screenshots, UI hierarchy, screen recording and the app's own crash log; it drops CoreSimulator / Simulator logs and the simulator's system-process crash reports. Unit tests keep the default.
 - **Save explicitly right after inserting a record that is shown at once — and only then**: a just-inserted SwiftData model has a temporary ID until autosave (observed 5–11 s later, or on backgrounding) swaps it for a permanent one. At the swap, `ForEach` rows keyed by that ID are torn down and rebuilt (UI tests then see `{{inf, inf}, {0, 0}}` frames and fail with "Activation point invalid", #55); a model passed straight to `.sheet(item:)` rebuilds the sheet and wipes its `@State` (#53, hence `EditTarget`); a master used as a `Picker` option changes hash and crashes with `KEY_TYPE_OF_DICTIONARY_VIOLATES_HASHABLE_REQUIREMENTS`. In-place edits keep their IDs — leave those to autosave. Every explicit save carries a comment saying why it can't wait.
 
 ---
