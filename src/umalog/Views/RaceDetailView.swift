@@ -84,6 +84,9 @@ struct RaceDetailView: View {
                                 predictionMark: snap.predictionMark, finishPosition: snap.finishPosition,
                                 sortIndex: snap.sortIndex,
                             ))
+                            // 取り消しで復元した出走馬は新しいレコードになる。自動保存を待つと、詳細画面に出たあとで
+                            // 一時 ID が恒久 ID に変わり、行が作り直されるため、表示前にここで保存する（Issue #55）
+                            try? ctx.save()
                         }
                         undoManager?.setActionName("出走馬を削除")
                         modelContext.delete(entry)
@@ -140,6 +143,9 @@ struct RaceDetailView: View {
                                     sortIndex: selSnap.sortIndex,
                                 ))
                             }
+                            // 取り消しで復元した馬券は新しいレコードになる。自動保存を待つと、詳細画面に出たあとで
+                            // 一時 ID が恒久 ID に変わり、行が作り直されるため、表示前にここで保存する（Issue #55）
+                            try? ctx.save()
                         }
                         undoManager?.setActionName("馬券を削除")
                         (bet.selections ?? []).forEach { modelContext.delete($0) }
