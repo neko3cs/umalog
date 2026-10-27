@@ -126,7 +126,7 @@ final class Bet {
         switch ticketTypeName {
         case "枠連", "馬連", "ワイド":
             return n * (n - 1) / 2
-        case "馬単":
+        case "馬単", "枠単":
             return n * (n - 1)
         case "三連複":
             return n >= 3 ? n * (n - 1) * (n - 2) / 6 : 0
@@ -147,7 +147,7 @@ final class Bet {
         switch ticketTypeName {
         case "枠連", "馬連", "ワイド":
             return formationTwoLegUnordered(legs: legs)
-        case "馬単":
+        case "馬単", "枠単":
             return formationTwoLegOrdered(legs: legs)
         case "三連複":
             return formationThreeLegUnordered(legs: legs)
@@ -172,7 +172,7 @@ final class Bet {
         return pairs.count
     }
 
-    /// 2 軸・順序あり（馬単）のフォーメーション点数。同一馬ペアのみ除外する。
+    /// 2 軸・順序あり（馬単・枠単）のフォーメーション点数。同一馬ペアのみ除外する。
     /// - Parameter legs: 各軸の馬番リスト。
     /// - Returns: 組合せ点数。軸数が 2 でない場合は 0。
     private static func formationTwoLegOrdered(legs: [[Int]]) -> Int {

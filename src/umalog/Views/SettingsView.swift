@@ -16,8 +16,6 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     /// SwiftData から取得した全競馬場。
     @Query(sort: \Venue.sortIndex) private var venues: [Venue]
-    /// SwiftData から取得した全券種。
-    @Query(sort: \TicketType.sortIndex) private var ticketTypes: [TicketType]
     /// SwiftData から取得した全レース。バックアップ対象。
     @Query private var races: [Race]
 
@@ -58,11 +56,6 @@ struct SettingsView: View {
                         VenueManagementView()
                     } label: {
                         LabeledContent("競馬場", value: "\(venues.count)件")
-                    }
-                    NavigationLink {
-                        TicketTypeManagementView()
-                    } label: {
-                        LabeledContent("券種", value: "\(ticketTypes.count)件")
                     }
                 }
 
@@ -407,81 +400,6 @@ private struct VenueManagementView: View {
         venues.forEach { modelContext.delete($0) }
         for preset in venuePresets {
             modelContext.insert(Venue(name: preset.name, isPreset: true, sortIndex: preset.sortIndex))
-        }
-        // 追加したマスターは Picker の選択肢になる。自動保存を待つと、Picker の表示中に一時 ID が恒久 ID に変わり、
-        // ハッシュ値が変わって Picker がクラッシュする。表示前に ID を確定させるため、ここで保存する（Issue #55）
-        try? modelContext.save()
-    }
-}
-
-/// 券種マスターの追加・削除・リセットを行う管理画面。
-private struct TicketTypeManagementView: View {
-    /// SwiftData のモデルコンテキスト。
-    @Environment(\.modelContext) private var modelContext
-    /// SwiftData から取得した全券種。
-    @Query(sort: \TicketType.sortIndex) private var ticketTypes: [TicketType]
-
-    /// 追加ダイアログの表示状態。
-    @State private var showingAdd = false
-    /// 追加ダイアログで入力中の券種名。
-    @State private var newName = ""
-    /// リセット確認アラートの表示状態。
-    @State private var showingReset = false
-
-    var body: some View {
-        List {
-            ForEach(ticketTypes) { tt in
-                Text(tt.name)
-            }
-            .onDelete { indexSet in
-                for i in indexSet {
-                    modelContext.delete(ticketTypes[i])
-                }
-            }
-            Button {
-                showingAdd = true
-            } label: {
-                Label("券種を追加", systemImage: "plus")
-            }
-
-            Section {
-                Button(role: .destructive) {
-                    showingReset = true
-                } label: {
-                    Label("初期状態にリセット", systemImage: "arrow.counterclockwise")
-                }
-            } footer: {
-                Text("追加・削除した券種をすべて破棄し、インストール時の状態に戻します。馬券データには影響しません。")
-            }
-        }
-        .navigationTitle("券種")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar { EditButton() }
-        .alert("券種を追加", isPresented: $showingAdd) {
-            TextField("券種名", text: $newName)
-            Button("追加") {
-                guard !newName.isEmpty else { return }
-                modelContext.insert(TicketType(name: newName, sortIndex: ticketTypes.count))
-                // 追加したマスターは Picker の選択肢になる。自動保存を待つと、Picker の表示中に一時 ID が恒久 ID に変わり、
-                // ハッシュ値が変わって Picker がクラッシュする。表示前に ID を確定させるため、ここで保存する（Issue #55）
-                try? modelContext.save()
-                newName = ""
-            }
-            Button("キャンセル", role: .cancel) { newName = "" }
-        }
-        .alert("券種をリセット", isPresented: $showingReset) {
-            Button("リセット", role: .destructive) { resetTicketTypes() }
-            Button("キャンセル", role: .cancel) {}
-        } message: {
-            Text("券種をインストール時の状態に戻します。この操作は元に戻せません。")
-        }
-    }
-
-    /// 券種マスターをすべて削除し、プリセットを再投入する。馬券の券種参照は nil になるが券種名は保持される。
-    private func resetTicketTypes() {
-        ticketTypes.forEach { modelContext.delete($0) }
-        for (name, index) in defaultTicketTypeNames {
-            modelContext.insert(TicketType(name: name, sortIndex: index))
         }
         // 追加したマスターは Picker の選択肢になる。自動保存を待つと、Picker の表示中に一時 ID が恒久 ID に変わり、
         // ハッシュ値が変わって Picker がクラッシュする。表示前に ID を確定させるため、ここで保存する（Issue #55）

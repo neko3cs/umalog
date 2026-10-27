@@ -25,12 +25,12 @@ struct SelectionFormView: View {
     /// SwiftData から取得した全券種。
     @Query(sort: \TicketType.sortIndex) private var ticketTypes: [TicketType]
 
-    /// 選択中の券種。
+    /// 選択中の券種。アプリが扱う券種のいずれか、または未選択（nil）。
     @State private var selectedTicketType: TicketType?
-    /// 入力中のカスタム券種名。
-    @State private var customTicketTypeName: String = ""
-    /// カスタム券種を使うかどうか。
-    @State private var useCustom: Bool = false
+    /// 編集対象が旧カスタム券種（アプリが扱わない券種）の場合の元の券種。券種を選び直さなければそのまま保存する。
+    @State private var legacyTicketType: TicketType?
+    /// 編集対象が旧カスタム券種の場合の元の券種名。
+    @State private var legacyTicketTypeName: String = ""
     /// 券種から頭数を自動決定できない場合に使う手動指定の頭数。
     @State private var manualHorseCount: Int = 1
     /// 選択中の買い方。
@@ -81,14 +81,16 @@ struct SelectionFormView: View {
         !sortedEntries.isEmpty
     }
 
-    /// 券種から一意に決まる頭数。決められない券種（カスタム等）の場合は nil。
+    /// 選択できる券種（アプリが扱う券種）。旧バージョンの設定画面で追加された任意名の券種は含めない。
+    private var selectableTicketTypes: [TicketType] {
+        ticketTypes.filter(\.isPreset)
+    }
+
+    /// 券種から一意に決まる頭数。決められない券種（未選択・旧カスタム券種）の場合は nil。
     private var autoHorseCount: Int? {
-        let name = useCustom ? customTicketTypeName : (selectedTicketType?.name ?? "")
-        switch name {
-        case "単勝", "複勝": return 1
-        case "枠連", "馬連", "ワイド", "馬単": return 2
-        case "三連複", "三連単": return 3
-        default: return nil
+        switch currentTicketTypeName {
+        case "単勝", "複勝": 1
+        default: NagashiSelection.horseCount(ticketTypeName: currentTicketTypeName)
         }
     }
 
@@ -164,9 +166,9 @@ struct SelectionFormView: View {
         hasEntries ? builtSelection : selectionText
     }
 
-    /// 現在の券種名。カスタムならカスタム券種名、そうでなければ選択した券種の名前。
+    /// 現在の券種名。券種を選んでいればその名前、未選択なら旧カスタム券種名（なければ空文字）。
     private var currentTicketTypeName: String {
-        useCustom ? customTicketTypeName : (selectedTicketType?.name ?? "")
+        selectedTicketType?.name ?? legacyTicketTypeName
     }
 
     /// 現在の入力から算出した組合せ点数（最低 1）。
@@ -191,7 +193,6 @@ struct SelectionFormView: View {
             .toolbar { toolbarContent }
             .onAppear { setupInitialState() }
             .onChange(of: selectedTicketType) { _, _ in resetIfUserChange(resetStyle: true) }
-            .onChange(of: useCustom) { _, _ in resetIfUserChange(resetStyle: true) }
             .onChange(of: betStyle) { _, _ in resetIfUserChange(resetStyle: false) }
             .onChange(of: manualHorseCount) { _, _ in resetIfUserChange(resetStyle: false) }
             .onChange(of: nagashiAxisCount) { _, _ in resetIfUserChange(resetStyle: false) }
@@ -200,21 +201,16 @@ struct SelectionFormView: View {
 
     // MARK: - Ticket Type Section
 
-    /// 券種選択（マスターから選択またはカスタム入力）のセクション。
+    /// 券種選択のセクション。旧カスタム券種の買い目を編集中は、未選択の位置にその券種名を表示する。
     private var ticketTypeSection: some View {
         Section("券種") {
-            Toggle("カスタム券種", isOn: $useCustom)
-            if useCustom {
-                TextField("券種名", text: $customTicketTypeName)
-            } else {
-                Picker("券種", selection: $selectedTicketType) {
-                    Text("未選択").tag(nil as TicketType?)
-                    ForEach(ticketTypes) { ticketType in
-                        Text(ticketType.name).tag(ticketType as TicketType?)
-                    }
+            Picker("券種", selection: $selectedTicketType) {
+                Text(legacyTicketTypeName.isEmpty ? "未選択" : legacyTicketTypeName).tag(nil as TicketType?)
+                ForEach(selectableTicketTypes) { ticketType in
+                    Text(ticketType.name).tag(ticketType as TicketType?)
                 }
-                .accessibilityIdentifier("ticket-type-picker")
             }
+            .accessibilityIdentifier("ticket-type-picker")
         }
     }
 
@@ -468,9 +464,12 @@ struct SelectionFormView: View {
     /// 編集対象ドラフトの買い目文字列をパースし、買い方・馬番選択の各状態に展開する。
     private func loadFromExisting() {
         guard let existing else { return }
-        selectedTicketType = existing.ticketType
-        customTicketTypeName = existing.ticketTypeName
-        useCustom = existing.useCustom
+        if existing.ticketType?.isPreset == true {
+            selectedTicketType = existing.ticketType
+        } else {
+            legacyTicketType = existing.ticketType
+            legacyTicketTypeName = existing.displayTicketTypeName
+        }
         unitPrice = existing.unitPrice
 
         if hasEntries {
@@ -516,9 +515,8 @@ struct SelectionFormView: View {
     /// 入力値からドラフトを組み立てて保存ハンドラに渡し、シートを閉じる。
     private func save() {
         let draft = BetSelectionDraft(
-            ticketType: useCustom ? nil : selectedTicketType,
+            ticketType: selectedTicketType ?? legacyTicketType,
             ticketTypeName: currentTicketTypeName,
-            useCustom: useCustom,
             selection: selection,
             unitPrice: unitPrice,
         )

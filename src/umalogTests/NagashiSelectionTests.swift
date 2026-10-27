@@ -155,14 +155,14 @@ struct 流し買い目Test {
     }
 
     @Test func `流しに対応しない券種の買い目ドラフトは最低 1 点として購入額を計算する`() {
-        let draft = BetSelectionDraft(ticketTypeName: "単勝", useCustom: true, selection: "1>2,3[流し]", unitPrice: 200)
+        let draft = BetSelectionDraft(ticketTypeName: "単勝", selection: "1>2,3[流し]", unitPrice: 200)
         #expect(draft.combinationCount == 1)
         #expect(draft.purchaseAmount == 200)
     }
 
     @Test func 流しの買い目ドラフトは単価と点数から購入額を計算する() {
         let draft = BetSelectionDraft(
-            ticketTypeName: "三連単", useCustom: true, selection: "1>2,3,4,5[流しマルチ]", unitPrice: 100,
+            ticketTypeName: "三連単", selection: "1>2,3,4,5[流しマルチ]", unitPrice: 100,
         )
         #expect(draft.combinationCount == 36)
         #expect(draft.purchaseAmount == 3600)
