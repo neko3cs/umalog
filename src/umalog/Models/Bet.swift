@@ -79,7 +79,7 @@ final class Bet {
     // MARK: - Combination Count
 
     /// 買い目文字列と券種名から組合せ点数を計算する。
-    /// - normal: 常に 1
+    /// - normal: 1（応援馬券は単勝と複勝の 2）
     /// - box: 券種ごとに n から組合せ数を算出
     /// - formation: 各軸の積（重複馬を除外、券種が unordered なら順序差を解消）
     /// - nagashi: 軸と相手から展開した組の数（`NagashiSelection` を参照）
@@ -112,8 +112,8 @@ final class Bet {
             return formationCount(legs: legs, ticketTypeName: ticketTypeName)
         }
 
-        // Normal: 単発の買い目は 1 点
-        return 1
+        // Normal: 単発の買い目は 1 点。応援馬券は 1 頭の単勝と複勝を 1 枚で買うため 2 点
+        return ticketTypeName == "応援馬券" ? 2 : 1
     }
 
     /// BOX 買いの組合せ点数を券種ごとの公式で計算する。
@@ -126,7 +126,7 @@ final class Bet {
         switch ticketTypeName {
         case "枠連", "馬連", "ワイド":
             return n * (n - 1) / 2
-        case "馬単":
+        case "馬単", "枠単":
             return n * (n - 1)
         case "三連複":
             return n >= 3 ? n * (n - 1) * (n - 2) / 6 : 0
@@ -147,7 +147,7 @@ final class Bet {
         switch ticketTypeName {
         case "枠連", "馬連", "ワイド":
             return formationTwoLegUnordered(legs: legs)
-        case "馬単":
+        case "馬単", "枠単":
             return formationTwoLegOrdered(legs: legs)
         case "三連複":
             return formationThreeLegUnordered(legs: legs)
@@ -172,7 +172,7 @@ final class Bet {
         return pairs.count
     }
 
-    /// 2 軸・順序あり（馬単）のフォーメーション点数。同一馬ペアのみ除外する。
+    /// 2 軸・順序あり（馬単・枠単）のフォーメーション点数。同一馬ペアのみ除外する。
     /// - Parameter legs: 各軸の馬番リスト。
     /// - Returns: 組合せ点数。軸数が 2 でない場合は 0。
     private static func formationTwoLegOrdered(legs: [[Int]]) -> Int {
