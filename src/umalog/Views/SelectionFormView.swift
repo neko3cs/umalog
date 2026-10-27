@@ -89,7 +89,7 @@ struct SelectionFormView: View {
     /// 券種から一意に決まる頭数。決められない券種（未選択・旧カスタム券種）の場合は nil。
     private var autoHorseCount: Int? {
         switch currentTicketTypeName {
-        case "単勝", "複勝": 1
+        case "単勝", "複勝", "応援馬券": 1
         default: NagashiSelection.horseCount(ticketTypeName: currentTicketTypeName)
         }
     }

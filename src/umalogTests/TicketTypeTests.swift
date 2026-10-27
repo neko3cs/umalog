@@ -30,7 +30,7 @@ private struct CombinationCase: Sendable, CustomTestStringConvertible {
 }
 
 /// 全券種の期待点数。
-/// 単勝・複勝は 1 頭の券種なので BOX・流しは成立しない（0 点）。フォーメーションは入力画面で選べないため、
+/// 単勝・複勝・応援馬券は 1 頭の券種なので BOX・流しは成立しない（0 点）。応援馬券は単勝と複勝の 2 点。フォーメーションは入力画面で選べないため、
 /// 計算上は各軸の積のままになる。
 private let combinationCases: [CombinationCase] = [
     .init(name: "単勝", normal: 1, box: 0, formation: 6, nagashi: 0),
@@ -42,6 +42,7 @@ private let combinationCases: [CombinationCase] = [
     .init(name: "三連複", normal: 1, box: 4, formation: 0, nagashi: 3),
     .init(name: "三連単", normal: 1, box: 24, formation: 0, nagashi: 6),
     .init(name: "枠単", normal: 1, box: 12, formation: 4, nagashi: 3),
+    .init(name: "応援馬券", normal: 2, box: 0, formation: 6, nagashi: 0),
 ]
 
 @MainActor
@@ -81,8 +82,8 @@ struct 券種Test {
         let inserted = TicketType.insertMissingPresets(into: ctx)
         #expect(inserted)
         let ticketTypes = try fetchTicketTypes()
-        #expect(ticketTypes.map(\.name) == oldNames + ["枠単"])
-        #expect(ticketTypes.last?.sortIndex == 8)
+        #expect(ticketTypes.map(\.name) == oldNames + ["枠単", "応援馬券"])
+        #expect(ticketTypes.suffix(2).map(\.sortIndex) == [8, 9])
     }
 
     @Test func 削除済みの券種は既存の表示順の最大値の後ろに追加される() throws {
@@ -93,7 +94,7 @@ struct 券種Test {
         let ticketTypes = try fetchTicketTypes()
         #expect(ticketTypes.count == defaultTicketTypeNames.count + 1)
         #expect(ticketTypes.prefix(2).map(\.name) == ["馬連", "独自の券種"])
-        #expect(ticketTypes.dropFirst(2).map(\.sortIndex) == Array(11 ... 18))
+        #expect(ticketTypes.dropFirst(2).map(\.sortIndex) == Array(11 ... 19))
         #expect(ticketTypes.count(where: { $0.name == "馬連" }) == 1)
     }
 
@@ -162,6 +163,21 @@ struct 券種Test {
         let draft = BetSelectionDraft(ticketType: wakutan, selection: "1,2,3[BOX]", unitPrice: 200)
         #expect(draft.combinationCount == 6)
         #expect(draft.purchaseAmount == 1200)
+    }
+
+    // MARK: - 応援馬券
+
+    @Test func `応援馬券は単勝と複勝の 2 点として購入額を計算する`() {
+        let ctx = container.mainContext
+        let ouen = TicketType(name: "応援馬券", sortIndex: 9); ctx.insert(ouen)
+        let draft = BetSelectionDraft(ticketType: ouen, selection: "5", unitPrice: 100)
+        #expect(draft.combinationCount == 2)
+        #expect(draft.purchaseAmount == 200)
+    }
+
+    @Test func 応援馬券は流しに対応しない券種として扱われる() {
+        #expect(NagashiSelection.horseCount(ticketTypeName: "応援馬券") == nil)
+        #expect(NagashiSelection.isOrdered(ticketTypeName: "応援馬券") == false)
     }
 
     // MARK: - 旧カスタム券種の互換

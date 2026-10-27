@@ -79,7 +79,7 @@ final class Bet {
     // MARK: - Combination Count
 
     /// 買い目文字列と券種名から組合せ点数を計算する。
-    /// - normal: 常に 1
+    /// - normal: 1（応援馬券は単勝と複勝の 2）
     /// - box: 券種ごとに n から組合せ数を算出
     /// - formation: 各軸の積（重複馬を除外、券種が unordered なら順序差を解消）
     /// - nagashi: 軸と相手から展開した組の数（`NagashiSelection` を参照）
@@ -112,8 +112,8 @@ final class Bet {
             return formationCount(legs: legs, ticketTypeName: ticketTypeName)
         }
 
-        // Normal: 単発の買い目は 1 点
-        return 1
+        // Normal: 単発の買い目は 1 点。応援馬券は 1 頭の単勝と複勝を 1 枚で買うため 2 点
+        return ticketTypeName == "応援馬券" ? 2 : 1
     }
 
     /// BOX 買いの組合せ点数を券種ごとの公式で計算する。
