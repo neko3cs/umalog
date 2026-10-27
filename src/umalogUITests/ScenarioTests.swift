@@ -457,6 +457,64 @@ final class 流し馬券追加Test: UIテストケース {
     }
 }
 
+// MARK: - Scenario 4c: 券種選択
+
+final class 券種選択Test: UIテストケース {
+    /// アプリが扱う券種。券種ピッカーにこの順で並ぶ。
+    private let ticketTypeNames = ["単勝", "複勝", "枠連", "馬連", "ワイド", "馬単", "三連複", "三連単", "枠単", "応援馬券"]
+
+    /// レースを登録し、出走馬なしで買い目入力シートを開く。
+    private func openSelectionForm() {
+        let raceName = "券種テストレース"
+        tapWhenReady(findElement("add-race-button"))
+        XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
+        let raceNameField = app.textFields["レース名（任意）"]
+        tapWhenReady(raceNameField)
+        raceNameField.typeText(raceName)
+        app.buttons["追加"].tap()
+        tapWhenReady(app.staticTexts[raceName])
+        XCTAssertTrue(app.navigationBars[raceName].waitForExistence(timeout: 5))
+
+        app.swipeUp()
+        tapWhenReady(findElement("add-bet-button"))
+        XCTAssertTrue(app.navigationBars["馬券を追加"].waitForExistence(timeout: 5))
+        app.buttons["買い目を追加"].tap()
+        XCTAssertTrue(app.navigationBars["買い目を追加"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func test券種は一覧から選ぶだけでカスタム券種の入力欄がない() {
+        openSelectionForm()
+
+        XCTAssertTrue(findElement("ticket-type-picker").waitForExistence(timeout: 5))
+        XCTAssertFalse(app.switches["カスタム券種"].exists)
+        XCTAssertFalse(app.textFields["券種名"].exists)
+
+        tapWhenReady(findElement("ticket-type-picker"))
+        for name in ticketTypeNames {
+            XCTAssertTrue(app.buttons[name].waitForExistence(timeout: 5), "\(name) が券種の選択肢にない")
+        }
+    }
+
+    @MainActor
+    func test枠単を選んでボックスの買い目を入力すると点数と購入額が算出され保存できる() {
+        openSelectionForm()
+
+        tapWhenReady(findElement("ticket-type-picker"))
+        tapWhenReady(app.buttons["枠単"])
+        let selectionTextField = app.textFields["買い目（例: 1-2-3）"]
+        tapWhenReady(selectionTextField)
+        selectionTextField.typeText("1,2,3[BOX]")
+        // 枠単は順序ありの 2 頭券種なので 3P2 = 6 点
+        XCTAssertTrue(app.staticTexts["この買い目の購入額, ¥100 × 6点 = ¥600"].waitForExistence(timeout: 5))
+
+        app.navigationBars["買い目を追加"].buttons["追加"].tap()
+        XCTAssertTrue(app.navigationBars["馬券を追加"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["枠単"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["¥100 × 6点 = ¥600"].waitForExistence(timeout: 5))
+    }
+}
+
 // MARK: - Scenario 5: レース削除
 
 final class レース削除Test: UIテストケース {
@@ -595,6 +653,15 @@ final class 設定Test: UIテストケース {
         XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
         let licensesButton = findElement("licenses-link")
         XCTAssertTrue(licensesButton.waitForExistence(timeout: 10))
+    }
+
+    @MainActor
+    func test設定画面に券種の管理項目がない() {
+        app.tabBars.firstMatch.buttons["設定"].tap()
+        XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH '競馬場'")).firstMatch
+            .waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label BEGINSWITH '券種'")).firstMatch.exists)
     }
 
     @MainActor
