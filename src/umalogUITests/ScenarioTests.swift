@@ -461,7 +461,7 @@ final class 流し馬券追加Test: UIテストケース {
 
 final class 券種選択Test: UIテストケース {
     /// アプリが扱う券種。券種ピッカーにこの順で並ぶ。
-    private let ticketTypeNames = ["単勝", "複勝", "枠連", "馬連", "ワイド", "馬単", "三連複", "三連単", "枠単"]
+    private let ticketTypeNames = ["単勝", "複勝", "枠連", "馬連", "ワイド", "馬単", "三連複", "三連単", "枠単", "応援馬券"]
 
     /// レースを登録し、出走馬なしで買い目入力シートを開く。
     private func openSelectionForm() {

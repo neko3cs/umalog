@@ -50,7 +50,7 @@ let venuePresets: [VenuePresetData] = [
 let defaultTicketTypeNames: [(name: String, sortIndex: Int)] = [
     ("単勝", 0), ("複勝", 1), ("枠連", 2), ("馬連", 3),
     ("ワイド", 4), ("馬単", 5), ("三連複", 6), ("三連単", 7),
-    ("枠単", 8),
+    ("枠単", 8), ("応援馬券", 9),
 ]
 
 // MARK: - JRA 騎手プリセット（オートコンプリート用）
