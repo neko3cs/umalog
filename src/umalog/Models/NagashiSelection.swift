@@ -85,17 +85,17 @@ struct NagashiSelection: Equatable {
     /// - Returns: 頭数。流しに対応しない券種の場合は nil。
     static func horseCount(ticketTypeName: String) -> Int? {
         switch ticketTypeName {
-        case "枠連", "馬連", "ワイド", "馬単": 2
+        case "枠連", "馬連", "ワイド", "馬単", "枠単": 2
         case "三連複", "三連単": 3
         default: nil
         }
     }
 
-    /// 着順を区別する券種かどうか（馬単・三連単）。
+    /// 着順を区別する券種かどうか（馬単・枠単・三連単）。
     /// - Parameter ticketTypeName: 券種名。
     /// - Returns: 着順を区別する券種なら true。
     static func isOrdered(ticketTypeName: String) -> Bool {
-        ticketTypeName == "馬単" || ticketTypeName == "三連単"
+        ["馬単", "枠単", "三連単"].contains(ticketTypeName)
     }
 
     // MARK: - Combination Count

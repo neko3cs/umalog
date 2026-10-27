@@ -60,20 +60,18 @@ struct NagashiPlacement: Hashable {
 struct BetSelectionDraft: Identifiable {
     /// ドラフトの識別子。編集時の差し替え先特定に使う。
     var id: UUID = .init()
-    /// 選択した券種。カスタム券種の場合は nil。
+    /// 選択した券種。旧カスタム券種で登録された買い目では nil。
     var ticketType: TicketType?
-    /// カスタム券種名。
+    /// 券種名。`ticketType` が nil のとき（旧カスタム券種）の表示・計算に使う。
     var ticketTypeName: String = ""
-    /// カスタム券種を使うかどうか。
-    var useCustom: Bool = false
     /// 買い目文字列。
     var selection: String = ""
     /// 1 口あたりの金額（円）。
     var unitPrice: Int = 100
 
-    /// 表示用の券種名。カスタムならカスタム券種名、そうでなければ選択した券種の名前。
+    /// 表示用の券種名。券種があればその名前、なければ保存済みの券種名を返す。
     var displayTicketTypeName: String {
-        useCustom ? ticketTypeName : (ticketType?.name ?? "")
+        ticketType?.name ?? ticketTypeName
     }
 
     /// 買い目と券種から算出した組合せ点数（最低 1）。
@@ -252,7 +250,6 @@ struct BetFormView: View {
             BetSelectionDraft(
                 ticketType: sel.ticketType,
                 ticketTypeName: sel.ticketTypeName,
-                useCustom: sel.ticketType == nil && !sel.ticketTypeName.isEmpty,
                 selection: sel.selection,
                 unitPrice: sel.unitPrice,
             )
@@ -271,7 +268,7 @@ struct BetFormView: View {
             for idx in 0 ..< min(draftCount, existingCount) {
                 let sel = existing[idx]
                 let draft = draftSelections[idx]
-                sel.ticketType = draft.useCustom ? nil : draft.ticketType
+                sel.ticketType = draft.ticketType
                 sel.ticketTypeName = draft.displayTicketTypeName
                 sel.selection = draft.selection
                 sel.unitPrice = draft.unitPrice
@@ -284,7 +281,7 @@ struct BetFormView: View {
                     let draft = draftSelections[idx]
                     modelContext.insert(BetSelection(
                         bet: bet,
-                        ticketType: draft.useCustom ? nil : draft.ticketType,
+                        ticketType: draft.ticketType,
                         ticketTypeName: draft.displayTicketTypeName,
                         selection: draft.selection,
                         unitPrice: draft.unitPrice,
@@ -314,7 +311,7 @@ struct BetFormView: View {
             for (idx, draft) in draftSelections.enumerated() {
                 modelContext.insert(BetSelection(
                     bet: newBet,
-                    ticketType: draft.useCustom ? nil : draft.ticketType,
+                    ticketType: draft.ticketType,
                     ticketTypeName: draft.displayTicketTypeName,
                     selection: draft.selection,
                     unitPrice: draft.unitPrice,
