@@ -7,7 +7,7 @@
 
 import XCTest
 
-// MARK: - Scenario: レースを取り込み
+// MARK: - Scenario: JSONで取り込み
 
 final class JSON取り込みTest: UIテストケース {
     /// 出走馬を 1 行ずつの JSON にする。
@@ -28,15 +28,15 @@ final class JSON取り込みTest: UIテストケース {
         XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
         tapWhenReady(findElement("add-race-button"))
         tapWhenReady(findElement("import-race-button"))
-        XCTAssertTrue(app.navigationBars["レースを取り込み"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["JSONで取り込み"].waitForExistence(timeout: 5))
     }
 
-    /// 取り込んだレースの詳細を開き、編集メニューから「取り込みで更新」を開く。
+    /// 取り込んだレースの詳細を開き、編集メニューから「JSONで更新」を開く。
     private func openImportFromDetail() {
         openImportedRace()
         tapWhenReady(findElement("race-edit-menu"))
         tapWhenReady(findElement("import-update-button"))
-        XCTAssertTrue(app.navigationBars["取り込みで更新"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["JSONで更新"].waitForExistence(timeout: 5))
     }
 
     /// 取り込み画面に JSON を入力して確認する。
@@ -85,7 +85,7 @@ final class JSON取り込みTest: UIテストケース {
     }
 
     @MainActor
-    func testレース詳細から取り込みで更新すると差分がプレビューされ保存すると更新される() {
+    func testレース詳細からJSONで更新すると差分がプレビューされ保存すると更新される() {
         importInitialRace()
 
         openImportFromDetail()
@@ -105,12 +105,31 @@ final class JSON取り込みTest: UIテストケース {
     }
 
     @MainActor
-    func testレース詳細から別のレースのJSONを取り込もうとするとエラーになる() {
+    func testレース詳細からレース番号が違うJSONで更新しても開いているレースが更新される() {
         importInitialRace()
 
         openImportFromDetail()
-        enterAndCheck(importJSON(raceNumber: 10, entries: [entryJSON(1, "取込ウマA", mark: "◎")]))
-        XCTAssertTrue(label("import-error-text").contains("このレース（"))
+        enterAndCheck(importJSON(raceNumber: 10, entries: [entryJSON(1, "取込ウマA", mark: "◎"), entryJSON(3, "取込ウマC", mark: "")]))
+        XCTAssertTrue(label("import-race-status").contains("R11"))
+        XCTAssertTrue(label("import-entry-3").contains("新規作成"))
+
+        tapWhenReady(findElement("import-save-button"))
+        XCTAssertTrue(app.navigationBars["取込テスト"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["取込ウマC"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["レース番号, R11"].exists)
+
+        tapWhenReady(app.navigationBars["取込テスト"].buttons["Umalog"])
+        XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label == %@", "取込テスト")).count, 1)
+    }
+
+    @MainActor
+    func testレース一覧から登録済みのレースを取り込むと既にあるというエラーになる() {
+        importInitialRace()
+
+        openImportFromList()
+        enterAndCheck(importJSON(entries: [entryJSON(1, "取込ウマA", mark: "○")]))
+        XCTAssertTrue(label("import-error-text").contains("既に登録されています"))
         XCTAssertFalse(findElement("import-save-button").exists)
     }
 

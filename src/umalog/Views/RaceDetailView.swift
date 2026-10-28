@@ -19,7 +19,7 @@ struct RaceDetailView: View {
     @Bindable var race: Race
     /// レース編集シートの表示状態。
     @State private var showingEditRace = false
-    /// このレースを取り込みで更新するシートの表示状態。
+    /// このJSONでJSONで更新するシートの表示状態。
     @State private var showingImportUpdate = false
     /// 出走馬追加シートの表示状態。
     @State private var showingAddEntry = false
@@ -209,7 +209,7 @@ struct RaceDetailView: View {
                     Button {
                         showingImportUpdate = true
                     } label: {
-                        Label("取り込みで更新", systemImage: "doc.on.clipboard")
+                        Label("JSONで更新", systemImage: "doc.on.clipboard")
                     }
                     .accessibilityIdentifier("import-update-button")
                 }

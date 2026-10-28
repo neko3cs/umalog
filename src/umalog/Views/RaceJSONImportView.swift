@@ -37,7 +37,7 @@ struct RaceJSONImportView: View {
                     inputSections
                 }
             }
-            .navigationTitle(targetRace == nil ? "レースを取り込み" : "取り込みで更新")
+            .navigationTitle(targetRace == nil ? "JSONで取り込み" : "JSONで更新")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -63,9 +63,9 @@ struct RaceJSONImportView: View {
     private var footerText: String {
         let usage = "プロンプトを AI に渡して予想を JSON で出力してもらい、その出力を下に貼り付けます。"
         if targetRace == nil {
-            return usage + "同じレース（日付・競馬場・レース番号）を貼り直すと差分だけを更新し、JSON に無い馬番の出走馬は削除します。"
+            return usage + "新しいレースとして登録します。登録済みのレースを更新するときは、レース詳細の「編集」›「JSONで更新」から取り込んでください。"
         }
-        return usage + "このレースと日付・競馬場・レース番号が同じ JSON だけを取り込み、差分だけを更新します。JSON に無い馬番の出走馬は削除します。"
+        return usage + "このレースの変わったところだけを更新します。JSON の日付・競馬場・レース番号は使わず、このレースの値のままにします。JSON に無い馬番の出走馬は削除します。"
     }
 
     /// テキストを貼り付ける入力画面のセクション。
@@ -126,11 +126,8 @@ struct RaceJSONImportView: View {
     @ViewBuilder
     private func previewSections(_ plan: RaceImportPlan) -> some View {
         Section("レース") {
-            LabeledContent(
-                "\(plan.data.date.japaneseShortDateString) \(plan.data.venueName) R\(plan.data.raceNumber)",
-                value: plan.raceKind.displayName,
-            )
-            .accessibilityIdentifier("import-race-status")
+            LabeledContent(raceTitle(plan), value: plan.raceKind.displayName)
+                .accessibilityIdentifier("import-race-status")
             ForEach(plan.raceChanges, id: \.label) { change in
                 changeRow(change)
             }
@@ -164,6 +161,16 @@ struct RaceJSONImportView: View {
             Button("入力に戻る") { self.plan = nil }
                 .accessibilityIdentifier("import-back-button")
         }
+    }
+
+    /// プレビューに出すレースの見出し。更新では JSON の日付・競馬場・レース番号を使わないため、更新するレースの値を出す。
+    /// - Parameter plan: 表示する取り込み計画。
+    /// - Returns: 「日付 競馬場 R番号」。
+    private func raceTitle(_ plan: RaceImportPlan) -> String {
+        if let race = plan.existingRace {
+            return "\(race.date.japaneseShortDateString) \(race.venue?.name ?? "競馬場未選択") R\(race.raceNumber)"
+        }
+        return "\(plan.data.date.japaneseShortDateString) \(plan.data.venueName) R\(plan.data.raceNumber)"
     }
 
     /// 1 フィールドの変更前後を表示する行。
