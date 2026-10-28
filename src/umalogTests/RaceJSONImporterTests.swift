@@ -295,15 +295,52 @@ struct JSON取り込みTest {
 
     // MARK: - プロンプト
 
-    @Test func `ai向けプロンプトに全競馬場と全予想印が含まれる`() {
-        let prompt = RaceJSONImporter.promptForAI
-        #expect(venuePresets.allSatisfy { prompt.contains($0.name) })
-        #expect(PredictionMark.allCases.allSatisfy { prompt.contains("\"\($0.rawValue)\"") })
-        #expect(prompt.contains("\"schemaVersion\": 1"))
+    /// JSON Schema を辞書として読み込む。
+    /// - Returns: JSON Schema のルート。
+    private func schemaObject() throws -> [String: Any] {
+        let object = try JSONSerialization.jsonObject(with: Data(RaceJSONImporter.jsonSchema.utf8))
+        return try #require(object as? [String: Any])
     }
 
-    @Test func `ai向けプロンプトの例のjsonはそのまま取り込める`() throws {
-        let data = try RaceJSONImporter.parse(RaceJSONImporter.promptForAI)
+    /// JSON Schema の中の、パスで指定したオブジェクトを返す。
+    /// - Parameters:
+    ///   - root: 探索を始めるオブジェクト。
+    ///   - keys: たどるキー。
+    /// - Returns: 見つかったオブジェクト。
+    private func object(_ root: [String: Any], _ keys: String...) throws -> [String: Any] {
+        try keys.reduce(root) { current, key in try #require(current[key] as? [String: Any]) }
+    }
+
+    @Test func `ai向けプロンプトに出力のルールとjson schemaと出力例が含まれる`() {
+        let prompt = RaceJSONImporter.promptForAI
+        #expect(prompt.contains("JSON だけを出力"))
+        #expect(prompt.contains("含まれない馬番の出走馬はアプリから削除されます"))
+        #expect(prompt.contains(RaceJSONImporter.jsonSchema))
+        #expect(prompt.contains(RaceJSONImporter.exampleJSON))
+    }
+
+    @Test func `JSON schemaの選択肢がアプリの定義と 一 致する`() throws {
+        let race = try object(schemaObject(), "properties", "race", "properties")
+        #expect(try object(race, "venue")["enum"] as? [String] == venuePresets.map(\.name))
+        #expect(try object(race, "trackCondition")["enum"] as? [String] == Race.trackConditions)
+        #expect(try object(race, "grade")["enum"] as? [String] == RaceGrade.allCases.map(\.rawValue))
+        let entry = try object(schemaObject(), "properties", "entries", "items", "properties")
+        #expect(try object(entry, "mark")["enum"] as? [String] == PredictionMark.allCases.map(\.rawValue) + [""])
+        #expect(try object(schemaObject(), "properties", "schemaVersion")["const"] as? Int == 1)
+    }
+
+    @Test func `JSON schemaの必須フィールドが出力例のフィールドと 一 致する`() throws {
+        let example = try #require(try JSONSerialization.jsonObject(with: Data(RaceJSONImporter.exampleJSON.utf8)) as? [String: Any])
+        let exampleRace = try #require(example["race"] as? [String: Any])
+        let exampleEntry = try #require((example["entries"] as? [[String: Any]])?.first)
+        let schema = try schemaObject()
+        #expect(Set(schema["required"] as? [String] ?? []) == Set(example.keys))
+        #expect(try Set(object(schema, "properties", "race")["required"] as? [String] ?? []) == Set(exampleRace.keys))
+        #expect(try Set(object(schema, "properties", "entries", "items")["required"] as? [String] ?? []) == Set(exampleEntry.keys))
+    }
+
+    @Test func `出力例のjsonはそのまま取り込める`() throws {
+        let data = try RaceJSONImporter.parse(RaceJSONImporter.exampleJSON)
         #expect(data.raceName == "天皇賞（秋）")
     }
 }
