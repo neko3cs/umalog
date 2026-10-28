@@ -10,7 +10,7 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// 設定画面。ZIP バックアップ / 復元・データ初期化・アプリ情報を提供する。
+/// 設定画面。ZIP バックアップ / 復元・テキストからの取り込み・データ初期化・アプリ情報を提供する。
 struct SettingsView: View {
     /// SwiftData のモデルコンテキスト。
     @Environment(\.modelContext) private var modelContext
@@ -41,6 +41,8 @@ struct SettingsView: View {
     @State private var exportError: String?
     /// バックアップエラーアラートの表示状態。
     @State private var showingExportError = false
+    /// テキストから取り込む画面の表示状態。
+    @State private var showingJSONImport = false
     /// データ初期化確認アラートの表示状態。
     @State private var showingDataReset = false
     /// データ初期化完了アラートの表示状態。
@@ -77,6 +79,14 @@ struct SettingsView: View {
                     }
                     .disabled(isExporting || isImporting)
 
+                    Button {
+                        showingJSONImport = true
+                    } label: {
+                        Label("テキストから取り込み", systemImage: "doc.on.clipboard")
+                    }
+                    .accessibilityIdentifier("import-json-button")
+                    .disabled(isExporting || isImporting)
+
                     Button(role: .destructive) {
                         showingDataReset = true
                     } label: {
@@ -111,6 +121,9 @@ struct SettingsView: View {
                     pendingImportURL = url
                     showingImportConfirm = true
                 }
+            }
+            .sheet(isPresented: $showingJSONImport) {
+                RaceJSONImportView()
             }
             .alert("データを復元", isPresented: $showingImportConfirm) {
                 Button("復元", role: .destructive) {

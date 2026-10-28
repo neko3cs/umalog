@@ -112,6 +112,9 @@ final class Race {
         return nil
     }
 
+    /// 馬場状態の選択肢。
+    static let trackConditions = ["良", "稍重", "重", "不良"]
+
     /// 区分の列挙値。未知の値は地方として扱う。
     var categoryValue: RaceCategory {
         RaceCategory(rawValue: category) ?? .local
