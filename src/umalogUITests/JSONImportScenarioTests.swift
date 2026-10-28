@@ -7,7 +7,7 @@
 
 import XCTest
 
-// MARK: - Scenario: テキストから取り込み
+// MARK: - Scenario: レースを取り込み
 
 final class JSON取り込みTest: UIテストケース {
     /// 出走馬を 1 行ずつの JSON にする。
@@ -27,7 +27,7 @@ final class JSON取り込みTest: UIテストケース {
     private func enterAndCheck(_ json: String) {
         app.tabBars.firstMatch.buttons["設定"].tap()
         tapWhenReady(findElement("import-json-button"))
-        XCTAssertTrue(app.navigationBars["テキストから取り込み"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["レースを取り込み"].waitForExistence(timeout: 5))
         let editor = app.textViews["import-json-editor"]
         tapWhenReady(editor)
         editor.typeText(json)

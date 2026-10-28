@@ -33,7 +33,7 @@ struct RaceJSONImportView: View {
                     inputSections
                 }
             }
-            .navigationTitle("テキストから取り込み")
+            .navigationTitle("レースを取り込み")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

@@ -600,51 +600,106 @@ enum RaceJSONImporter {
 
     // MARK: Prompt
 
-    /// AI に渡すプロンプト。スキーマと使える値を含む。
+    /// AI に渡すプロンプト。出力のルール・JSON Schema・出力例を含む。
+    /// - Note: JSON Schema だけでは「着順の馬番は entries にある」「JSON に無い馬は削除される」を伝えきれないため、指示文を添える。
     static var promptForAI: String {
-        let venues = RaceCategory.allCases.map { category in
-            "  - \(category.displayName): " + venuePresets.filter { $0.category == category }.map(\.name).joined(separator: ", ")
-        }.joined(separator: "\n")
-        let grades = RaceGrade.allCases.map { "\"\($0.rawValue)\"（\($0.displayName)）" }.joined(separator: ", ")
-        let marks = PredictionMark.allCases.map { "\"\($0.rawValue)\"" }.joined(separator: ", ")
-        return """
-        競馬予想アプリ umalog に取り込むため、予想したレース 1 件を次の JSON 形式で出力してください。
-        JSON だけを出力し、説明文は付けないでください。
+        """
+        競馬予想アプリ umalog に取り込むため、予想したレース 1 件を、次の JSON Schema に従う JSON で出力してください。
 
-        {
-          "schemaVersion": 1,
-          "race": {
-            "date": "2026-10-25",
-            "venue": "東京",
-            "raceNumber": 11,
-            "raceName": "天皇賞（秋）",
-            "distance": 2000,
-            "trackType": "turf",
-            "trackCondition": "良",
-            "grade": "G1",
-            "firstPlaceHorseNumber": 0,
-            "secondPlaceHorseNumber": 0,
-            "thirdPlaceHorseNumber": 0
-          },
-          "entries": [
-            { "horseNumber": 1, "horseName": "馬名", "jockeyName": "騎手名", "trainerName": "調教師名", "mark": "◎" }
-          ]
-        }
-
-        ルール:
+        出力のルール:
+        - JSON だけを出力し、説明文は付けないでください。
         - すべてのフィールドが必須です。省略や null は使えません。分からない文字列は空文字 "" にしてください（horseName は空文字不可）。
-        - date: 開催日を "yyyy-MM-dd" 形式で。
-        - venue: 次の競馬場名のどれか。
-        \(venues)
-        - raceNumber: 1〜12 の整数。
-        - distance: 距離（メートル）の整数。
-        - trackType: "turf"（芝）または "dirt"（ダート）。
-        - trackCondition: \(Race.trackConditions.map { "\"\($0)\"" }.joined(separator: ", ")) のどれか。
-        - grade: \(grades) のどれか。
-        - firstPlaceHorseNumber / secondPlaceHorseNumber / thirdPlaceHorseNumber: 1〜3 着の馬番。レース前など未確定なら 0。
-        - entries: 出走馬全頭。horseNumber（1 以上の整数）は重複不可。
-        - mark: 予想印。\(marks) のどれか。印を付けない馬は空文字 ""。
-        - 予想を見直して出し直すときも、出走馬は全頭を含めてください。含まれない馬番の出走馬はアプリから削除されます。
+        - 着順（firstPlaceHorseNumber / secondPlaceHorseNumber / thirdPlaceHorseNumber）は、レース前など未確定なら 0 にしてください。0 以外は entries にある馬番で、互いに重複させないでください。
+        - 印を付けない馬の mark は空文字 "" にしてください。
+        - entries には出走馬を全頭含め、horseNumber を重複させないでください。予想を見直して出し直すときも全頭を含めてください。含まれない馬番の出走馬はアプリから削除されます。
+
+        JSON Schema:
+        \(jsonSchema)
+
+        出力例:
+        \(exampleJSON)
         """
     }
+
+    /// 取り込む JSON の JSON Schema（draft 2020-12）。競馬場・印・グレードなどの選択肢はアプリの定義から組み立てる。
+    static var jsonSchema: String {
+        let integer: (Int, String) -> [String: Any] = { minimum, description in
+            ["type": "integer", "minimum": minimum, "description": description]
+        }
+        let enumeration: ([String], String) -> [String: Any] = { values, description in
+            ["type": "string", "enum": values, "description": description]
+        }
+        let raceProperties: [String: Any] = [
+            "date": [
+                "type": "string", "format": "date", "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "description": "開催日（yyyy-MM-dd）",
+            ],
+            "venue": enumeration(venuePresets.map(\.name), "競馬場名"),
+            "raceNumber": ["type": "integer", "minimum": 1, "maximum": 12, "description": "レース番号"],
+            "raceName": ["type": "string", "description": "レース名。分からなければ空文字"],
+            "distance": integer(1, "距離（メートル）"),
+            "trackType": enumeration(trackTypes, "turf: 芝、dirt: ダート"),
+            "trackCondition": enumeration(Race.trackConditions, "馬場状態"),
+            "grade": enumeration(
+                RaceGrade.allCases.map(\.rawValue),
+                "グレード。" + RaceGrade.allCases.map { "\"\($0.rawValue)\": \($0.displayName)" }.joined(separator: "、"),
+            ),
+            "firstPlaceHorseNumber": integer(0, "1 着の馬番。未確定なら 0"),
+            "secondPlaceHorseNumber": integer(0, "2 着の馬番。未確定なら 0"),
+            "thirdPlaceHorseNumber": integer(0, "3 着の馬番。未確定なら 0"),
+        ]
+        let entryProperties: [String: Any] = [
+            "horseNumber": integer(1, "馬番。レース内で重複不可"),
+            "horseName": ["type": "string", "minLength": 1, "description": "馬名"],
+            "jockeyName": ["type": "string", "description": "騎手名。分からなければ空文字"],
+            "trainerName": ["type": "string", "description": "調教師名。分からなければ空文字"],
+            "mark": enumeration(PredictionMark.allCases.map(\.rawValue) + [""], "予想印。印なしは空文字"),
+        ]
+        let schema: [String: Any] = [
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "title": "umalog レース取り込み（schemaVersion 1）",
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["schemaVersion", "race", "entries"],
+            "properties": [
+                "schemaVersion": ["const": schemaVersion],
+                "race": [
+                    "type": "object", "additionalProperties": false,
+                    "required": raceProperties.keys.sorted(), "properties": raceProperties,
+                ],
+                "entries": [
+                    "type": "array", "description": "出走馬全頭",
+                    "items": [
+                        "type": "object", "additionalProperties": false,
+                        "required": entryProperties.keys.sorted(), "properties": entryProperties,
+                    ],
+                ],
+            ],
+        ]
+        let data = (try? JSONSerialization.data(withJSONObject: schema, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])) ?? Data()
+        return String(bytes: data, encoding: .utf8) ?? ""
+    }
+
+    /// プロンプトに載せる出力例。
+    static let exampleJSON = """
+    {
+      "schemaVersion": 1,
+      "race": {
+        "date": "2026-10-25",
+        "venue": "東京",
+        "raceNumber": 11,
+        "raceName": "天皇賞（秋）",
+        "distance": 2000,
+        "trackType": "turf",
+        "trackCondition": "良",
+        "grade": "G1",
+        "firstPlaceHorseNumber": 0,
+        "secondPlaceHorseNumber": 0,
+        "thirdPlaceHorseNumber": 0
+      },
+      "entries": [
+        { "horseNumber": 1, "horseName": "馬名", "jockeyName": "騎手名", "trainerName": "調教師名", "mark": "◎" }
+      ]
+    }
+    """
 }
