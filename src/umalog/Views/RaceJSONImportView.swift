@@ -27,14 +27,25 @@ struct RaceJSONImportView: View {
     @State private var importError: RaceImportError?
     /// 直前にコピーした内容の説明。コピーしたことを知らせるために表示する。
     @State private var copiedMessage: String?
+    /// 「確認」を押した回数。押すたびに画面の先頭（エラーかプレビュー）へスクロールするきっかけにする。
+    @State private var checkCount = 0
+
+    /// 画面の先頭の行に付ける識別子。`ScrollViewReader` でスクロールする先。
+    private let topRowID = "import-top-row"
 
     var body: some View {
         NavigationStack {
-            Form {
-                if let plan {
-                    previewSections(plan)
-                } else {
-                    inputSections
+            ScrollViewReader { proxy in
+                Form {
+                    if let plan {
+                        previewSections(plan)
+                    } else {
+                        inputSections
+                    }
+                }
+                // 長い JSON を貼ったあとは画面が下へスクロールしていることがあり、先頭に出したエラーやプレビューが見えないため戻す
+                .onChange(of: checkCount) {
+                    withAnimation { proxy.scrollTo(topRowID, anchor: .top) }
                 }
             }
             .navigationTitle(targetRace == nil ? "JSONで取り込み" : "JSONで更新")
@@ -71,32 +82,7 @@ struct RaceJSONImportView: View {
     /// テキストを貼り付ける入力画面のセクション。
     @ViewBuilder
     private var inputSections: some View {
-        Section {
-            Button {
-                copy(RaceJSONImporter.promptForAI, message: "プロンプトをコピーしました")
-            } label: {
-                Label("AI 向けプロンプトをコピー", systemImage: "doc.on.doc")
-            }
-            .accessibilityIdentifier("copy-import-prompt-button")
-        } footer: {
-            Text(footerText)
-        }
-
-        Section("JSON") {
-            TextEditor(text: $text)
-                .font(.system(.footnote, design: .monospaced))
-                .frame(minHeight: 200)
-                .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
-                .accessibilityIdentifier("import-json-editor")
-            PasteButton(payloadType: String.self) { strings in
-                Task { @MainActor in
-                    text = strings.first ?? ""
-                    importError = nil
-                }
-            }
-        }
-
+        // エラーは JSON の入力欄より上に出す。入力欄は長い JSON で縦に伸び、下に出すと画面外に押し出されて気づけないため
         if let importError {
             Section("取り込めませんでした（何も保存していません）") {
                 Text(importError.errorDescription ?? "")
@@ -111,12 +97,40 @@ struct RaceJSONImportView: View {
                 }
                 .accessibilityIdentifier("copy-import-error-button")
             }
+            // 見出しごと見えるよう、行ではなくセクションをスクロール先にする
+            .id(topRowID)
         }
 
-        if let copiedMessage {
-            Text(copiedMessage)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+        Section {
+            if let copiedMessage {
+                Text(copiedMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            Button {
+                copy(RaceJSONImporter.promptForAI, message: "プロンプトをコピーしました")
+            } label: {
+                Label("AI 向けプロンプトをコピー", systemImage: "doc.on.doc")
+            }
+            .accessibilityIdentifier("copy-import-prompt-button")
+        } footer: {
+            Text(footerText)
+        }
+
+        Section("JSON") {
+            TextEditor(text: $text)
+                .font(.system(.footnote, design: .monospaced))
+                // 長い JSON でも入力欄の中でスクロールさせ、画面全体を押し下げないよう高さに上限を付ける
+                .frame(minHeight: 200, maxHeight: 320)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                .accessibilityIdentifier("import-json-editor")
+            PasteButton(payloadType: String.self) { strings in
+                Task { @MainActor in
+                    text = strings.first ?? ""
+                    importError = nil
+                }
+            }
         }
     }
 
@@ -128,6 +142,7 @@ struct RaceJSONImportView: View {
         Section("レース") {
             LabeledContent(raceTitle(plan), value: plan.raceKind.displayName)
                 .accessibilityIdentifier("import-race-status")
+                .id(topRowID)
             ForEach(plan.raceChanges, id: \.label) { change in
                 changeRow(change)
             }
@@ -193,6 +208,7 @@ struct RaceJSONImportView: View {
         } catch {
             importError = RaceImportError(issues: [.init(path: "(JSON)", message: error.localizedDescription)])
         }
+        checkCount += 1
     }
 
     /// 取り込み計画を保存して画面を閉じる。失敗したら入力画面に戻して原因を表示する。

@@ -134,6 +134,20 @@ final class JSON取り込みTest: UIテストケース {
     }
 
     @MainActor
+    func test長いJSONを貼って確認してもエラーが画面内に表示される() {
+        importInitialRace()
+
+        // 改行を含む長い JSON は入力欄を縦に伸ばすため、エラーが入力欄の下にあると画面外に押し出されて見えなくなる
+        openImportFromList()
+        let entries = (1 ... 12).map { entryJSON($0, "Horse\($0)", mark: "") }
+        enterAndCheck(importJSON(entries: entries).replacingOccurrences(of: ",", with: ",\n"))
+        let error = findElement("import-error-text")
+        XCTAssertTrue(error.waitForExistence(timeout: 5))
+        XCTAssertTrue(error.label.contains("既に登録されています"))
+        XCTAssertTrue(error.isHittable, "エラーが画面外に表示されている")
+    }
+
+    @MainActor
     func test不正な印のJSONは原因のフィールドを示すエラーになり何も保存されない() {
         openImportFromList()
         enterAndCheck(importJSON(entries: [entryJSON(1, "取込ウマA", mark: "★")]))
