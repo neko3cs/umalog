@@ -257,6 +257,32 @@ struct JSON取り込みTest {
         #expect(plan.raceChanges.first == RaceImportFieldChange(label: "レース名", oldValue: "手入力", newValue: "天皇賞（秋）"))
     }
 
+    // MARK: - レース詳細からの更新
+
+    @Test func 更新するレースを指定するとそのレースと照合される() throws {
+        let ctx = container.mainContext
+        let race = try RaceJSONImporter.apply(plan(Self.json()), in: ctx)
+        let plan = try RaceJSONImporter.makePlan(
+            for: RaceJSONImporter.parse(Self.json(race: { $0["distance"] = 2400 })), in: ctx, target: race,
+        )
+        #expect(plan.existingRace === race)
+        #expect(plan.raceKind == .update)
+    }
+
+    @Test(arguments: [
+        ("date", "2026-10-26" as Any), ("venue", "京都" as Any), ("raceNumber", 10 as Any),
+    ])
+    func `更新するレースと日付か競馬場かレース番号が違うjsonはエラーになる`(key: String, value: Any) throws {
+        let ctx = container.mainContext
+        let race = try RaceJSONImporter.apply(plan(Self.json()), in: ctx)
+        let data = try RaceJSONImporter.parse(Self.json(race: { $0[key] = value }))
+        let error = try #require(throws: RaceImportError.self) {
+            try RaceJSONImporter.makePlan(for: data, in: ctx, target: race)
+        }
+        #expect(error.issues.map(\.path) == ["race"])
+        #expect(try races().count == 1)
+    }
+
     // MARK: - 保存
 
     @Test func 新規作成を保存するとレースと出走馬が登録され区分は競馬場から決まる() throws {

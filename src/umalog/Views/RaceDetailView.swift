@@ -19,6 +19,8 @@ struct RaceDetailView: View {
     @Bindable var race: Race
     /// レース編集シートの表示状態。
     @State private var showingEditRace = false
+    /// このレースを取り込みで更新するシートの表示状態。
+    @State private var showingImportUpdate = false
     /// 出走馬追加シートの表示状態。
     @State private var showingAddEntry = false
     /// 馬券追加シートの表示状態。
@@ -197,10 +199,25 @@ struct RaceDetailView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("編集") { showingEditRace = true }
+                Menu("編集") {
+                    Button {
+                        showingEditRace = true
+                    } label: {
+                        Label("レースを編集", systemImage: "square.and.pencil")
+                    }
+                    .accessibilityIdentifier("edit-race-button")
+                    Button {
+                        showingImportUpdate = true
+                    } label: {
+                        Label("取り込みで更新", systemImage: "doc.on.clipboard")
+                    }
+                    .accessibilityIdentifier("import-update-button")
+                }
+                .accessibilityIdentifier("race-edit-menu")
             }
         }
         .sheet(isPresented: $showingEditRace) { RaceFormView(race: race) }
+        .sheet(isPresented: $showingImportUpdate) { RaceJSONImportView(targetRace: race) }
         .sheet(isPresented: $showingAddEntry) { RaceEntryFormView(race: race) }
         .sheet(isPresented: $showingAddBet) { BetFormView(race: race) }
         .sheet(item: $editingEntry) { target in RaceEntryFormView(race: race, entry: target.model) }

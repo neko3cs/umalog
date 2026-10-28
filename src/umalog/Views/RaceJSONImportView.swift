@@ -9,11 +9,15 @@ import SwiftData
 import SwiftUI
 
 /// JSON 文字列からレース・出走馬を取り込む画面。貼り付け → 差分プレビュー → 保存の順に進み、保存するまでデータは変えない。
+/// `targetRace` が nil ならレース一覧からの取り込み、非 nil ならレース詳細からそのレースを更新する取り込みとして動作する。
 struct RaceJSONImportView: View {
     /// SwiftData のモデルコンテキスト。
     @Environment(\.modelContext) private var modelContext
     /// シートを閉じるためのアクション。
     @Environment(\.dismiss) private var dismiss
+
+    /// 更新するレース。レース一覧から開いた場合は nil。
+    var targetRace: Race?
 
     /// 貼り付けられたテキスト。
     @State private var text = ""
@@ -33,7 +37,7 @@ struct RaceJSONImportView: View {
                     inputSections
                 }
             }
-            .navigationTitle("レースを取り込み")
+            .navigationTitle(targetRace == nil ? "レースを取り込み" : "取り込みで更新")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -55,6 +59,15 @@ struct RaceJSONImportView: View {
         }
     }
 
+    /// 入力画面の使い方の説明。
+    private var footerText: String {
+        let usage = "プロンプトを AI に渡して予想を JSON で出力してもらい、その出力を下に貼り付けます。"
+        if targetRace == nil {
+            return usage + "同じレース（日付・競馬場・レース番号）を貼り直すと差分だけを更新し、JSON に無い馬番の出走馬は削除します。"
+        }
+        return usage + "このレースと日付・競馬場・レース番号が同じ JSON だけを取り込み、差分だけを更新します。JSON に無い馬番の出走馬は削除します。"
+    }
+
     /// テキストを貼り付ける入力画面のセクション。
     @ViewBuilder
     private var inputSections: some View {
@@ -66,7 +79,7 @@ struct RaceJSONImportView: View {
             }
             .accessibilityIdentifier("copy-import-prompt-button")
         } footer: {
-            Text("プロンプトを AI に渡して予想を JSON で出力してもらい、その出力を下に貼り付けます。同じレース（日付・競馬場・レース番号）を貼り直すと差分だけを更新し、JSON に無い馬番の出走馬は削除します。")
+            Text(footerText)
         }
 
         Section("JSON") {
@@ -166,7 +179,7 @@ struct RaceJSONImportView: View {
         copiedMessage = nil
         do {
             let data = try RaceJSONImporter.parse(text)
-            plan = try RaceJSONImporter.makePlan(for: data, in: modelContext)
+            plan = try RaceJSONImporter.makePlan(for: data, in: modelContext, target: targetRace)
             importError = nil
         } catch let error as RaceImportError {
             importError = error
