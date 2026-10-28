@@ -7,42 +7,77 @@
 
 import Foundation
 
-/// 初期データとして投入する競馬場プリセットの定義。
+/// アプリが扱う競馬場の定義。
 struct VenuePresetData {
     /// 競馬場名。
     let name: String
-    /// 表示順。
-    let sortIndex: Int
+    /// 区分（`RaceCategory`）。この競馬場を選んだレースの区分になる。
+    let category: RaceCategory
 }
 
-/// 初回起動時・リセット時に投入する競馬場プリセット（中央 10 場 + 地方主要 14 場）。
+/// アプリが扱う競馬場の一覧（中央 10 場・地方 15 場・海外 24 場）。レース入力で選べるのはこの競馬場だけ。
+/// - Note: 既存ユーザーには起動時に足りない競馬場だけを末尾へ追加するため、既存の並び順を変えないよう新しい競馬場は末尾に足す。
 let venuePresets: [VenuePresetData] = [
     // 中央（JRA）
-    .init(name: "札幌", sortIndex: 0),
-    .init(name: "函館", sortIndex: 1),
-    .init(name: "福島", sortIndex: 2),
-    .init(name: "新潟", sortIndex: 3),
-    .init(name: "東京", sortIndex: 4),
-    .init(name: "中山", sortIndex: 5),
-    .init(name: "中京", sortIndex: 6),
-    .init(name: "京都", sortIndex: 7),
-    .init(name: "阪神", sortIndex: 8),
-    .init(name: "小倉", sortIndex: 9),
+    .init(name: "札幌", category: .central),
+    .init(name: "函館", category: .central),
+    .init(name: "福島", category: .central),
+    .init(name: "新潟", category: .central),
+    .init(name: "東京", category: .central),
+    .init(name: "中山", category: .central),
+    .init(name: "中京", category: .central),
+    .init(name: "京都", category: .central),
+    .init(name: "阪神", category: .central),
+    .init(name: "小倉", category: .central),
     // 地方（NAR）
-    .init(name: "大井", sortIndex: 10),
-    .init(name: "船橋", sortIndex: 11),
-    .init(name: "川崎", sortIndex: 12),
-    .init(name: "浦和", sortIndex: 13),
-    .init(name: "園田", sortIndex: 14),
-    .init(name: "姫路", sortIndex: 15),
-    .init(name: "門別", sortIndex: 16),
-    .init(name: "名古屋", sortIndex: 17),
-    .init(name: "笠松", sortIndex: 18),
-    .init(name: "高知", sortIndex: 19),
-    .init(name: "佐賀", sortIndex: 20),
-    .init(name: "金沢", sortIndex: 21),
-    .init(name: "盛岡", sortIndex: 22),
-    .init(name: "水沢", sortIndex: 23),
+    .init(name: "大井", category: .local),
+    .init(name: "船橋", category: .local),
+    .init(name: "川崎", category: .local),
+    .init(name: "浦和", category: .local),
+    .init(name: "園田", category: .local),
+    .init(name: "姫路", category: .local),
+    .init(name: "門別", category: .local),
+    .init(name: "名古屋", category: .local),
+    .init(name: "笠松", category: .local),
+    .init(name: "高知", category: .local),
+    .init(name: "佐賀", category: .local),
+    .init(name: "金沢", category: .local),
+    .init(name: "盛岡", category: .local),
+    .init(name: "水沢", category: .local),
+    .init(name: "帯広", category: .local),
+    // 海外
+    // フランス
+    .init(name: "パリロンシャン", category: .overseas),
+    .init(name: "シャンティイ", category: .overseas),
+    .init(name: "ドーヴィル", category: .overseas),
+    // イギリス
+    .init(name: "アスコット", category: .overseas),
+    .init(name: "エプソム", category: .overseas),
+    .init(name: "ニューマーケット", category: .overseas),
+    .init(name: "グッドウッド", category: .overseas),
+    .init(name: "ヨーク", category: .overseas),
+    // 香港
+    .init(name: "シャティン", category: .overseas),
+    .init(name: "ハッピーバレー", category: .overseas),
+    // UAE
+    .init(name: "メイダン", category: .overseas),
+    // サウジアラビア
+    .init(name: "キングアブドゥルアジーズ", category: .overseas),
+    // アメリカ
+    .init(name: "サンタアニタパーク", category: .overseas),
+    .init(name: "チャーチルダウンズ", category: .overseas),
+    .init(name: "デルマー", category: .overseas),
+    .init(name: "キーンランド", category: .overseas),
+    .init(name: "ベルモントパーク", category: .overseas),
+    .init(name: "サラトガ", category: .overseas),
+    // オーストラリア
+    .init(name: "フレミントン", category: .overseas),
+    .init(name: "ムーニーバレー", category: .overseas),
+    .init(name: "コーフィールド", category: .overseas),
+    .init(name: "ランドウィック", category: .overseas),
+    .init(name: "ローズヒル", category: .overseas),
+    // シンガポール
+    .init(name: "クランジ", category: .overseas),
 ]
 
 /// アプリが扱う券種の一覧。買い目入力で選べるのはこの券種だけ。

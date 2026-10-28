@@ -10,12 +10,10 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// 設定画面。マスター管理・ZIP バックアップ / 復元・データ初期化・アプリ情報を提供する。
+/// 設定画面。ZIP バックアップ / 復元・データ初期化・アプリ情報を提供する。
 struct SettingsView: View {
     /// SwiftData のモデルコンテキスト。
     @Environment(\.modelContext) private var modelContext
-    /// SwiftData から取得した全競馬場。
-    @Query(sort: \Venue.sortIndex) private var venues: [Venue]
     /// SwiftData から取得した全レース。バックアップ対象。
     @Query private var races: [Race]
 
@@ -51,14 +49,6 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("管理") {
-                    NavigationLink {
-                        VenueManagementView()
-                    } label: {
-                        LabeledContent("競馬場", value: "\(venues.count)件")
-                    }
-                }
-
                 Section("データ") {
                     Button {
                         exportZip()
@@ -329,81 +319,6 @@ struct LicenseDetailView: View {
         }
         .navigationTitle(package.name)
         .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-/// 競馬場マスターの追加・削除・リセットを行う管理画面。
-private struct VenueManagementView: View {
-    /// SwiftData のモデルコンテキスト。
-    @Environment(\.modelContext) private var modelContext
-    /// SwiftData から取得した全競馬場。
-    @Query(sort: \Venue.sortIndex) private var venues: [Venue]
-
-    /// 追加ダイアログの表示状態。
-    @State private var showingAdd = false
-    /// 追加ダイアログで入力中の競馬場名。
-    @State private var newName = ""
-    /// リセット確認アラートの表示状態。
-    @State private var showingReset = false
-
-    var body: some View {
-        List {
-            ForEach(venues) { venue in
-                Text(venue.name)
-            }
-            .onDelete { indexSet in
-                for i in indexSet {
-                    modelContext.delete(venues[i])
-                }
-            }
-            Button {
-                showingAdd = true
-            } label: {
-                Label("競馬場を追加", systemImage: "plus")
-            }
-
-            Section {
-                Button(role: .destructive) {
-                    showingReset = true
-                } label: {
-                    Label("初期状態にリセット", systemImage: "arrow.counterclockwise")
-                }
-            } footer: {
-                Text("追加・削除した競馬場をすべて破棄し、インストール時の状態に戻します。レースデータには影響しません。")
-            }
-        }
-        .navigationTitle("競馬場")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar { EditButton() }
-        .alert("競馬場を追加", isPresented: $showingAdd) {
-            TextField("競馬場名", text: $newName)
-            Button("追加") {
-                guard !newName.isEmpty else { return }
-                modelContext.insert(Venue(name: newName, isPreset: false, sortIndex: venues.count))
-                // 追加したマスターは Picker の選択肢になる。自動保存を待つと、Picker の表示中に一時 ID が恒久 ID に変わり、
-                // ハッシュ値が変わって Picker がクラッシュする。表示前に ID を確定させるため、ここで保存する（Issue #55）
-                try? modelContext.save()
-                newName = ""
-            }
-            Button("キャンセル", role: .cancel) { newName = "" }
-        }
-        .alert("競馬場をリセット", isPresented: $showingReset) {
-            Button("リセット", role: .destructive) { resetVenues() }
-            Button("キャンセル", role: .cancel) {}
-        } message: {
-            Text("競馬場をインストール時の状態に戻します。この操作は元に戻せません。")
-        }
-    }
-
-    /// 競馬場マスターをすべて削除し、プリセットを再投入する。レースの競馬場参照は nil になる。
-    private func resetVenues() {
-        venues.forEach { modelContext.delete($0) }
-        for preset in venuePresets {
-            modelContext.insert(Venue(name: preset.name, isPreset: true, sortIndex: preset.sortIndex))
-        }
-        // 追加したマスターは Picker の選択肢になる。自動保存を待つと、Picker の表示中に一時 ID が恒久 ID に変わり、
-        // ハッシュ値が変わって Picker がクラッシュする。表示前に ID を確定させるため、ここで保存する（Issue #55）
-        try? modelContext.save()
     }
 }
 

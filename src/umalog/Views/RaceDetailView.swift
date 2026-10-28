@@ -62,7 +62,7 @@ struct RaceDetailView: View {
                 LabeledContent("コース") {
                     Text("\(race.trackType == "turf" ? "芝" : "ダート") \(race.distance)m \(race.trackCondition)")
                 }
-                LabeledContent("区分", value: race.category == "central" ? "中央（JRA）" : "地方（NAR）")
+                LabeledContent("区分", value: race.categoryValue.displayName)
             }
 
             Section {
