@@ -16,18 +16,31 @@ final class JSON取り込みTest: UIテストケース {
     }
 
     /// 取り込み用の 1 行の JSON を作る。
-    private func importJSON(entries: [String]) -> String {
-        "{\"schemaVersion\":1,\"race\":{\"date\":\"2026-10-25\",\"venue\":\"東京\",\"raceNumber\":11,"
+    private func importJSON(raceNumber: Int = 11, entries: [String]) -> String {
+        "{\"schemaVersion\":1,\"race\":{\"date\":\"2026-10-25\",\"venue\":\"東京\",\"raceNumber\":\(raceNumber),"
             + "\"raceName\":\"取込テスト\",\"distance\":2000,\"trackType\":\"turf\",\"trackCondition\":\"良\","
             + "\"grade\":\"G1\",\"firstPlaceHorseNumber\":0,\"secondPlaceHorseNumber\":0,\"thirdPlaceHorseNumber\":0},"
             + "\"entries\":[\(entries.joined(separator: ","))]}"
     }
 
-    /// 設定画面から取り込み画面を開き、JSON を入力して確認する。
-    private func enterAndCheck(_ json: String) {
-        app.tabBars.firstMatch.buttons["設定"].tap()
-        tapWhenReady(findElement("import-json-button"))
+    /// レース一覧の + メニューから取り込み画面を開く。
+    private func openImportFromList() {
+        XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
+        tapWhenReady(findElement("add-race-button"))
+        tapWhenReady(findElement("import-race-button"))
         XCTAssertTrue(app.navigationBars["レースを取り込み"].waitForExistence(timeout: 5))
+    }
+
+    /// 取り込んだレースの詳細を開き、編集メニューから「取り込みで更新」を開く。
+    private func openImportFromDetail() {
+        openImportedRace()
+        tapWhenReady(findElement("race-edit-menu"))
+        tapWhenReady(findElement("import-update-button"))
+        XCTAssertTrue(app.navigationBars["取り込みで更新"].waitForExistence(timeout: 5))
+    }
+
+    /// 取り込み画面に JSON を入力して確認する。
+    private func enterAndCheck(_ json: String) {
         let editor = app.textViews["import-json-editor"]
         tapWhenReady(editor)
         editor.typeText(json)
@@ -43,19 +56,27 @@ final class JSON取り込みTest: UIテストケース {
 
     /// レース一覧から取り込んだレースの詳細を開く。
     private func openImportedRace() {
-        app.tabBars.firstMatch.buttons["レース"].tap()
         tapWhenReady(app.staticTexts["取込テスト"])
         XCTAssertTrue(app.navigationBars["取込テスト"].waitForExistence(timeout: 5))
     }
 
+    /// レース一覧から 2 頭のレースを取り込んで保存する。
+    private func importInitialRace() {
+        openImportFromList()
+        enterAndCheck(importJSON(entries: [entryJSON(1, "取込ウマA", mark: "◎"), entryJSON(2, "取込ウマB", mark: "")]))
+        tapWhenReady(findElement("import-save-button"))
+        XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
+    }
+
     @MainActor
-    func testJSONを貼り付けるとプレビューが出て保存するとレースと出走馬が登録される() {
+    func testレース一覧から取り込むとプレビューが出て保存するとレースと出走馬が登録される() {
+        openImportFromList()
         enterAndCheck(importJSON(entries: [entryJSON(1, "取込ウマA", mark: "◎"), entryJSON(2, "取込ウマB", mark: "")]))
         XCTAssertTrue(label("import-race-status").contains("新規作成"))
         XCTAssertTrue(label("import-entry-1").contains("新規作成"))
 
         tapWhenReady(findElement("import-save-button"))
-        XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
 
         openImportedRace()
         XCTAssertTrue(app.staticTexts["取込ウマA"].waitForExistence(timeout: 5))
@@ -64,11 +85,10 @@ final class JSON取り込みTest: UIテストケース {
     }
 
     @MainActor
-    func test同じレースのJSONを貼り直すと差分がプレビューされ保存すると更新される() {
-        enterAndCheck(importJSON(entries: [entryJSON(1, "取込ウマA", mark: "◎"), entryJSON(2, "取込ウマB", mark: "")]))
-        tapWhenReady(findElement("import-save-button"))
-        XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
+    func testレース詳細から取り込みで更新すると差分がプレビューされ保存すると更新される() {
+        importInitialRace()
 
+        openImportFromDetail()
         enterAndCheck(importJSON(entries: [entryJSON(1, "取込ウマA", mark: "○"), entryJSON(3, "取込ウマC", mark: "▲")]))
         XCTAssertTrue(label("import-race-status").contains("変更なし"))
         XCTAssertTrue(label("import-entry-1").contains("更新"))
@@ -77,9 +97,7 @@ final class JSON取り込みTest: UIテストケース {
         XCTAssertTrue(label("import-entry-3").contains("新規作成"))
 
         tapWhenReady(findElement("import-save-button"))
-        XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
-
-        openImportedRace()
+        XCTAssertTrue(app.navigationBars["取込テスト"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["取込ウマC"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["取込ウマB"].exists)
         XCTAssertTrue(app.staticTexts["○"].exists)
@@ -87,25 +105,35 @@ final class JSON取り込みTest: UIテストケース {
     }
 
     @MainActor
+    func testレース詳細から別のレースのJSONを取り込もうとするとエラーになる() {
+        importInitialRace()
+
+        openImportFromDetail()
+        enterAndCheck(importJSON(raceNumber: 10, entries: [entryJSON(1, "取込ウマA", mark: "◎")]))
+        XCTAssertTrue(label("import-error-text").contains("このレース（"))
+        XCTAssertFalse(findElement("import-save-button").exists)
+    }
+
+    @MainActor
     func test不正な印のJSONは原因のフィールドを示すエラーになり何も保存されない() {
+        openImportFromList()
         enterAndCheck(importJSON(entries: [entryJSON(1, "取込ウマA", mark: "★")]))
         XCTAssertTrue(label("import-error-text").contains("entries[0].mark"))
         XCTAssertTrue(findElement("copy-import-error-button").exists)
         XCTAssertTrue(findElement("copy-import-prompt-button").exists)
 
         tapWhenReady(findElement("import-cancel-button"))
-        app.tabBars.firstMatch.buttons["レース"].tap()
         XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["取込テスト"].waitForExistence(timeout: 2))
     }
 
     @MainActor
     func testプレビューでキャンセルすると何も保存されない() {
+        openImportFromList()
         enterAndCheck(importJSON(entries: [entryJSON(1, "取込ウマA", mark: "◎")]))
         XCTAssertTrue(label("import-race-status").contains("新規作成"))
 
         tapWhenReady(findElement("import-cancel-button"))
-        app.tabBars.firstMatch.buttons["レース"].tap()
         XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["取込テスト"].waitForExistence(timeout: 2))
     }

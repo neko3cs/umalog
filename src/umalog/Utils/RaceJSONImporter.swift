@@ -438,17 +438,24 @@ enum RaceJSONImporter {
     /// - Parameters:
     ///   - data: 検証を通過したデータ。
     ///   - context: 照合先のモデルコンテキスト。
+    ///   - target: 更新するレース。レース詳細から取り込むときに渡し、nil なら全レースから照合する。
     /// - Returns: レースと出走馬ごとの変更内容。
-    /// - Throws: 競馬場マスターに競馬場が無ければ `RaceImportError`。
-    static func makePlan(for data: RaceImportData, in context: ModelContext) throws -> RaceImportPlan {
+    /// - Throws: 競馬場マスターに競馬場が無い場合や、`target` と日付・競馬場・レース番号が違う場合は `RaceImportError`。
+    static func makePlan(for data: RaceImportData, in context: ModelContext, target: Race? = nil) throws -> RaceImportPlan {
         let venues = try context.fetch(FetchDescriptor<Venue>())
         guard let venue = venues.first(where: { $0.name == data.venueName }) else {
             throw RaceImportError(issues: [.init(path: "race.venue", message: "\"\(data.venueName)\" が競馬場マスターにありません")])
         }
-        let existingRace = try context.fetch(FetchDescriptor<Race>(sortBy: [SortDescriptor(\.sortIndex)])).first {
-            $0.venue?.name == data.venueName
-                && $0.raceNumber == data.raceNumber
-                && Calendar.current.isDate($0.date, inSameDayAs: data.date)
+        // レース詳細から取り込むときに別のレースの JSON を貼ると、意図せず新しいレースができてしまうため中止する
+        if let target, !isSameRace(target, as: data) {
+            let current = "\(target.date.japaneseShortDateString) \(target.venue?.name ?? "競馬場未選択") R\(target.raceNumber)"
+            throw RaceImportError(issues: [.init(
+                path: "race",
+                message: "このレース（\(current)）と日付・競馬場・レース番号が違います。date・venue・raceNumber をこのレースに合わせてください",
+            )])
+        }
+        let existingRace = try target ?? context.fetch(FetchDescriptor<Race>(sortBy: [SortDescriptor(\.sortIndex)])).first {
+            isSameRace($0, as: data)
         }
         guard let existingRace else {
             let entries = data.entries.sorted { $0.horseNumber < $1.horseNumber }.map {
@@ -484,6 +491,18 @@ enum RaceJSONImporter {
             raceKind: raceChanges.isEmpty ? .unchanged : .update, raceChanges: raceChanges,
             entries: entryPlans.sorted { $0.horseNumber < $1.horseNumber },
         )
+    }
+
+    /// 既存のレースが取り込むデータと同じレースか（日付・競馬場名・レース番号が一致するか）を返す。
+    /// - Note: 手入力のレースは時刻を持つため、日付は同じ日かどうかで比べる。
+    /// - Parameters:
+    ///   - race: 既存のレース。
+    ///   - data: 取り込むデータ。
+    /// - Returns: 同じレースなら true。
+    static func isSameRace(_ race: Race, as data: RaceImportData) -> Bool {
+        race.venue?.name == data.venueName
+            && race.raceNumber == data.raceNumber
+            && Calendar.current.isDate(race.date, inSameDayAs: data.date)
     }
 
     /// 既存のレースと取り込むデータの、値が違うフィールドを返す。照合キー（日付・競馬場・レース番号）は比べない。
