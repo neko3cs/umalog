@@ -38,8 +38,6 @@ struct RaceFormView: View {
     /// 入力中のグレード識別子。
     @State private var grade: String = ""
 
-    /// 馬場状態の選択肢。
-    private let trackConditions = ["良", "稍重", "重", "不良"]
     /// 編集モードかどうか。
     private var isEditing: Bool {
         race != nil
@@ -109,7 +107,7 @@ struct RaceFormView: View {
                     }
 
                     Picker("馬場状態", selection: $trackCondition) {
-                        ForEach(trackConditions, id: \.self) { condition in
+                        ForEach(Race.trackConditions, id: \.self) { condition in
                             Text(condition).tag(condition)
                         }
                     }

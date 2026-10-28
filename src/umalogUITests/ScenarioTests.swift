@@ -41,6 +41,12 @@ class UIテストケース: XCTestCase {
         _ = XCTWaiter.wait(for: [expectation], timeout: timeout)
         element.tap()
     }
+
+    /// レース一覧の + メニューから「手入力で追加」を選び、レース追加フォームを開く。
+    func openAddRaceForm() {
+        tapWhenReady(findElement("add-race-button"))
+        tapWhenReady(findElement("add-race-manual-button"))
+    }
 }
 
 // MARK: - Scenario 1: タブバーナビゲーション
@@ -77,13 +83,13 @@ final class レース追加Test: UIテストケース {
     @MainActor
     func testプラスボタンをタップするとレース追加フォームが表示される() {
         XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
-        tapWhenReady(findElement("add-race-button"))
+        openAddRaceForm()
         XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
     }
 
     @MainActor
     func testキャンセルボタンをタップするとフォームが閉じる() {
-        tapWhenReady(findElement("add-race-button"))
+        openAddRaceForm()
         XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
         app.buttons["キャンセル"].tap()
         XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
@@ -92,7 +98,7 @@ final class レース追加Test: UIテストケース {
     @MainActor
     func testレース名を入力して追加するとリストに表示される() {
         XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
-        tapWhenReady(findElement("add-race-button"))
+        openAddRaceForm()
         XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
 
         let raceNameField = app.textFields["レース名（任意）"]
@@ -109,7 +115,7 @@ final class レース追加Test: UIテストケース {
 
 final class レース詳細Test: UIテストケース {
     private func addRace(name: String = "シナリオレース") {
-        tapWhenReady(findElement("add-race-button"))
+        openAddRaceForm()
         XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
         let raceNameField = app.textFields["レース名（任意）"]
         tapWhenReady(raceNameField)
@@ -193,7 +199,7 @@ final class レース詳細Test: UIテストケース {
 
 final class 馬券追加Test: UIテストケース {
     private func setupRaceAndNavigateToDetail(name: String = "馬券テストレース") {
-        tapWhenReady(findElement("add-race-button"))
+        openAddRaceForm()
         XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
         let raceNameField = app.textFields["レース名（任意）"]
         tapWhenReady(raceNameField)
@@ -370,7 +376,7 @@ final class 流し馬券追加Test: UIテストケース {
     /// レースと出走馬を登録し、買い目入力シートを開いて券種と買い方「流し」を選ぶ。
     private func openNagashiSelectionForm(ticketTypeName: String, horseCount: Int) {
         let raceName = "流しテストレース"
-        tapWhenReady(findElement("add-race-button"))
+        openAddRaceForm()
         XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
         let raceNameField = app.textFields["レース名（任意）"]
         tapWhenReady(raceNameField)
@@ -466,7 +472,7 @@ final class 券種選択Test: UIテストケース {
     /// レースを登録し、出走馬なしで買い目入力シートを開く。
     private func openSelectionForm() {
         let raceName = "券種テストレース"
-        tapWhenReady(findElement("add-race-button"))
+        openAddRaceForm()
         XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
         let raceNameField = app.textFields["レース名（任意）"]
         tapWhenReady(raceNameField)
@@ -530,7 +536,7 @@ final class 競馬場選択Test: UIテストケース {
     /// 海外の競馬場（パリロンシャン）でレースを登録し、レース一覧に戻る。
     /// - Parameter raceName: 登録するレース名。
     private func addOverseasRace(named raceName: String) {
-        tapWhenReady(findElement("add-race-button"))
+        openAddRaceForm()
         XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
         let raceNameField = app.textFields["レース名（任意）"]
         tapWhenReady(raceNameField)
@@ -551,7 +557,7 @@ final class 競馬場選択Test: UIテストケース {
 
     @MainActor
     func testレース入力で中央地方海外の競馬場を選べる() {
-        tapWhenReady(findElement("add-race-button"))
+        openAddRaceForm()
         XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["区分, 中央（JRA）"].waitForExistence(timeout: 5))
 
@@ -618,7 +624,7 @@ final class 競馬場選択Test: UIテストケース {
 
 final class レース削除Test: UIテストケース {
     private func addRace(name: String) {
-        tapWhenReady(findElement("add-race-button"))
+        openAddRaceForm()
         XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
         let raceNameField = app.textFields["レース名（任意）"]
         tapWhenReady(raceNameField)
@@ -815,7 +821,7 @@ final class データ初期化Test: UIテストケース {
     @MainActor
     func test初期化後にレース一覧が空になる() {
         // レースを追加する
-        tapWhenReady(findElement("add-race-button"))
+        openAddRaceForm()
         XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
         let raceNameField = app.textFields["レース名（任意）"]
         tapWhenReady(raceNameField)
@@ -847,7 +853,7 @@ final class フルフローTest: UIテストケース {
     func testレース追加から収支確認まで一連の操作が完結する() {
         // 1. レースを追加
         XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
-        tapWhenReady(findElement("add-race-button"))
+        openAddRaceForm()
         XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
 
         let raceNameField = app.textFields["レース名（任意）"]

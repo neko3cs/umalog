@@ -20,6 +20,8 @@ struct RaceListView: View {
     @Query(sort: \Venue.sortIndex) private var venues: [Venue]
     /// レース追加シートの表示状態。
     @State private var showingAddRace = false
+    /// レース取り込みシートの表示状態。
+    @State private var showingImportRace = false
     /// フィルターシートの表示状態。
     @State private var showingFilter = false
     /// 現在のフィルター条件。
@@ -73,7 +75,7 @@ struct RaceListView: View {
                         ContentUnavailableView(
                             "レースがありません",
                             systemImage: "list.bullet.clipboard",
-                            description: Text("右上の + ボタンからレースを追加してください"),
+                            description: Text("右上の + ボタンから、手入力するか AI の予想を取り込んでレースを追加してください"),
                         )
                     } else if filteredRaces.isEmpty {
                         ContentUnavailableView(
@@ -108,8 +110,19 @@ struct RaceListView: View {
                     .accessibilityIdentifier("filter-button")
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showingAddRace = true
+                    Menu {
+                        Button {
+                            showingAddRace = true
+                        } label: {
+                            Label("手入力で追加", systemImage: "square.and.pencil")
+                        }
+                        .accessibilityIdentifier("add-race-manual-button")
+                        Button {
+                            showingImportRace = true
+                        } label: {
+                            Label("JSONで取り込み", systemImage: "doc.on.clipboard")
+                        }
+                        .accessibilityIdentifier("import-race-button")
                     } label: {
                         Image(systemName: "plus")
                     }
@@ -118,6 +131,9 @@ struct RaceListView: View {
             }
             .sheet(isPresented: $showingAddRace) {
                 RaceFormView()
+            }
+            .sheet(isPresented: $showingImportRace) {
+                RaceJSONImportView()
             }
             .sheet(isPresented: $showingFilter) {
                 RaceFilterView(filter: $filter)
