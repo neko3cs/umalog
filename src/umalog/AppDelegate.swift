@@ -58,19 +58,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         return config
     }
 
-    /// 競馬場マスターが空なら初期プリセットを投入し、券種マスターに足りない券種を追加して、旧データモデルの移行を行う。
+    /// 競馬場・券種マスターに足りない競馬場・券種を追加して、旧データモデルの移行を行う。
     @MainActor
     func seedInitialDataIfNeeded() async {
         let context = modelContainer.mainContext
-        let venueCount = (try? context.fetchCount(FetchDescriptor<Venue>())) ?? 0
-        if venueCount == 0 {
-            for preset in venuePresets {
-                context.insert(Venue(name: preset.name, isPreset: true, sortIndex: preset.sortIndex))
-            }
-        }
-        // 新規インストールでは全券種が、既存ユーザーでは後から増えた券種だけが入る
+        // 新規インストールでは全件が、既存ユーザーでは後から増えた競馬場・券種だけが入る
+        let insertedVenues = Venue.insertMissingPresets(into: context)
         let insertedTicketTypes = TicketType.insertMissingPresets(into: context)
-        if venueCount == 0 || insertedTicketTypes {
+        if insertedVenues || insertedTicketTypes {
             // マスターは Picker の選択肢になる。自動保存を待つと、Picker の表示中に一時 ID が恒久 ID に変わり、
             // ハッシュ値が変わって Picker がクラッシュする。表示前に ID を確定させるため、ここで保存する（Issue #55）
             try? context.save()

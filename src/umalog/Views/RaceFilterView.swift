@@ -14,7 +14,7 @@ import SwiftUI
 struct RaceFilter: Equatable {
     /// 選択した競馬場の永続ID。空なら全競馬場を対象とする。
     var venueIDs: Set<PersistentIdentifier> = []
-    /// 区分フィルター。nil なら全区分。"central" または "local"。
+    /// 区分フィルター。nil なら全区分。`RaceCategory` の rawValue。
     var category: String?
     /// 選択グレード。空なら全グレードを対象とする。
     var grades: Set<RaceGrade> = []
@@ -87,13 +87,6 @@ struct RaceFilterView: View {
     var body: some View {
         NavigationStack {
             Form {
-                if !venues.isEmpty {
-                    Section("競馬場") {
-                        ForEach(venues) { venue in
-                            venueToggle(for: venue)
-                        }
-                    }
-                }
                 Section("区分") {
                     categoryPicker
                 }
@@ -104,6 +97,17 @@ struct RaceFilterView: View {
                 }
                 Section("日付範囲") {
                     dateRangeRows
+                }
+                // 競馬場は 49 場あり、先頭に置くと他の条件が画面外に押し出されるため最後に並べる
+                ForEach(RaceCategory.allCases, id: \.self) { category in
+                    let categoryVenues = venues.filter { $0.category == category.rawValue }
+                    if !categoryVenues.isEmpty {
+                        Section("競馬場（\(category.shortName)）") {
+                            ForEach(categoryVenues) { venue in
+                                venueToggle(for: venue)
+                            }
+                        }
+                    }
                 }
             }
             .navigationTitle("フィルター")
@@ -142,12 +146,13 @@ struct RaceFilterView: View {
         }
     }
 
-    /// 区分（中央/地方）選択ピッカー。
+    /// 区分（中央/地方/海外）選択ピッカー。
     private var categoryPicker: some View {
         Picker("区分", selection: $filter.category) {
             Text("すべて").tag(String?.none)
-            Text("中央").tag(String?.some("central"))
-            Text("地方").tag(String?.some("local"))
+            ForEach(RaceCategory.allCases, id: \.self) { category in
+                Text(category.shortName).tag(String?.some(category.rawValue))
+            }
         }
         .pickerStyle(.segmented)
     }
@@ -243,8 +248,8 @@ struct FilterChipsView: View {
                         FilterChip(label: venue.name) { filter.venueIDs.remove(id) }
                     }
                 }
-                if let cat = filter.category {
-                    FilterChip(label: cat == "central" ? "中央" : "地方") { filter.category = nil }
+                if let category = filter.category.flatMap(RaceCategory.init(rawValue:)) {
+                    FilterChip(label: category.shortName) { filter.category = nil }
                 }
                 ForEach(RaceGrade.allCases.filter { filter.grades.contains($0) }, id: \.self) { grade in
                     FilterChip(label: grade.displayName) { filter.grades.remove(grade) }

@@ -25,7 +25,7 @@ final class Race {
     var trackType: String = "turf"
     /// 馬場状態（良・稍重・重・不良）。
     var trackCondition: String = "良"
-    /// 区分。"central"（中央）または "local"（地方）。
+    /// 区分（`RaceCategory` の rawValue）。レース入力では競馬場の区分から決まる。
     var category: String = "central"
     /// レースのグレード識別子。空文字はグレード未選択を示す。
     var grade: String = ""
@@ -55,7 +55,7 @@ final class Race {
     ///   - distance: 距離（メートル）。
     ///   - trackType: トラック種別（"turf" / "dirt"）。
     ///   - trackCondition: 馬場状態。
-    ///   - category: 区分（"central" / "local"）。
+    ///   - category: 区分（`RaceCategory` の rawValue）。
     ///   - grade: グレード識別子。
     ///   - memo: Markdown 形式のメモ。
     ///   - firstPlaceHorseNumber: 1 着の馬番（0 は未入力）。
@@ -112,6 +112,11 @@ final class Race {
         return nil
     }
 
+    /// 区分の列挙値。未知の値は地方として扱う。
+    var categoryValue: RaceCategory {
+        RaceCategory(rawValue: category) ?? .local
+    }
+
     /// 全馬券の購入額合計。
     var totalPurchase: Int {
         (bets ?? []).reduce(0) { $0 + $1.purchaseAmount }
@@ -131,6 +136,34 @@ final class Race {
     var returnRate: Double? {
         guard totalPurchase > 0 else { return nil }
         return Double(totalPayout) / Double(totalPurchase)
+    }
+}
+
+/// レースの区分を表す。rawValue はストレージに使う文字列識別子。
+enum RaceCategory: String, CaseIterable {
+    /// 中央（JRA）
+    case central
+    /// 地方（NAR）
+    case local
+    /// 海外
+    case overseas
+
+    /// 入力・詳細画面で使う表示名。
+    var displayName: String {
+        switch self {
+        case .central: "中央（JRA）"
+        case .local: "地方（NAR）"
+        case .overseas: "海外"
+        }
+    }
+
+    /// 絞り込み・CSV で使う短い表示名。
+    var shortName: String {
+        switch self {
+        case .central: "中央"
+        case .local: "地方"
+        case .overseas: "海外"
+        }
     }
 }
 

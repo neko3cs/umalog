@@ -35,8 +35,6 @@ struct RaceFormView: View {
     @State private var trackType: String = "turf"
     /// 入力中の馬場状態。
     @State private var trackCondition: String = "良"
-    /// 入力中の区分（"central" / "local"）。
-    @State private var category: String = "central"
     /// 入力中のグレード識別子。
     @State private var grade: String = ""
 
@@ -45,6 +43,14 @@ struct RaceFormView: View {
     /// 編集モードかどうか。
     private var isEditing: Bool {
         race != nil
+    }
+
+    /// 保存する区分。競馬場の区分に従い、競馬場が未選択なら編集前の区分（新規なら中央）のままにする。
+    private var category: RaceCategory {
+        if let selectedVenue {
+            return RaceCategory(rawValue: selectedVenue.category) ?? .central
+        }
+        return race?.categoryValue ?? .central
     }
 
     var body: some View {
@@ -64,10 +70,18 @@ struct RaceFormView: View {
                     }
                     Picker("競馬場", selection: $selectedVenue) {
                         Text("未選択").tag(nil as Venue?)
-                        ForEach(venues) { venue in
-                            Text(venue.name).tag(venue as Venue?)
+                        ForEach(RaceCategory.allCases, id: \.self) { category in
+                            Section(category.displayName) {
+                                ForEach(venues.filter { $0.category == category.rawValue }) { venue in
+                                    Text(venue.name).tag(venue as Venue?)
+                                }
+                            }
                         }
                     }
+                    // 競馬場が 49 場あり、メニューでは一覧しづらいため区分の見出し付きの画面で選ぶ
+                    .pickerStyle(.navigationLink)
+                    .accessibilityIdentifier("venue-picker")
+                    LabeledContent("区分", value: category.displayName)
                     Stepper("R\(raceNumber)", value: $raceNumber, in: 1 ... 12)
                     TextField("レース名（任意）", text: $raceName)
                     Picker("グレード", selection: $grade) {
@@ -98,12 +112,6 @@ struct RaceFormView: View {
                         ForEach(trackConditions, id: \.self) { condition in
                             Text(condition).tag(condition)
                         }
-                    }
-                    .pickerStyle(.segmented)
-
-                    Picker("区分", selection: $category) {
-                        Text("中央（JRA）").tag("central")
-                        Text("地方（NAR）").tag("local")
                     }
                     .pickerStyle(.segmented)
                 }
@@ -144,7 +152,6 @@ struct RaceFormView: View {
         distance = race.distance
         trackType = race.trackType
         trackCondition = race.trackCondition
-        category = race.category
         grade = race.grade
     }
 
@@ -158,13 +165,13 @@ struct RaceFormView: View {
             race.distance = distance
             race.trackType = trackType
             race.trackCondition = trackCondition
-            race.category = category
+            race.category = category.rawValue
             race.grade = grade
         } else {
             let newRace = Race(
                 date: date, venue: selectedVenue, raceNumber: raceNumber,
                 raceName: raceName, distance: distance, trackType: trackType,
-                trackCondition: trackCondition, category: category, grade: grade,
+                trackCondition: trackCondition, category: category.rawValue, grade: grade,
             )
             modelContext.insert(newRace)
             // 自動保存を待つと、追加したレースがレース一覧に出たあとで一時 ID が恒久 ID に変わり、行が作り直される。

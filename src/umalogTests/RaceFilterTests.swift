@@ -97,6 +97,18 @@ struct RaceFilterTest {
         #expect(result.first === local)
     }
 
+    @Test func 区分海外フィルターで海外レースのみ返される() {
+        let ctx = container.mainContext
+        let central = Race(category: "central"); ctx.insert(central)
+        let local = Race(category: "local"); ctx.insert(local)
+        let overseas = Race(category: "overseas"); ctx.insert(overseas)
+        var f = RaceFilter()
+        f.category = "overseas"
+        let result = f.apply(to: [central, local, overseas])
+        #expect(result.count == 1)
+        #expect(result.first === overseas)
+    }
+
     // MARK: - apply(to:) グレードフィルター
 
     @Test func `グレードg 1 フィルターでg 1 レースのみ返される`() {
