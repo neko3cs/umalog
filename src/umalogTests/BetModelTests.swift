@@ -234,16 +234,16 @@ struct 馬券モデルTest {
         let venue = Venue(name: "東京")
         container.mainContext.insert(venue)
         #expect(venue.name == "東京")
-        #expect(venue.isPreset == false)
+        #expect(venue.category == "central")
         #expect(venue.sortIndex == 0)
     }
 
-    @Test func 競馬場のプリセットとソート順が設定できる() {
-        let venue = Venue(name: "中山", isPreset: true, sortIndex: 5)
+    @Test func 競馬場の区分とソート順が設定できる() {
+        let venue = Venue(name: "大井", category: "local", sortIndex: 10)
         container.mainContext.insert(venue)
-        #expect(venue.name == "中山")
-        #expect(venue.isPreset == true)
-        #expect(venue.sortIndex == 5)
+        #expect(venue.name == "大井")
+        #expect(venue.category == "local")
+        #expect(venue.sortIndex == 10)
     }
 
     // MARK: - Property-Based Tests

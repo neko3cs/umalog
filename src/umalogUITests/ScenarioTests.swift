@@ -515,6 +515,105 @@ final class 券種選択Test: UIテストケース {
     }
 }
 
+// MARK: - Scenario 4d: 競馬場選択・絞り込み
+
+final class 競馬場選択Test: UIテストケース {
+    /// 要素がタップできる位置に来るまで上へスワイプする。
+    /// - Parameter element: 表示させたい要素。
+    private func swipeUpUntilHittable(_ element: XCUIElement) {
+        for _ in 0 ..< 15 where !(element.exists && element.isHittable) {
+            app.swipeUp()
+        }
+        XCTAssertTrue(element.isHittable, "\(element) が表示されない")
+    }
+
+    /// 海外の競馬場（パリロンシャン）でレースを登録し、レース一覧に戻る。
+    /// - Parameter raceName: 登録するレース名。
+    private func addOverseasRace(named raceName: String) {
+        tapWhenReady(findElement("add-race-button"))
+        XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
+        let raceNameField = app.textFields["レース名（任意）"]
+        tapWhenReady(raceNameField)
+        raceNameField.typeText(raceName)
+
+        tapWhenReady(findElement("venue-picker"))
+        XCTAssertTrue(app.navigationBars["競馬場"].waitForExistence(timeout: 5))
+        let longchamp = app.buttons["パリロンシャン"]
+        swipeUpUntilHittable(longchamp)
+        longchamp.tap()
+        XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["区分, 海外"].waitForExistence(timeout: 5))
+
+        app.buttons["追加"].tap()
+        XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts[raceName].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testレース入力で中央地方海外の競馬場を選べる() {
+        tapWhenReady(findElement("add-race-button"))
+        XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["区分, 中央（JRA）"].waitForExistence(timeout: 5))
+
+        tapWhenReady(findElement("venue-picker"))
+        XCTAssertTrue(app.navigationBars["競馬場"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["東京"].waitForExistence(timeout: 5))
+        swipeUpUntilHittable(app.buttons["帯広"])
+        app.buttons["帯広"].tap()
+        XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["区分, 地方（NAR）"].waitForExistence(timeout: 5))
+
+        tapWhenReady(findElement("venue-picker"))
+        XCTAssertTrue(app.navigationBars["競馬場"].waitForExistence(timeout: 5))
+        swipeUpUntilHittable(app.buttons["クランジ"])
+        app.buttons["クランジ"].tap()
+        XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["区分, 海外"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func test海外の競馬場で登録したレースが区分の海外で絞り込まれる() {
+        let raceName = "凱旋門賞"
+        addOverseasRace(named: raceName)
+
+        tapWhenReady(findElement("filter-button"))
+        XCTAssertTrue(app.navigationBars["フィルター"].waitForExistence(timeout: 5))
+        tapWhenReady(app.buttons["海外"])
+        app.navigationBars["フィルター"].buttons["完了"].tap()
+        XCTAssertTrue(app.staticTexts[raceName].waitForExistence(timeout: 5))
+
+        tapWhenReady(findElement("filter-button"))
+        XCTAssertTrue(app.navigationBars["フィルター"].waitForExistence(timeout: 5))
+        tapWhenReady(app.buttons["中央"])
+        app.navigationBars["フィルター"].buttons["完了"].tap()
+        XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts[raceName].waitForExistence(timeout: 2))
+    }
+
+    @MainActor
+    func test海外の競馬場で登録したレースが競馬場で絞り込まれる() {
+        let raceName = "凱旋門賞"
+        addOverseasRace(named: raceName)
+
+        tapWhenReady(findElement("filter-button"))
+        XCTAssertTrue(app.navigationBars["フィルター"].waitForExistence(timeout: 5))
+        let tokyo = app.buttons["東京"]
+        swipeUpUntilHittable(tokyo)
+        tokyo.tap()
+        app.navigationBars["フィルター"].buttons["完了"].tap()
+        XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts[raceName].waitForExistence(timeout: 2))
+
+        tapWhenReady(findElement("filter-button"))
+        XCTAssertTrue(app.navigationBars["フィルター"].waitForExistence(timeout: 5))
+        let longchamp = app.buttons["パリロンシャン"]
+        swipeUpUntilHittable(longchamp)
+        longchamp.tap()
+        app.navigationBars["フィルター"].buttons["完了"].tap()
+        XCTAssertTrue(app.staticTexts[raceName].waitForExistence(timeout: 5))
+    }
+}
+
 // MARK: - Scenario 5: レース削除
 
 final class レース削除Test: UIテストケース {
@@ -656,11 +755,11 @@ final class 設定Test: UIテストケース {
     }
 
     @MainActor
-    func test設定画面に券種の管理項目がない() {
+    func test設定画面に競馬場と券種の管理項目がない() {
         app.tabBars.firstMatch.buttons["設定"].tap()
         XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH '競馬場'")).firstMatch
-            .waitForExistence(timeout: 5))
+        XCTAssertTrue(findElement("licenses-link").waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label BEGINSWITH '競馬場'")).firstMatch.exists)
         XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label BEGINSWITH '券種'")).firstMatch.exists)
     }
 
