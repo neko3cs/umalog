@@ -41,7 +41,7 @@ final class JSON取り込みTest: UIテストケース {
 
     /// 取り込み画面に JSON を入力して確認する。
     private func enterAndCheck(_ json: String) {
-        let editor = app.textViews["import-json-editor"]
+        let editor = findElement("import-json-editor")
         tapWhenReady(editor)
         editor.typeText(json)
         tapWhenReady(findElement("import-check-button"))
@@ -137,10 +137,12 @@ final class JSON取り込みTest: UIテストケース {
     func test長いJSONを貼って確認してもエラーが画面内に表示される() {
         importInitialRace()
 
-        // 改行を含む長い JSON は入力欄を縦に伸ばすため、エラーが入力欄の下にあると画面外に押し出されて見えなくなる
+        // 利用者と同じく、AI の出力をクリップボードからペーストボタンで貼る。改行を含む長い JSON でもエラーが画面外に出ないこと
         openImportFromList()
         let entries = (1 ... 12).map { entryJSON($0, "Horse\($0)", mark: "") }
-        enterAndCheck(importJSON(entries: entries).replacingOccurrences(of: ",", with: ",\n"))
+        UIPasteboard.general.string = importJSON(entries: entries).replacingOccurrences(of: ",", with: ",\n")
+        tapWhenReady(app.buttons["Paste"])
+        tapWhenReady(findElement("import-check-button"))
         let error = findElement("import-error-text")
         XCTAssertTrue(error.waitForExistence(timeout: 5))
         XCTAssertTrue(error.label.contains("既に登録されています"))
@@ -152,8 +154,17 @@ final class JSON取り込みTest: UIテストケース {
         openImportFromList()
         enterAndCheck(importJSON(entries: [entryJSON(1, "取込ウマA", mark: "★")]))
         XCTAssertTrue(label("import-error-text").contains("entries[0].mark"))
-        XCTAssertTrue(findElement("copy-import-error-button").exists)
-        XCTAssertTrue(findElement("copy-import-prompt-button").exists)
+        tapWhenReady(findElement("copy-import-error-button"))
+        let errorCopied = app.alerts["コピーしました"]
+        XCTAssertTrue(errorCopied.waitForExistence(timeout: 5))
+        XCTAssertTrue(errorCopied.staticTexts["エラー内容をコピーしました。AI に貼り付けて、JSON を直してもらってください。"].exists)
+        errorCopied.buttons["OK"].tap()
+
+        tapWhenReady(findElement("copy-import-prompt-button"))
+        let promptCopied = app.alerts["コピーしました"]
+        XCTAssertTrue(promptCopied.waitForExistence(timeout: 5))
+        XCTAssertTrue(promptCopied.staticTexts["AI 向けプロンプトをコピーしました。AI に貼り付けて、予想を JSON で出力してもらってください。"].exists)
+        promptCopied.buttons["OK"].tap()
 
         tapWhenReady(findElement("import-cancel-button"))
         XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))

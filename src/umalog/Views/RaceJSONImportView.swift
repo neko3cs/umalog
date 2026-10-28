@@ -25,27 +25,20 @@ struct RaceJSONImportView: View {
     @State private var plan: RaceImportPlan?
     /// 取り込みを中止したときのエラー。
     @State private var importError: RaceImportError?
-    /// 直前にコピーした内容の説明。コピーしたことを知らせるために表示する。
-    @State private var copiedMessage: String?
-    /// 「確認」を押した回数。押すたびに画面の先頭（エラーかプレビュー）へスクロールするきっかけにする。
-    @State private var checkCount = 0
-
-    /// 画面の先頭の行に付ける識別子。`ScrollViewReader` でスクロールする先。
-    private let topRowID = "import-top-row"
+    /// コピーしたことを知らせるダイアログの本文。
+    @State private var copiedMessage = ""
+    /// コピーしたことを知らせるダイアログの表示状態。
+    @State private var showingCopiedAlert = false
+    /// JSON の入力欄にフォーカスがあるかどうか。
+    @FocusState private var isEditorFocused: Bool
 
     var body: some View {
         NavigationStack {
-            ScrollViewReader { proxy in
-                Form {
-                    if let plan {
-                        previewSections(plan)
-                    } else {
-                        inputSections
-                    }
-                }
-                // 長い JSON を貼ったあとは画面が下へスクロールしていることがあり、先頭に出したエラーやプレビューが見えないため戻す
-                .onChange(of: checkCount) {
-                    withAnimation { proxy.scrollTo(topRowID, anchor: .top) }
+            Form {
+                if let plan {
+                    previewSections(plan)
+                } else {
+                    inputSections
                 }
             }
             .navigationTitle(targetRace == nil ? "JSONで取り込み" : "JSONで更新")
@@ -67,6 +60,11 @@ struct RaceJSONImportView: View {
                     }
                 }
             }
+            .alert("コピーしました", isPresented: $showingCopiedAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(copiedMessage)
+            }
         }
     }
 
@@ -82,33 +80,9 @@ struct RaceJSONImportView: View {
     /// テキストを貼り付ける入力画面のセクション。
     @ViewBuilder
     private var inputSections: some View {
-        // エラーは JSON の入力欄より上に出す。入力欄は長い JSON で縦に伸び、下に出すと画面外に押し出されて気づけないため
-        if let importError {
-            Section("取り込めませんでした（何も保存していません）") {
-                Text(importError.errorDescription ?? "")
-                    .font(.footnote)
-                    .foregroundStyle(.red)
-                    .textSelection(.enabled)
-                    .accessibilityIdentifier("import-error-text")
-                Button {
-                    copy(importError.reportForAI, message: "エラー内容をコピーしました")
-                } label: {
-                    Label("エラー内容をコピー（AI に渡す）", systemImage: "doc.on.doc")
-                }
-                .accessibilityIdentifier("copy-import-error-button")
-            }
-            // 見出しごと見えるよう、行ではなくセクションをスクロール先にする
-            .id(topRowID)
-        }
-
         Section {
-            if let copiedMessage {
-                Text(copiedMessage)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
             Button {
-                copy(RaceJSONImporter.promptForAI, message: "プロンプトをコピーしました")
+                copy(RaceJSONImporter.promptForAI, message: "AI 向けプロンプトをコピーしました。AI に貼り付けて、予想を JSON で出力してもらってください。")
             } label: {
                 Label("AI 向けプロンプトをコピー", systemImage: "doc.on.doc")
             }
@@ -118,18 +92,36 @@ struct RaceJSONImportView: View {
         }
 
         Section("JSON") {
-            TextEditor(text: $text)
+            // JSON は貼り付けるもので、ここで読み書きはしない。高さを 5 行に固定して低くし、下に出るエラーを画面内に収める。
+            // TextEditor は Form の中で入力すると .frame(height:) を超えて行が伸び、エラーを画面外へ押し出すため使わない
+            TextField("ここに JSON を貼り付け", text: $text, axis: .vertical)
                 .font(.system(.footnote, design: .monospaced))
-                // 長い JSON でも入力欄の中でスクロールさせ、画面全体を押し下げないよう高さに上限を付ける
-                .frame(minHeight: 200, maxHeight: 320)
+                .lineLimit(5, reservesSpace: true)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
+                .focused($isEditorFocused)
                 .accessibilityIdentifier("import-json-editor")
             PasteButton(payloadType: String.self) { strings in
                 Task { @MainActor in
                     text = strings.first ?? ""
                     importError = nil
                 }
+            }
+        }
+
+        if let importError {
+            Section("取り込めませんでした（何も保存していません）") {
+                Text(importError.errorDescription ?? "")
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .textSelection(.enabled)
+                    .accessibilityIdentifier("import-error-text")
+                Button {
+                    copy(importError.reportForAI, message: "エラー内容をコピーしました。AI に貼り付けて、JSON を直してもらってください。")
+                } label: {
+                    Label("エラー内容をコピー（AI に渡す）", systemImage: "doc.on.doc")
+                }
+                .accessibilityIdentifier("copy-import-error-button")
             }
         }
     }
@@ -142,7 +134,6 @@ struct RaceJSONImportView: View {
         Section("レース") {
             LabeledContent(raceTitle(plan), value: plan.raceKind.displayName)
                 .accessibilityIdentifier("import-race-status")
-                .id(topRowID)
             ForEach(plan.raceChanges, id: \.label) { change in
                 changeRow(change)
             }
@@ -198,7 +189,8 @@ struct RaceJSONImportView: View {
 
     /// テキストを検証して取り込み計画を作る。エラーなら原因を表示する。
     private func check() {
-        copiedMessage = nil
+        // キーボードが出ていると、入力欄の下に出すエラーが隠れるため閉じる
+        isEditorFocused = false
         do {
             let data = try RaceJSONImporter.parse(text)
             plan = try RaceJSONImporter.makePlan(for: data, in: modelContext, target: targetRace)
@@ -208,7 +200,6 @@ struct RaceJSONImportView: View {
         } catch {
             importError = RaceImportError(issues: [.init(path: "(JSON)", message: error.localizedDescription)])
         }
-        checkCount += 1
     }
 
     /// 取り込み計画を保存して画面を閉じる。失敗したら入力画面に戻して原因を表示する。
@@ -224,12 +215,13 @@ struct RaceJSONImportView: View {
         }
     }
 
-    /// テキストをクリップボードにコピーし、コピーしたことを表示する。
+    /// テキストをクリップボードにコピーし、コピーしたことをダイアログで知らせる。
     /// - Parameters:
     ///   - string: コピーするテキスト。
-    ///   - message: 表示する説明。
+    ///   - message: ダイアログの本文。
     private func copy(_ string: String, message: String) {
         UIPasteboard.general.string = string
         copiedMessage = message
+        showingCopiedAlert = true
     }
 }
