@@ -194,9 +194,9 @@ struct RaceImportEntryPlan: Identifiable {
 struct RaceImportPlan {
     /// 取り込むデータ。
     let data: RaceImportData
-    /// 取り込み先の競馬場。
-    let venue: Venue
-    /// 照合した既存のレース。新規作成なら nil。
+    /// 新規作成するレースの競馬場。更新では競馬場を変えないため nil。
+    let venue: Venue?
+    /// 更新するレース。新規作成なら nil。
     let existingRace: Race?
     /// レースの変更の種類。
     let raceKind: RaceImportChangeKind
@@ -434,38 +434,54 @@ enum RaceJSONImporter {
 
     // MARK: Plan
 
-    /// 既存データと照合し、保存前にプレビューする取り込み計画を作る。データは変更しない。
+    /// 保存前にプレビューする取り込み計画を作る。データは変更しない。
+    /// - Note: 追加（`target` が nil）と更新（`target` を指定）を混ぜない。追加は既存のレースを更新せず、
+    ///   更新は JSON の日付・競馬場・レース番号を使わない。AI の出力がぶれても、別のレースに紐づいたり二重登録されたりしないため。
     /// - Parameters:
     ///   - data: 検証を通過したデータ。
     ///   - context: 照合先のモデルコンテキスト。
-    ///   - target: 更新するレース。レース詳細から取り込むときに渡し、nil なら全レースから照合する。
+    ///   - target: 更新するレース。レース詳細から取り込むときに渡し、nil なら新規作成として扱う。
     /// - Returns: レースと出走馬ごとの変更内容。
-    /// - Throws: 競馬場マスターに競馬場が無い場合や、`target` と日付・競馬場・レース番号が違う場合は `RaceImportError`。
+    /// - Throws: 新規作成で、競馬場マスターに競馬場が無い場合や同じレースが既にある場合は `RaceImportError`。
     static func makePlan(for data: RaceImportData, in context: ModelContext, target: Race? = nil) throws -> RaceImportPlan {
+        if let target {
+            return updatePlan(for: data, target: target)
+        }
+        return try createPlan(for: data, in: context)
+    }
+
+    /// 新規作成の取り込み計画を作る。
+    /// - Parameters:
+    ///   - data: 検証を通過したデータ。
+    ///   - context: 照合先のモデルコンテキスト。
+    /// - Returns: レースと全出走馬を新規作成する計画。
+    /// - Throws: 競馬場マスターに競馬場が無い場合や、日付・競馬場・レース番号が同じレースが既にある場合は `RaceImportError`。
+    private static func createPlan(for data: RaceImportData, in context: ModelContext) throws -> RaceImportPlan {
         let venues = try context.fetch(FetchDescriptor<Venue>())
         guard let venue = venues.first(where: { $0.name == data.venueName }) else {
             throw RaceImportError(issues: [.init(path: "race.venue", message: "\"\(data.venueName)\" が競馬場マスターにありません")])
         }
-        // レース詳細から取り込むときに別のレースの JSON を貼ると、意図せず新しいレースができてしまうため中止する
-        if let target, !isSameRace(target, as: data) {
-            let current = "\(target.date.japaneseShortDateString) \(target.venue?.name ?? "競馬場未選択") R\(target.raceNumber)"
+        if try context.fetch(FetchDescriptor<Race>()).contains(where: { isSameRace($0, as: data) }) {
+            let key = "\(data.date.japaneseShortDateString) \(data.venueName) R\(data.raceNumber)"
             throw RaceImportError(issues: [.init(
                 path: "race",
-                message: "このレース（\(current)）と日付・競馬場・レース番号が違います。date・venue・raceNumber をこのレースに合わせてください",
+                message: "このレース（\(key)）は既に登録されています。予想を更新するときは、レース詳細の「編集」›「JSONで更新」から取り込んでください",
             )])
         }
-        let existingRace = try target ?? context.fetch(FetchDescriptor<Race>(sortBy: [SortDescriptor(\.sortIndex)])).first {
-            isSameRace($0, as: data)
+        let entries = data.entries.sorted { $0.horseNumber < $1.horseNumber }.map {
+            RaceImportEntryPlan(kind: .create, horseNumber: $0.horseNumber, horseName: $0.horseName, changes: [], existing: nil, imported: $0)
         }
-        guard let existingRace else {
-            let entries = data.entries.sorted { $0.horseNumber < $1.horseNumber }.map {
-                RaceImportEntryPlan(kind: .create, horseNumber: $0.horseNumber, horseName: $0.horseName, changes: [], existing: nil, imported: $0)
-            }
-            return RaceImportPlan(data: data, venue: venue, existingRace: nil, raceKind: .create, raceChanges: [], entries: entries)
-        }
+        return RaceImportPlan(data: data, venue: venue, existingRace: nil, raceKind: .create, raceChanges: [], entries: entries)
+    }
 
-        let raceChanges = raceChanges(from: existingRace, to: data, venue: venue)
-        var remaining = (existingRace.entries ?? []).sorted { $0.sortIndex < $1.sortIndex }
+    /// 指定したレースを更新する取り込み計画を作る。JSON の日付・競馬場・レース番号は使わない。
+    /// - Parameters:
+    ///   - data: 検証を通過したデータ。
+    ///   - target: 更新するレース。
+    /// - Returns: 変わったフィールドの更新、新しい馬番の追加、JSON に無い馬番の削除を含む計画。
+    private static func updatePlan(for data: RaceImportData, target: Race) -> RaceImportPlan {
+        let raceChanges = raceChanges(from: target, to: data)
+        var remaining = (target.entries ?? []).sorted { $0.sortIndex < $1.sortIndex }
         var entryPlans: [RaceImportEntryPlan] = []
         for imported in data.entries {
             if let index = remaining.firstIndex(where: { $0.horseNumber == imported.horseNumber }) {
@@ -487,7 +503,7 @@ enum RaceJSONImporter {
             RaceImportEntryPlan(kind: .delete, horseNumber: $0.horseNumber, horseName: $0.horseName, changes: [], existing: $0, imported: nil)
         }
         return RaceImportPlan(
-            data: data, venue: venue, existingRace: existingRace,
+            data: data, venue: nil, existingRace: target,
             raceKind: raceChanges.isEmpty ? .unchanged : .update, raceChanges: raceChanges,
             entries: entryPlans.sorted { $0.horseNumber < $1.horseNumber },
         )
@@ -505,13 +521,12 @@ enum RaceJSONImporter {
             && Calendar.current.isDate(race.date, inSameDayAs: data.date)
     }
 
-    /// 既存のレースと取り込むデータの、値が違うフィールドを返す。照合キー（日付・競馬場・レース番号）は比べない。
+    /// 既存のレースと取り込むデータの、値が違うフィールドを返す。更新では使わない日付・競馬場・レース番号と、競馬場から決まる区分は比べない。
     /// - Parameters:
     ///   - race: 既存のレース。
     ///   - data: 取り込むデータ。
-    ///   - venue: 取り込み先の競馬場。
     /// - Returns: 変更されるフィールド。
-    private static func raceChanges(from race: Race, to data: RaceImportData, venue: Venue) -> [RaceImportFieldChange] {
+    private static func raceChanges(from race: Race, to data: RaceImportData) -> [RaceImportFieldChange] {
         [
             RaceImportFieldChange(label: "レース名", oldValue: race.raceName, newValue: data.raceName),
             RaceImportFieldChange(
@@ -520,9 +535,6 @@ enum RaceJSONImporter {
             RaceImportFieldChange(label: "トラック", oldValue: trackTypeName(race.trackType), newValue: trackTypeName(data.trackType)),
             RaceImportFieldChange(label: "距離", oldValue: "\(race.distance)m", newValue: "\(data.distance)m"),
             RaceImportFieldChange(label: "馬場状態", oldValue: race.trackCondition, newValue: data.trackCondition),
-            RaceImportFieldChange(
-                label: "区分", oldValue: race.categoryValue.displayName, newValue: (RaceCategory(rawValue: venue.category) ?? .local).displayName,
-            ),
             RaceImportFieldChange(label: "1着", oldValue: placeName(race.firstPlaceHorseNumber), newValue: placeName(data.firstPlaceHorseNumber)),
             RaceImportFieldChange(label: "2着", oldValue: placeName(race.secondPlaceHorseNumber), newValue: placeName(data.secondPlaceHorseNumber)),
             RaceImportFieldChange(label: "3着", oldValue: placeName(race.thirdPlaceHorseNumber), newValue: placeName(data.thirdPlaceHorseNumber)),
@@ -572,14 +584,16 @@ enum RaceJSONImporter {
         if let existingRace = plan.existingRace {
             race = existingRace
         } else {
-            race = Race(date: data.date, venue: plan.venue, raceNumber: data.raceNumber)
+            race = Race(
+                date: data.date, venue: plan.venue, raceNumber: data.raceNumber,
+                category: plan.venue?.category ?? RaceCategory.central.rawValue,
+            )
             context.insert(race)
         }
         race.raceName = data.raceName
         race.distance = data.distance
         race.trackType = data.trackType
         race.trackCondition = data.trackCondition
-        race.category = plan.venue.category
         race.grade = data.grade.rawValue
         race.firstPlaceHorseNumber = data.firstPlaceHorseNumber
         race.secondPlaceHorseNumber = data.secondPlaceHorseNumber

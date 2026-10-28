@@ -194,7 +194,22 @@ struct JSON取り込みTest {
         #expect(error.reportForAI.contains("JSON だけを出力し直してください"))
     }
 
-    // MARK: - 照合・差分
+    /// 既存のレースを指定して更新の取り込み計画を作る。
+    /// - Parameters:
+    ///   - text: 取り込むテキスト。
+    ///   - target: 更新するレース。
+    /// - Returns: 取り込み計画。
+    private func updatePlan(_ text: String, target: Race) throws -> RaceImportPlan {
+        try RaceJSONImporter.makePlan(for: RaceJSONImporter.parse(text), in: container.mainContext, target: target)
+    }
+
+    /// 既存のレースが無い状態から `json()` のレースを登録する。
+    /// - Returns: 登録したレース。
+    private func importInitialRace() throws -> Race {
+        try RaceJSONImporter.apply(plan(Self.json()), in: container.mainContext)
+    }
+
+    // MARK: - 追加（レース一覧から）
 
     @Test func 同じレースが無ければレースと出走馬が新規作成になる() throws {
         let plan = try plan(Self.json())
@@ -209,20 +224,47 @@ struct JSON取り込みTest {
         #expect(try container.mainContext.fetch(FetchDescriptor<RaceEntry>()).isEmpty)
     }
 
-    @Test func 同じ内容を取り込み直すと変更なしになる() throws {
-        try RaceJSONImporter.apply(plan(Self.json()), in: container.mainContext)
-        let plan = try plan(Self.json())
+    @Test func 登録済みのレースと日付と競馬場とレース番号が同じならエラーになり何も変わらない() throws {
+        _ = try importInitialRace()
+        let error = try #require(throws: RaceImportError.self) {
+            try plan(Self.json(race: { $0["distance"] = 2400 }))
+        }
+        #expect(error.issues.map(\.path) == ["race"])
+        #expect(error.issues.first?.message.contains("既に登録されています") == true)
+        #expect(try races().count == 1)
+        #expect(try races().first?.distance == 2000)
+    }
+
+    @Test func 時刻付きで手入力したレースとも同じ日付ならエラーになる() throws {
+        let ctx = container.mainContext
+        let tokyo = try #require(try ctx.fetch(FetchDescriptor<Venue>()).first { $0.name == "東京" })
+        let date = try #require(Calendar.current.date(from: DateComponents(year: 2026, month: 10, day: 25, hour: 15, minute: 40)))
+        ctx.insert(Race(date: date, venue: tokyo, raceNumber: 11, raceName: "手入力"))
+        #expect(throws: RaceImportError.self) { try plan(Self.json()) }
+    }
+
+    @Test(arguments: [
+        ("date", "2026-10-26" as Any), ("venue", "京都" as Any), ("raceNumber", 10 as Any),
+    ])
+    func 日付か競馬場かレース番号が違えば別のレースとして新規作成になる(key: String, value: Any) throws {
+        _ = try importInitialRace()
+        #expect(try plan(Self.json(race: { $0[key] = value })).raceKind == .create)
+    }
+
+    // MARK: - 更新（レース詳細から）
+
+    @Test func 同じ内容で更新すると変更なしになる() throws {
+        let plan = try updatePlan(Self.json(), target: importInitialRace())
         #expect(plan.raceKind == .unchanged)
         #expect(plan.entries.map(\.kind) == [.unchanged, .unchanged])
         #expect(plan.hasChanges == false)
     }
 
     @Test func 変わったフィールドだけが更新として出る() throws {
-        try RaceJSONImporter.apply(plan(Self.json()), in: container.mainContext)
-        let plan = try plan(Self.json(
+        let plan = try updatePlan(Self.json(
             race: { $0["trackCondition"] = "重"; $0["firstPlaceHorseNumber"] = 2 },
             entries: [Self.entryObject(1, "ウマA", mark: "○"), Self.entryObject(2, "ウマB", mark: "○")],
-        ))
+        ), target: importInitialRace())
         #expect(plan.raceKind == .update)
         #expect(plan.raceChanges == [
             RaceImportFieldChange(label: "馬場状態", oldValue: "良", newValue: "重"),
@@ -233,54 +275,41 @@ struct JSON取り込みTest {
     }
 
     @Test func `新しい馬番は新規作成になりjsonに無い馬番は削除になる`() throws {
-        try RaceJSONImporter.apply(plan(Self.json()), in: container.mainContext)
-        let plan = try plan(Self.json(entries: [Self.entryObject(1, "ウマA", mark: "◎"), Self.entryObject(3, "ウマC")]))
+        let plan = try updatePlan(
+            Self.json(entries: [Self.entryObject(1, "ウマA", mark: "◎"), Self.entryObject(3, "ウマC")]), target: importInitialRace(),
+        )
         #expect(plan.entries.map(\.horseNumber) == [1, 2, 3])
         #expect(plan.entries.map(\.kind) == [.unchanged, .delete, .create])
     }
 
-    @Test(arguments: [
-        ("date", "2026-10-26" as Any), ("venue", "京都" as Any), ("raceNumber", 10 as Any),
-    ])
-    func 日付か競馬場かレース番号が違えば別のレースとして新規作成になる(key: String, value: Any) throws {
-        try RaceJSONImporter.apply(plan(Self.json()), in: container.mainContext)
-        #expect(try plan(Self.json(race: { $0[key] = value })).raceKind == .create)
-    }
-
-    @Test func 時刻付きで登録したレースも同じ日付なら照合される() throws {
-        let ctx = container.mainContext
-        let tokyo = try #require(try ctx.fetch(FetchDescriptor<Venue>()).first { $0.name == "東京" })
-        let date = try #require(Calendar.current.date(from: DateComponents(year: 2026, month: 10, day: 25, hour: 15, minute: 40)))
-        ctx.insert(Race(date: date, venue: tokyo, raceNumber: 11, raceName: "手入力"))
-        let plan = try plan(Self.json())
-        #expect(plan.raceKind == .update)
-        #expect(plan.raceChanges.first == RaceImportFieldChange(label: "レース名", oldValue: "手入力", newValue: "天皇賞（秋）"))
-    }
-
-    // MARK: - レース詳細からの更新
-
-    @Test func 更新するレースを指定するとそのレースと照合される() throws {
-        let ctx = container.mainContext
-        let race = try RaceJSONImporter.apply(plan(Self.json()), in: ctx)
-        let plan = try RaceJSONImporter.makePlan(
-            for: RaceJSONImporter.parse(Self.json(race: { $0["distance"] = 2400 })), in: ctx, target: race,
+    @Test func `更新ではjsonの日付と競馬場とレース番号が違っても指定したレースが更新されそれらは変わらない`() throws {
+        let race = try importInitialRace()
+        let plan = try updatePlan(
+            Self.json(race: { $0["date"] = "2026-10-26"; $0["venue"] = "京都"; $0["raceNumber"] = 10; $0["distance"] = 2400 }),
+            target: race,
         )
         #expect(plan.existingRace === race)
-        #expect(plan.raceKind == .update)
+        #expect(plan.raceChanges == [RaceImportFieldChange(label: "距離", oldValue: "2000m", newValue: "2400m")])
+
+        try RaceJSONImporter.apply(plan, in: container.mainContext)
+        #expect(try races().count == 1)
+        #expect(race.distance == 2400)
+        #expect(race.venue?.name == "東京")
+        #expect(race.raceNumber == 11)
+        #expect(race.category == "central")
+        let day = Calendar.current.dateComponents([.month, .day], from: race.date)
+        #expect(day.month == 10 && day.day == 25)
     }
 
-    @Test(arguments: [
-        ("date", "2026-10-26" as Any), ("venue", "京都" as Any), ("raceNumber", 10 as Any),
-    ])
-    func `更新するレースと日付か競馬場かレース番号が違うjsonはエラーになる`(key: String, value: Any) throws {
+    @Test func 競馬場が未選択のレースも更新できる() throws {
         let ctx = container.mainContext
-        let race = try RaceJSONImporter.apply(plan(Self.json()), in: ctx)
-        let data = try RaceJSONImporter.parse(Self.json(race: { $0[key] = value }))
-        let error = try #require(throws: RaceImportError.self) {
-            try RaceJSONImporter.makePlan(for: data, in: ctx, target: race)
-        }
-        #expect(error.issues.map(\.path) == ["race"])
-        #expect(try races().count == 1)
+        let race = Race(raceNumber: 3, raceName: "手入力", category: "local")
+        ctx.insert(race)
+        try RaceJSONImporter.apply(updatePlan(Self.json(), target: race), in: ctx)
+        #expect(race.raceName == "天皇賞（秋）")
+        #expect(race.venue == nil)
+        #expect(race.category == "local")
+        #expect(race.entries?.count == 2)
     }
 
     // MARK: - 保存
@@ -299,16 +328,16 @@ struct JSON取り込みTest {
         #expect(Set(entries.map(\.sortIndex)).count == 2)
     }
 
-    @Test func 更新を保存すると同じレースが更新され出走馬が追加削除され馬券は残る() throws {
+    @Test func 更新を保存すると出走馬が追加削除され馬券は残る() throws {
         let ctx = container.mainContext
-        let race = try RaceJSONImporter.apply(plan(Self.json()), in: ctx)
+        let race = try importInitialRace()
         ctx.insert(Bet(race: race, purchaseAmount: 100))
         try ctx.save()
 
-        try RaceJSONImporter.apply(plan(Self.json(
+        try RaceJSONImporter.apply(updatePlan(Self.json(
             race: { $0["distance"] = 2400 },
             entries: [Self.entryObject(1, "ウマA", mark: ""), Self.entryObject(3, "ウマC", mark: "▲")],
-        )), in: ctx)
+        ), target: race), in: ctx)
 
         #expect(try races().count == 1)
         #expect(race.distance == 2400)

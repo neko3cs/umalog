@@ -120,7 +120,7 @@ struct RaceListView: View {
                         Button {
                             showingImportRace = true
                         } label: {
-                            Label("レースを取り込み", systemImage: "doc.on.clipboard")
+                            Label("JSONで取り込み", systemImage: "doc.on.clipboard")
                         }
                         .accessibilityIdentifier("import-race-button")
                     } label: {
