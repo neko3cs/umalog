@@ -82,6 +82,12 @@ struct CSVエクスポーターTest {
         #expect(output.contains(",地方,"))
     }
 
+    @Test func カテゴリが海外の場合に海外と出力される() {
+        let race = Race(category: "overseas"); container.mainContext.insert(race)
+        let output = CSVExporter.export(races: [race])
+        #expect(output.contains(",海外,"))
+    }
+
     @Test func トラック種別が未知の場合はダートとして出力される() {
         let race = Race(trackType: "unknown"); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
