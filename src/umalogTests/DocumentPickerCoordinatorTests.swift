@@ -8,8 +8,8 @@
 import Foundation
 import Testing
 import UIKit
-import UniformTypeIdentifiers
 @testable import umalog
+import UniformTypeIdentifiers
 
 /// ファイル選択画面のコーディネーターを、選択結果を直接渡して確かめる。
 /// - Note: ファイル選択画面は別プロセスで UI テストから安定して操作できないため（#43）、選んだ後の処理はここで確かめる。
