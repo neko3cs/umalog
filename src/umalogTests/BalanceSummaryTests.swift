@@ -26,22 +26,10 @@ struct 収支集計期間計算Test {
         #expect(interval == nil)
     }
 
-    @Test func 日次の集計期間に同日正午が含まれる() throws {
-        let date = makeDate(2026, 6, 15)
-        let interval = try #require(calc.interval(for: .daily, date: date))
-        #expect(interval.contains(makeDate(2026, 6, 15)))
-    }
-
-    @Test func 日次の集計期間に前日が含まれない() throws {
-        let date = makeDate(2026, 6, 15)
-        let interval = try #require(calc.interval(for: .daily, date: date))
-        #expect(!interval.contains(makeDate(2026, 6, 14)))
-    }
-
-    @Test func 日次の集計期間に翌日が含まれない() throws {
-        let date = makeDate(2026, 6, 15)
-        let interval = try #require(calc.interval(for: .daily, date: date))
-        #expect(!interval.contains(makeDate(2026, 6, 16)))
+    @Test(arguments: [(15, true), (14, false), (16, false)])
+    func 日次の集計期間には基準日だけが含まれ前日と翌日は含まれない(day: Int, isContained: Bool) throws {
+        let interval = try #require(calc.interval(for: .daily, date: makeDate(2026, 6, 15)))
+        #expect(interval.contains(makeDate(2026, 6, day)) == isContained)
     }
 
     @Test func 月次の集計期間に月初と月末が含まれる() throws {
@@ -86,25 +74,15 @@ struct 収支集計期間計算Test {
         #expect(diff.day == 1)
     }
 
-    @Test func `月次で 1 進めると翌月になる`() {
-        let date = makeDate(2026, 6, 15)
-        let next = calc.advance(date, by: 1, unit: .monthly)
-        #expect(calc.month(from: next) == 7)
-        #expect(calc.year(from: next) == 2026)
-    }
-
-    @Test func `月次で 12 月から 1 進めると翌年 1 月になる`() {
-        let date = makeDate(2026, 12, 15)
-        let next = calc.advance(date, by: 1, unit: .monthly)
-        #expect(calc.month(from: next) == 1)
-        #expect(calc.year(from: next) == 2027)
-    }
-
-    @Test func `月次で 1 月からマイナス 1 進めると前年 12 月になる`() {
-        let date = makeDate(2026, 1, 15)
-        let prev = calc.advance(date, by: -1, unit: .monthly)
-        #expect(calc.month(from: prev) == 12)
-        #expect(calc.year(from: prev) == 2025)
+    @Test(arguments: [
+        (6, 1, 2026, 7), // 翌月
+        (12, 1, 2027, 1), // 12 月から翌年 1 月
+        (1, -1, 2025, 12), // 1 月から前年 12 月
+    ])
+    func 月次で進めると年をまたいでも前後の月になる(month: Int, steps: Int, expectedYear: Int, expectedMonth: Int) {
+        let result = calc.advance(makeDate(2026, month, 15), by: steps, unit: .monthly)
+        #expect(calc.year(from: result) == expectedYear)
+        #expect(calc.month(from: result) == expectedMonth)
     }
 
     @Test func `年次で 1 進めると翌年になる`() {
@@ -115,23 +93,11 @@ struct 収支集計期間計算Test {
 
     // MARK: - title
 
-    @Test func 期間モードのtitleは空文字を返す() {
-        #expect(calc.title(for: .range, date: makeDate(2026, 6, 15)) == "")
-    }
-
-    @Test func 日次のタイトルが年月日形式で表示される() {
-        let date = makeDate(2026, 6, 15)
-        #expect(calc.title(for: .daily, date: date) == "2026年6月15日")
-    }
-
-    @Test func 月次のタイトルが年月形式で表示される() {
-        let date = makeDate(2026, 6, 15)
-        #expect(calc.title(for: .monthly, date: date) == "2026年6月")
-    }
-
-    @Test func 年次のタイトルが年形式で表示される() {
-        let date = makeDate(2026, 6, 15)
-        #expect(calc.title(for: .yearly, date: date) == "2026年")
+    @Test(arguments: [
+        (SummaryPeriod.daily, "2026年6月15日"), (.monthly, "2026年6月"), (.yearly, "2026年"), (.range, ""),
+    ])
+    func 集計単位ごとのタイトルは単位に合った年月日の形式になり期間モードは空文字になる(period: SummaryPeriod, expected: String) {
+        #expect(calc.title(for: period, date: makeDate(2026, 6, 15)) == expected)
     }
 
     // MARK: - setYear / setMonth

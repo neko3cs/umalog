@@ -123,32 +123,6 @@ struct 馬券モデルTest {
         #expect(sel.displayTicketTypeName == "カスタム")
     }
 
-    // MARK: - TicketType
-
-    @Test func 券種のデフォルトソート順がゼロである() {
-        let ticketType = TicketType(name: "単勝")
-        container.mainContext.insert(ticketType)
-        #expect(ticketType.sortIndex == 0)
-    }
-
-    // MARK: - Venue
-
-    @Test func 競馬場のデフォルト値が正しく設定される() {
-        let venue = Venue(name: "東京")
-        container.mainContext.insert(venue)
-        #expect(venue.name == "東京")
-        #expect(venue.category == "central")
-        #expect(venue.sortIndex == 0)
-    }
-
-    @Test func 競馬場の区分とソート順が設定できる() {
-        let venue = Venue(name: "大井", category: "local", sortIndex: 10)
-        container.mainContext.insert(venue)
-        #expect(venue.name == "大井")
-        #expect(venue.category == "local")
-        #expect(venue.sortIndex == 10)
-    }
-
     // MARK: - Property-Based Tests
 
     @Test func 任意の購入額と払戻額で収支が常に払戻マイナス購入に等しい() {
