@@ -63,7 +63,16 @@ xcrun xccov view --report --only-targets src/TestResults.xcresult
 xcrun xcresulttool merge unit.xcresult ui.xcresult --output-path merged.xcresult
 xcrun xccov view --report --only-targets merged.xcresult
 
-# Mutation tests — skip; Muter crashes (SIGBUS exit 138) on Xcode 26
+# Mutation tests — skip; Muter crashes (SIGBUS exit 138) on Xcode 26 and, per the
+# owner, doesn't support current Xcode (not re-run on 27.1).
+# PBT — skip; SwiftCheck isn't adopted until it supports the current Swift
+# (owner decision 2026-10-31). Don't add it as a dependency during a quality gate.
+# CodeQL — skip; it supports Swift 5.4–6.3 and this project needs Swift 6.4
+# (Xcode 27.1, iOS 27 SDK; checked 2026-10-31). Tracing still fails with Rosetta 2
+# installed (SwiftPM's sandbox-exec "Bad CPU type", then clang spawn ENOENT).
+# Re-run once CodeQL supports Swift 6.4.
+# Sanitizers — the ASan runtime links into umalog.app/umalog.debug.dylib, not the
+# `umalog` stub; check that file with `otool -L` to confirm instrumentation.
 ```
 
 For Claude Code: use the `/test-ios-project` skill to run the full sequence above, but override its default destination (`iPhone 16,OS=latest`) with the one above — no `iPhone 16` exists under the iOS 27.0 runtime.
