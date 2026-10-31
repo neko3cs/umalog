@@ -117,7 +117,7 @@ final class Race {
 
     /// トラック種別の列挙値。"turf" 以外はダートとして扱う。
     var trackTypeValue: TrackType {
-        TrackType(rawValue: trackType) ?? .dirt
+        TrackType(storedValue: trackType)
     }
 
     /// 区分の列挙値。未知の値は地方として扱う。
@@ -153,6 +153,12 @@ enum TrackType: String, CaseIterable {
     case turf
     /// ダート
     case dirt
+
+    /// 保存値から列挙値を作る。"turf" 以外（未知の値を含む）はダートとして扱う。
+    /// - Parameter storedValue: `Race.trackType` などに保存された文字列。
+    init(storedValue: String) {
+        self = TrackType(rawValue: storedValue) ?? .dirt
+    }
 
     /// 入力・詳細画面・CSV で使う表示名。
     var displayName: String {
