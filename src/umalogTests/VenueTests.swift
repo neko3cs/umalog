@@ -55,7 +55,7 @@ struct 競馬場Test {
 
     // MARK: - プリセットの投入
 
-    @Test func `競馬場マスターが空なら全競馬場が 一 覧の順に区分付きで追加される`() throws {
+    @Test func `競馬場マスターが空なら全競馬場が一覧の順に区分付きで追加される`() throws {
         let ctx = container.mainContext
         let inserted = Venue.insertMissingPresets(into: ctx)
         #expect(inserted)

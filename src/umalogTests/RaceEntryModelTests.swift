@@ -21,127 +21,53 @@ struct 出走馬モデルTest {
 
     // MARK: - デフォルト値
 
-    @Test func `新規出走馬の馬番デフォルトが 0 である`() {
+    @Test func `新規出走馬は馬番とソート順が 0 で文字列が空で予想印が無い`() {
         let entry = RaceEntry()
         container.mainContext.insert(entry)
         #expect(entry.horseNumber == 0)
-    }
-
-    @Test func 新規出走馬の馬名デフォルトが空文字である() {
-        let entry = RaceEntry()
-        container.mainContext.insert(entry)
         #expect(entry.horseName == "")
-    }
-
-    @Test func 新規出走馬の騎手名デフォルトが空文字である() {
-        let entry = RaceEntry()
-        container.mainContext.insert(entry)
         #expect(entry.jockeyName == "")
-    }
-
-    @Test func 新規出走馬の調教師名デフォルトが空文字である() {
-        let entry = RaceEntry()
-        container.mainContext.insert(entry)
         #expect(entry.trainerName == "")
-    }
-
-    @Test func 新規出走馬の予想印デフォルトがnilである() {
-        let entry = RaceEntry()
-        container.mainContext.insert(entry)
         #expect(entry.predictionMark == nil)
-    }
-
-    @Test func `新規出走馬のソート順デフォルトが 0 である`() {
-        let entry = RaceEntry()
-        container.mainContext.insert(entry)
         #expect(entry.sortIndex == 0)
     }
 
     // MARK: - mark getter
 
-    @Test func `prediction markがnilのときmarkがnilを返す`() {
-        let entry = RaceEntry(predictionMark: nil)
+    @Test(arguments: [
+        ("◎", PredictionMark.honmei), ("○", .taikou), ("▲", .tanana), ("△", .renmei),
+        ("☆", .hoshi), ("注", .chu), ("押", .oshi), ("消", .keshi),
+    ])
+    func 保存された記号から予想印が読み取れる(stored: String, mark: PredictionMark) {
+        let entry = RaceEntry(predictionMark: stored)
         container.mainContext.insert(entry)
-        #expect(entry.mark == nil)
+        #expect(entry.mark == mark)
     }
 
-    @Test func `prediction markが本命記号のときmarkが本命を返す`() {
-        let entry = RaceEntry(predictionMark: "◎")
-        container.mainContext.insert(entry)
-        #expect(entry.mark == .honmei)
-    }
-
-    @Test func `prediction markが対抗記号のときmarkが対抗を返す`() {
-        let entry = RaceEntry(predictionMark: "○")
-        container.mainContext.insert(entry)
-        #expect(entry.mark == .taikou)
-    }
-
-    @Test func `prediction markが単穴記号のときmarkが単穴を返す`() {
-        let entry = RaceEntry(predictionMark: "▲")
-        container.mainContext.insert(entry)
-        #expect(entry.mark == .tanana)
-    }
-
-    @Test func `prediction markが連下記号のときmarkが連下を返す`() {
-        let entry = RaceEntry(predictionMark: "△")
-        container.mainContext.insert(entry)
-        #expect(entry.mark == .renmei)
-    }
-
-    @Test func `prediction markが星記号のときmarkが星を返す`() {
-        let entry = RaceEntry(predictionMark: "☆")
-        container.mainContext.insert(entry)
-        #expect(entry.mark == .hoshi)
-    }
-
-    @Test func `prediction markが注のときmarkが注を返す`() {
-        let entry = RaceEntry(predictionMark: "注")
-        container.mainContext.insert(entry)
-        #expect(entry.mark == .chu)
-    }
-
-    @Test func `prediction markが押のときmarkが押を返す`() {
-        let entry = RaceEntry(predictionMark: "押")
-        container.mainContext.insert(entry)
-        #expect(entry.mark == .oshi)
-    }
-
-    @Test func `prediction markが消のときmarkが消を返す`() {
-        let entry = RaceEntry(predictionMark: "消")
-        container.mainContext.insert(entry)
-        #expect(entry.mark == .keshi)
-    }
-
-    @Test func 無効な文字列のときmarkがnilを返す() {
-        let entry = RaceEntry(predictionMark: "invalid")
-        container.mainContext.insert(entry)
-        #expect(entry.mark == nil)
-    }
-
-    @Test func 空文字のときmarkがnilを返す() {
-        let entry = RaceEntry(predictionMark: "")
+    @Test(arguments: [nil, "invalid", ""] as [String?])
+    func 保存された値が予想印の記号でなければ予想印は無い(stored: String?) {
+        let entry = RaceEntry(predictionMark: stored)
         container.mainContext.insert(entry)
         #expect(entry.mark == nil)
     }
 
     // MARK: - mark setter
 
-    @Test func `markを設定するとprediction markが更新される`() {
+    @Test func 予想印を設定すると保存する記号が更新される() {
         let entry = RaceEntry(predictionMark: nil)
         container.mainContext.insert(entry)
         entry.mark = .honmei
         #expect(entry.predictionMark == "◎")
     }
 
-    @Test func `markにnilを設定するとprediction markがnilになる`() {
+    @Test func 予想印を外すと保存する記号が無くなる() {
         let entry = RaceEntry(predictionMark: "◎")
         container.mainContext.insert(entry)
         entry.mark = nil
         #expect(entry.predictionMark == nil)
     }
 
-    @Test func markを変更すると正しく更新される() {
+    @Test func 予想印を変更すると新しい記号が保存される() {
         let entry = RaceEntry(predictionMark: "◎")
         container.mainContext.insert(entry)
         entry.mark = .keshi
@@ -149,7 +75,7 @@ struct 出走馬モデルTest {
         #expect(entry.mark == .keshi)
     }
 
-    @Test func `全ケースでgetterとsetterが 一 致する`() {
+    @Test func `全予想印で設定した予想印と保存される記号が一致する`() {
         let entry = RaceEntry()
         container.mainContext.insert(entry)
         for mark in PredictionMark.allCases {
