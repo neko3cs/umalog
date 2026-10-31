@@ -46,6 +46,13 @@ struct SettingsView: View {
     /// データ初期化完了アラートの表示状態。
     @State private var showingDataResetSuccess = false
 
+    /// UI テストでシステムのファイル選択画面を飛ばすか。
+    /// - Note: ファイル選択画面は別プロセスで、並列実行用のシミュレーター複製ではタップが効かないことがあるため（#43）、
+    ///   書き出しは保存できたものとし、復元は直前に書き出した ZIP を選んだものとして扱う。
+    private static let skipsDocumentPicker = CommandLine.arguments.contains("--UITestingSkipDocumentPicker")
+    /// ファイル選択画面を飛ばすときに、直前に書き出した ZIP の URL。
+    @State private var lastExportedURL: URL?
+
     var body: some View {
         NavigationStack {
             List {
@@ -64,7 +71,12 @@ struct SettingsView: View {
                     .disabled(isExporting || isImporting)
 
                     Button {
-                        showingImportPicker = true
+                        if Self.skipsDocumentPicker {
+                            pendingImportURL = lastExportedURL
+                            showingImportConfirm = lastExportedURL != nil
+                        } else {
+                            showingImportPicker = true
+                        }
                     } label: {
                         HStack {
                             Label("ZIPから復元", systemImage: "archivebox.fill")
@@ -173,7 +185,12 @@ struct SettingsView: View {
             do {
                 let url = try ZipExporter.export(races: races)
                 isExporting = false
-                exportURL = ExportURL(url: url)
+                if Self.skipsDocumentPicker {
+                    lastExportedURL = url
+                    showingExportSuccess = true
+                } else {
+                    exportURL = ExportURL(url: url)
+                }
             } catch {
                 isExporting = false
                 exportError = error.localizedDescription
