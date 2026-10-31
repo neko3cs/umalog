@@ -365,13 +365,16 @@ struct SelectionFormView: View {
                     legToggle(isOn: formLeg1.contains(entry.horseNumber)) {
                         toggleSet(&formLeg1, entry.horseNumber)
                     }
+                    .accessibilityIdentifier("formation-leg1-\(entry.horseNumber)")
                     legToggle(isOn: formLeg2.contains(entry.horseNumber)) {
                         toggleSet(&formLeg2, entry.horseNumber)
                     }
+                    .accessibilityIdentifier("formation-leg2-\(entry.horseNumber)")
                     if effectiveHorseCount >= 3 {
                         legToggle(isOn: formLeg3.contains(entry.horseNumber)) {
                             toggleSet(&formLeg3, entry.horseNumber)
                         }
+                        .accessibilityIdentifier("formation-leg3-\(entry.horseNumber)")
                     }
                 }
             }
