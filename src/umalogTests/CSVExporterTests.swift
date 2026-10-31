@@ -29,7 +29,7 @@ struct CSVエクスポーターTest {
 
     // MARK: - セクションヘッダー
 
-    @Test func `エクスポート結果にraces・entries・bets・bet selectionsの全セクションヘッダーが含まれる`() {
+    @Test func `エクスポート結果に RACES・ENTRIES・BETS・BET_SELECTIONS の全セクションヘッダーが含まれる`() {
         let output = CSVExporter.export(races: [])
         #expect(output.contains("=== RACES ==="))
         #expect(output.contains("=== ENTRIES ==="))
@@ -58,46 +58,18 @@ struct CSVエクスポーターTest {
         #expect(output.contains(",5,"))
     }
 
-    @Test func トラック種別が芝の場合に芝と出力される() {
-        let race = Race(trackType: "turf"); container.mainContext.insert(race)
+    @Test(arguments: [("turf", "芝"), ("dirt", "ダート"), ("unknown", "ダート")])
+    func トラック種別が表示名で出力され未知の値はダートになる(trackType: String, expected: String) {
+        let race = Race(trackType: trackType); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
-        #expect(output.contains(",芝,"))
+        #expect(output.contains(",\(expected),"))
     }
 
-    @Test func トラック種別がダートの場合にダートと出力される() {
-        let race = Race(trackType: "dirt"); container.mainContext.insert(race)
+    @Test(arguments: [("central", "中央"), ("local", "地方"), ("overseas", "海外"), ("unknown", "地方")])
+    func 区分が短い表示名で出力され未知の値は地方になる(category: String, expected: String) {
+        let race = Race(category: category); container.mainContext.insert(race)
         let output = CSVExporter.export(races: [race])
-        #expect(output.contains(",ダート,"))
-    }
-
-    @Test func カテゴリが中央の場合に中央と出力される() {
-        let race = Race(category: "central"); container.mainContext.insert(race)
-        let output = CSVExporter.export(races: [race])
-        #expect(output.contains(",中央,"))
-    }
-
-    @Test func カテゴリが地方の場合に地方と出力される() {
-        let race = Race(category: "local"); container.mainContext.insert(race)
-        let output = CSVExporter.export(races: [race])
-        #expect(output.contains(",地方,"))
-    }
-
-    @Test func カテゴリが海外の場合に海外と出力される() {
-        let race = Race(category: "overseas"); container.mainContext.insert(race)
-        let output = CSVExporter.export(races: [race])
-        #expect(output.contains(",海外,"))
-    }
-
-    @Test func トラック種別が未知の場合はダートとして出力される() {
-        let race = Race(trackType: "unknown"); container.mainContext.insert(race)
-        let output = CSVExporter.export(races: [race])
-        #expect(output.contains(",ダート,"))
-    }
-
-    @Test func カテゴリが未知の場合は地方として出力される() {
-        let race = Race(category: "unknown"); container.mainContext.insert(race)
-        let output = CSVExporter.export(races: [race])
-        #expect(output.contains(",地方,"))
+        #expect(output.contains(",\(expected),"))
     }
 
     @Test func レース行に購入合計が含まれる() {
@@ -212,7 +184,7 @@ struct CSVエクスポーターTest {
 
     // MARK: - ソート
 
-    @Test func `馬券がsort index昇順で出力される`() {
+    @Test func `馬券が sortIndex 昇順で出力される`() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet1 = Bet(race: race, purchaseAmount: 100, sortIndex: 1); ctx.insert(bet1)
@@ -244,27 +216,16 @@ struct CSVエクスポーターTest {
 
     // MARK: - horseNumberString
 
-    @Test func `horse number stringでゼロは空文字になる`() {
-        #expect(CSVExporter.horseNumberString(0) == "")
-    }
-
-    @Test func `horse number stringで正数は文字列になる`() {
-        #expect(CSVExporter.horseNumberString(1) == "1")
-        #expect(CSVExporter.horseNumberString(18) == "18")
+    @Test(arguments: [(0, ""), (1, "1"), (18, "18")])
+    func `horseNumberString は未入力の 0 を空文字に、馬番を数字の文字列にする`(number: Int, expected: String) {
+        #expect(CSVExporter.horseNumberString(number) == expected)
     }
 
     // MARK: - escape / formatDate / formatFilenameDate
 
-    @Test func カンマを含む文字列がクォートされる() {
-        #expect(CSVExporter.escape("a,b") == "\"a,b\"")
-    }
-
-    @Test func ダブルクォートを含む文字列がエスケープされクォートされる() {
-        #expect(CSVExporter.escape("a\"b") == "\"a\"\"b\"")
-    }
-
-    @Test func 改行を含む文字列がクォートされる() {
-        #expect(CSVExporter.escape("a\nb") == "\"a\nb\"")
+    @Test(arguments: [("a,b", "\"a,b\""), ("a\"b", "\"a\"\"b\""), ("a\nb", "\"a\nb\"")])
+    func `カンマやダブルクォートや改行を含む文字列はクォートされ中のダブルクォートは二重になる`(value: String, expected: String) {
+        #expect(CSVExporter.escape(value) == expected)
     }
 
     @Test func 日付がスラッシュ区切り形式でフォーマットされる() throws {

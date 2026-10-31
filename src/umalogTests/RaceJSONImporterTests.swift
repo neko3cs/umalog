@@ -88,7 +88,7 @@ struct JSON取り込みTest {
 
     // MARK: - 解析
 
-    @Test func `スキーマに沿ったjsonを解析できる`() throws {
+    @Test func `スキーマに沿った JSON を解析できる`() throws {
         let data = try RaceJSONImporter.parse(Self.json())
         #expect(data.venueName == "東京")
         #expect(data.raceNumber == 11)
@@ -120,11 +120,11 @@ struct JSON取り込みTest {
 
     // MARK: - 解析エラー
 
-    @Test func `jsonが含まれないテキストはエラーになる`() {
+    @Test func `JSON が含まれないテキストはエラーになる`() {
         #expect(issuePaths("予想できませんでした") == ["(JSON)"])
     }
 
-    @Test func `jsonの構文エラーはエラーになる`() {
+    @Test func `JSON の構文エラーはエラーになる`() {
         #expect(issuePaths("{ \"schemaVersion\": 1, ") == ["(JSON)"])
         #expect(issuePaths("{ \"schemaVersion\": 1, \"race\": }") == ["(JSON)"])
     }
@@ -185,7 +185,7 @@ struct JSON取り込みTest {
         #expect(paths == ["race.secondPlaceHorseNumber", "race.thirdPlaceHorseNumber"])
     }
 
-    @Test func `aiに渡すエラー文に原因のフィールドがすべて含まれる`() throws {
+    @Test func `AI に渡すエラー文に原因のフィールドがすべて含まれる`() throws {
         let error = try #require(throws: RaceImportError.self) {
             try RaceJSONImporter.parse(Self.json(race: { $0["venue"] = "どこか" }, entries: [Self.entryObject(1, "ウマA", mark: "X")]))
         }
@@ -274,7 +274,7 @@ struct JSON取り込みTest {
         #expect(plan.entries.first?.changes == [RaceImportFieldChange(label: "印", oldValue: "◎", newValue: "○")])
     }
 
-    @Test func `新しい馬番は新規作成になりjsonに無い馬番は削除になる`() throws {
+    @Test func `新しい馬番は新規作成になり JSON に無い馬番は削除になる`() throws {
         let plan = try updatePlan(
             Self.json(entries: [Self.entryObject(1, "ウマA", mark: "◎"), Self.entryObject(3, "ウマC")]), target: importInitialRace(),
         )
@@ -282,7 +282,7 @@ struct JSON取り込みTest {
         #expect(plan.entries.map(\.kind) == [.unchanged, .delete, .create])
     }
 
-    @Test func `更新ではjsonの日付と競馬場とレース番号が違っても指定したレースが更新されそれらは変わらない`() throws {
+    @Test func `更新では JSON の日付と競馬場とレース番号が違っても指定したレースが更新されそれらは変わらない`() throws {
         let race = try importInitialRace()
         let plan = try updatePlan(
             Self.json(race: { $0["date"] = "2026-10-26"; $0["venue"] = "京都"; $0["raceNumber"] = 10; $0["distance"] = 2400 }),
@@ -366,7 +366,7 @@ struct JSON取り込みTest {
         try keys.reduce(root) { current, key in try #require(current[key] as? [String: Any]) }
     }
 
-    @Test func `ai向けプロンプトに出力のルールとjson schemaと出力例が含まれる`() {
+    @Test func `AI 向けプロンプトに出力のルールと JSON Schema と出力例が含まれる`() {
         let prompt = RaceJSONImporter.promptForAI
         #expect(prompt.contains("JSON だけを出力"))
         #expect(prompt.contains("含まれない馬番の出走馬はアプリから削除されます"))
@@ -394,7 +394,7 @@ struct JSON取り込みTest {
         #expect(try Set(object(schema, "properties", "entries", "items")["required"] as? [String] ?? []) == Set(exampleEntry.keys))
     }
 
-    @Test func `出力例のjsonはそのまま取り込める`() throws {
+    @Test func `出力例の JSON はそのまま取り込める`() throws {
         let data = try RaceJSONImporter.parse(RaceJSONImporter.exampleJSON)
         #expect(data.raceName == "天皇賞（秋）")
     }

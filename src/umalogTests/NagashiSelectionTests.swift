@@ -77,12 +77,9 @@ struct 流し買い目Test {
 
     // MARK: - 組合せ点数: 馬単
 
-    @Test func `馬単の 1 着流しは相手の頭数が点数になる`() {
-        #expect(Bet.combinationCount(selection: "1>2,3,4[1着流し]", ticketTypeName: "馬単") == 3)
-    }
-
-    @Test func `馬単の 2 着流しは相手の頭数が点数になる`() {
-        #expect(Bet.combinationCount(selection: "1>2,3,4[2着流し]", ticketTypeName: "馬単") == 3)
+    @Test(arguments: ["1着流し", "2着流し"])
+    func `馬単の着順指定流しは相手の頭数が点数になる`(tag: String) {
+        #expect(Bet.combinationCount(selection: "1>2,3,4[\(tag)]", ticketTypeName: "馬単") == 3)
     }
 
     @Test func `馬単の流しマルチは 1 着流しと 2 着流しの合計になる`() {
