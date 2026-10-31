@@ -19,7 +19,7 @@ struct RaceDetailView: View {
     @Bindable var race: Race
     /// レース編集シートの表示状態。
     @State private var showingEditRace = false
-    /// このJSONでJSONで更新するシートの表示状態。
+    /// JSON で更新するシートの表示状態。
     @State private var showingImportUpdate = false
     /// 出走馬追加シートの表示状態。
     @State private var showingAddEntry = false
@@ -62,7 +62,7 @@ struct RaceDetailView: View {
                     LabeledContent("グレード", value: gradeEnum.displayName)
                 }
                 LabeledContent("コース") {
-                    Text("\(race.trackType == "turf" ? "芝" : "ダート") \(race.distance)m \(race.trackCondition)")
+                    Text("\(race.trackTypeValue.displayName) \(race.distance)m \(race.trackCondition)")
                 }
                 LabeledContent("区分", value: race.categoryValue.displayName)
             }
@@ -80,12 +80,7 @@ struct RaceDetailView: View {
                         let raceId = race.persistentModelID
                         undoManager?.registerUndo(withTarget: modelContext) { [snap] ctx in
                             guard let raceRef = ctx.model(for: raceId) as? Race else { return }
-                            ctx.insert(RaceEntry(
-                                race: raceRef, horseNumber: snap.horseNumber, horseName: snap.horseName,
-                                jockeyName: snap.jockeyName, trainerName: snap.trainerName,
-                                predictionMark: snap.predictionMark, finishPosition: snap.finishPosition,
-                                sortIndex: snap.sortIndex,
-                            ))
+                            snap.restore(into: ctx, race: raceRef)
                             // 取り消しで復元した出走馬は新しいレコードになる。自動保存を待つと、詳細画面に出たあとで
                             // 一時 ID が恒久 ID に変わり、行が作り直されるため、表示前にここで保存する（Issue #55）
                             try? ctx.save()
@@ -123,28 +118,8 @@ struct RaceDetailView: View {
                             guard let races = try? ctx.fetch(FetchDescriptor<Race>()),
                                   let raceRef = races.first(where: { $0.persistentModelID == raceId })
                             else { return }
-                            let allTicketTypes = (try? ctx.fetch(FetchDescriptor<TicketType>())) ?? []
-                            let ticketType = snap.ticketTypeId.flatMap { id in
-                                allTicketTypes.first(where: { $0.persistentModelID == id })
-                            }
-                            let restored = Bet(
-                                race: raceRef, ticketType: ticketType,
-                                ticketTypeName: snap.ticketTypeName, selection: snap.selection,
-                                unitPrice: snap.unitPrice, purchaseAmount: snap.purchaseAmount,
-                                payoutAmount: snap.payoutAmount, sortIndex: snap.sortIndex,
-                            )
-                            ctx.insert(restored)
-                            for selSnap in snap.selections {
-                                let selTicketType = selSnap.ticketTypeId.flatMap { id in
-                                    allTicketTypes.first(where: { $0.persistentModelID == id })
-                                }
-                                ctx.insert(BetSelection(
-                                    bet: restored, ticketType: selTicketType,
-                                    ticketTypeName: selSnap.ticketTypeName, selection: selSnap.selection,
-                                    unitPrice: selSnap.unitPrice, combinationCount: selSnap.combinationCount,
-                                    sortIndex: selSnap.sortIndex,
-                                ))
-                            }
+                            let ticketTypes = (try? ctx.fetch(FetchDescriptor<TicketType>())) ?? []
+                            snap.restore(into: ctx, race: raceRef, ticketTypes: ticketTypes)
                             // 取り消しで復元した馬券は新しいレコードになる。自動保存を待つと、詳細画面に出たあとで
                             // 一時 ID が恒久 ID に変わり、行が作り直されるため、表示前にここで保存する（Issue #55）
                             try? ctx.save()
@@ -369,14 +344,7 @@ struct BetRowView: View {
     /// - Returns: 買い目行のビュー。
     private func selectionRow(_ sel: BetSelection) -> some View {
         HStack(spacing: 6) {
-            if !sel.displayTicketTypeName.isEmpty {
-                Text(sel.displayTicketTypeName)
-                    .font(.caption)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.accentColor.opacity(0.15))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-            }
+            TicketTypeBadge(name: sel.displayTicketTypeName)
             Text(sel.selection)
             Spacer()
             if sel.combinationCount > 1 {
@@ -394,14 +362,7 @@ struct BetRowView: View {
     /// 買い目レコードを持たない旧形式馬券のための行。レガシーフィールドから表示する。
     private var legacySelectionRow: some View {
         HStack(spacing: 6) {
-            if !bet.displayTicketTypeName.isEmpty {
-                Text(bet.displayTicketTypeName)
-                    .font(.caption)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.accentColor.opacity(0.15))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-            }
+            TicketTypeBadge(name: bet.displayTicketTypeName)
             Text(bet.selection)
             Spacer()
         }
@@ -424,69 +385,19 @@ struct BetRowView: View {
     }
 }
 
-// MARK: - Snapshots for Undo
+/// 券種名のバッジ。券種名が空なら何も表示しない。
+struct TicketTypeBadge: View {
+    /// 表示する券種名。
+    let name: String
 
-/// 出走馬削除の Undo 復元用スナップショット。各プロパティは `RaceEntry` の同名フィールドの写し。
-struct EntrySnapshot {
-    let horseNumber: Int
-    let horseName: String
-    let jockeyName: String
-    let trainerName: String
-    let predictionMark: String?
-    let finishPosition: Int?
-    let sortIndex: Int
-
-    /// 出走馬からスナップショットを取る。
-    /// - Parameter entry: スナップショット対象の出走馬。
-    init(from entry: RaceEntry) {
-        horseNumber = entry.horseNumber
-        horseName = entry.horseName
-        jockeyName = entry.jockeyName
-        trainerName = entry.trainerName
-        predictionMark = entry.predictionMark
-        finishPosition = entry.finishPosition
-        sortIndex = entry.sortIndex
-    }
-}
-
-/// 馬券削除の Undo 復元用スナップショット。各プロパティは `Bet` の同名フィールドの写しで、
-/// 買い目もネストしたスナップショットとして保持する。券種は永続 ID で保持し復元時に再関連付けする。
-struct BetSnapshot {
-    let ticketTypeId: PersistentIdentifier?
-    let ticketTypeName: String
-    let selection: String
-    let unitPrice: Int
-    let purchaseAmount: Int
-    let payoutAmount: Int
-    let sortIndex: Int
-    let selections: [SelectionSnapshot]
-
-    /// 買い目のスナップショット。各プロパティは `BetSelection` の同名フィールドの写し。
-    struct SelectionSnapshot {
-        let ticketTypeId: PersistentIdentifier?
-        let ticketTypeName: String
-        let selection: String
-        let unitPrice: Int
-        let combinationCount: Int
-        let sortIndex: Int
-    }
-
-    /// 馬券からスナップショットを取る。
-    /// - Parameter bet: スナップショット対象の馬券。
-    init(from bet: Bet) {
-        ticketTypeId = bet.ticketType?.persistentModelID
-        ticketTypeName = bet.ticketTypeName
-        selection = bet.selection
-        unitPrice = bet.unitPrice
-        purchaseAmount = bet.purchaseAmount
-        payoutAmount = bet.payoutAmount
-        sortIndex = bet.sortIndex
-        selections = (bet.selections ?? []).map { sel in
-            SelectionSnapshot(
-                ticketTypeId: sel.ticketType?.persistentModelID, ticketTypeName: sel.ticketTypeName,
-                selection: sel.selection, unitPrice: sel.unitPrice,
-                combinationCount: sel.combinationCount, sortIndex: sel.sortIndex,
-            )
+    var body: some View {
+        if !name.isEmpty {
+            Text(name)
+                .font(.caption)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Color.accentColor.opacity(0.15))
+                .clipShape(RoundedRectangle(cornerRadius: 4))
         }
     }
 }

@@ -23,62 +23,28 @@ struct 予想印Test {
 
     // MARK: - rawValue
 
-    @Test func `本命のraw valueが本命記号の文字列になる`() {
-        #expect(PredictionMark.honmei.rawValue == "◎")
+    @Test(arguments: [
+        (PredictionMark.honmei, "◎"), (.taikou, "○"), (.tanana, "▲"), (.renmei, "△"),
+        (.hoshi, "☆"), (.chu, "注"), (.oshi, "押"), (.keshi, "消"),
+    ])
+    func 予想印ごとに保存する記号が決まっている(mark: PredictionMark, symbol: String) {
+        #expect(mark.rawValue == symbol)
+        #expect(PredictionMark(rawValue: symbol) == mark)
     }
 
-    @Test func `対抗のraw valueが対抗記号の文字列になる`() {
-        #expect(PredictionMark.taikou.rawValue == "○")
-    }
-
-    @Test func `単穴のraw valueが単穴記号の文字列になる`() {
-        #expect(PredictionMark.tanana.rawValue == "▲")
-    }
-
-    @Test func `連下のraw valueが連下記号の文字列になる`() {
-        #expect(PredictionMark.renmei.rawValue == "△")
-    }
-
-    @Test func `星のraw valueが星記号の文字列になる`() {
-        #expect(PredictionMark.hoshi.rawValue == "☆")
-    }
-
-    @Test func `注のraw valueは注である`() {
-        #expect(PredictionMark.chu.rawValue == "注")
-    }
-
-    @Test func `押のraw valueは押である`() {
-        #expect(PredictionMark.oshi.rawValue == "押")
-    }
-
-    @Test func `消のraw valueは消である`() {
-        #expect(PredictionMark.keshi.rawValue == "消")
-    }
-
-    @Test func `全てのraw valueが 一 意である`() {
+    @Test func 保存する記号が予想印どうしで重複しない() {
         let rawValues = PredictionMark.allCases.map(\.rawValue)
         #expect(Set(rawValues).count == PredictionMark.allCases.count)
     }
 
     // MARK: - init(rawValue:)
 
-    @Test func `本命記号のraw valueのときに本命が返る`() {
-        #expect(PredictionMark(rawValue: "◎") == .honmei)
+    @Test(arguments: ["x", ""])
+    func 予想印の記号でない文字列からは予想印が作られない(rawValue: String) {
+        #expect(PredictionMark(rawValue: rawValue) == nil)
     }
 
-    @Test func `raw valueが消のときに消が返る`() {
-        #expect(PredictionMark(rawValue: "消") == .keshi)
-    }
-
-    @Test func `無効なraw valueのときにnilが返る`() {
-        #expect(PredictionMark(rawValue: "x") == nil)
-    }
-
-    @Test func `空文字のraw valueのときにnilが返る`() {
-        #expect(PredictionMark(rawValue: "") == nil)
-    }
-
-    @Test func `全ケースでraw valueのラウンドトリップが成立する`() {
+    @Test func 全予想印で記号から元の予想印に戻せる() {
         for mark in PredictionMark.allCases {
             #expect(PredictionMark(rawValue: mark.rawValue) == mark)
         }

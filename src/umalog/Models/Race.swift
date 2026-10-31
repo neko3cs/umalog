@@ -115,6 +115,11 @@ final class Race {
     /// 馬場状態の選択肢。
     static let trackConditions = ["良", "稍重", "重", "不良"]
 
+    /// トラック種別の列挙値。"turf" 以外はダートとして扱う。
+    var trackTypeValue: TrackType {
+        TrackType(storedValue: trackType)
+    }
+
     /// 区分の列挙値。未知の値は地方として扱う。
     var categoryValue: RaceCategory {
         RaceCategory(rawValue: category) ?? .local
@@ -139,6 +144,36 @@ final class Race {
     var returnRate: Double? {
         guard totalPurchase > 0 else { return nil }
         return Double(totalPayout) / Double(totalPurchase)
+    }
+}
+
+/// トラック種別を表す。rawValue はストレージ・取り込み JSON に使う文字列識別子。
+enum TrackType: String, CaseIterable {
+    /// 芝
+    case turf
+    /// ダート
+    case dirt
+
+    /// 保存値から列挙値を作る。"turf" 以外（未知の値を含む）はダートとして扱う。
+    /// - Parameter storedValue: `Race.trackType` などに保存された文字列。
+    init(storedValue: String) {
+        self = TrackType(rawValue: storedValue) ?? .dirt
+    }
+
+    /// 入力・詳細画面・CSV で使う表示名。
+    var displayName: String {
+        switch self {
+        case .turf: "芝"
+        case .dirt: "ダート"
+        }
+    }
+
+    /// レース一覧のバッジで使う短い表示名。
+    var shortName: String {
+        switch self {
+        case .turf: "芝"
+        case .dirt: "ダ"
+        }
     }
 }
 

@@ -33,6 +33,24 @@ struct 競馬場Test {
         try context.fetch(FetchDescriptor<Venue>(sortBy: [SortDescriptor(\.sortIndex)]))
     }
 
+    // MARK: - 初期値
+
+    @Test func 競馬場のデフォルト値が正しく設定される() {
+        let venue = Venue(name: "東京")
+        container.mainContext.insert(venue)
+        #expect(venue.name == "東京")
+        #expect(venue.category == "central")
+        #expect(venue.sortIndex == 0)
+    }
+
+    @Test func 競馬場の区分とソート順が設定できる() {
+        let venue = Venue(name: "大井", category: "local", sortIndex: 10)
+        container.mainContext.insert(venue)
+        #expect(venue.name == "大井")
+        #expect(venue.category == "local")
+        #expect(venue.sortIndex == 10)
+    }
+
     // MARK: - 競馬場の一覧
 
     @Test func `中央 10 場と地方 15 場と海外 24 場を扱う`() {
@@ -55,7 +73,7 @@ struct 競馬場Test {
 
     // MARK: - プリセットの投入
 
-    @Test func `競馬場マスターが空なら全競馬場が 一 覧の順に区分付きで追加される`() throws {
+    @Test func `競馬場マスターが空なら全競馬場が一覧の順に区分付きで追加される`() throws {
         let ctx = container.mainContext
         let inserted = Venue.insertMissingPresets(into: ctx)
         #expect(inserted)

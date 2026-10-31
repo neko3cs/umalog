@@ -62,11 +62,11 @@ struct 流し買い目Test {
         #expect(Bet.combinationCount(selection: "1>2,3,4[流し]", ticketTypeName: ticketTypeName) == 3)
     }
 
-    @Test func `三 連複の軸 1 頭流しは相手n頭から 2 頭を選ぶ組合せ数になる`() {
+    @Test func `三連複の軸 1 頭流しは相手n頭から 2 頭を選ぶ組合せ数になる`() {
         #expect(Bet.combinationCount(selection: "1>2,3,4,5[流し]", ticketTypeName: "三連複") == 6)
     }
 
-    @Test func `三 連複の軸 2 頭流しは相手の頭数が点数になる`() {
+    @Test func `三連複の軸 2 頭流しは相手の頭数が点数になる`() {
         #expect(Bet.combinationCount(selection: "1,2>3,4,5[流し]", ticketTypeName: "三連複") == 3)
     }
 
@@ -77,12 +77,9 @@ struct 流し買い目Test {
 
     // MARK: - 組合せ点数: 馬単
 
-    @Test func `馬単の 1 着流しは相手の頭数が点数になる`() {
-        #expect(Bet.combinationCount(selection: "1>2,3,4[1着流し]", ticketTypeName: "馬単") == 3)
-    }
-
-    @Test func `馬単の 2 着流しは相手の頭数が点数になる`() {
-        #expect(Bet.combinationCount(selection: "1>2,3,4[2着流し]", ticketTypeName: "馬単") == 3)
+    @Test(arguments: ["1着流し", "2着流し"])
+    func `馬単の着順指定流しは相手の頭数が点数になる`(tag: String) {
+        #expect(Bet.combinationCount(selection: "1>2,3,4[\(tag)]", ticketTypeName: "馬単") == 3)
     }
 
     @Test func `馬単の流しマルチは 1 着流しと 2 着流しの合計になる`() {
@@ -96,24 +93,24 @@ struct 流し買い目Test {
     // MARK: - 組合せ点数: 三連単
 
     @Test(arguments: ["1着流し", "2着流し", "3着流し"])
-    func `三 連単の軸 1 頭着順指定流しは相手n頭の順列数になる`(tag: String) {
+    func `三連単の軸 1 頭着順指定流しは相手n頭の順列数になる`(tag: String) {
         #expect(Bet.combinationCount(selection: "1>2,3,4,5[\(tag)]", ticketTypeName: "三連単") == 12)
     }
 
-    @Test func `三 連単の軸 1 頭流しマルチは着順指定流しの 3 倍になる`() {
+    @Test func `三連単の軸 1 頭流しマルチは着順指定流しの 3 倍になる`() {
         #expect(Bet.combinationCount(selection: "1>2,3,4,5[流しマルチ]", ticketTypeName: "三連単") == 36)
     }
 
     @Test(arguments: ["1・2着流し", "1・3着流し", "2・3着流し"])
-    func `三 連単の軸 2 頭着順指定流しは相手の頭数が点数になる`(tag: String) {
+    func `三連単の軸 2 頭着順指定流しは相手の頭数が点数になる`(tag: String) {
         #expect(Bet.combinationCount(selection: "1,2>3,4,5[\(tag)]", ticketTypeName: "三連単") == 3)
     }
 
-    @Test func `三 連単の軸 2 頭流しマルチは着順指定流しの 6 倍になる`() {
+    @Test func `三連単の軸 2 頭流しマルチは着順指定流しの 6 倍になる`() {
         #expect(Bet.combinationCount(selection: "1,2>3,4,5[流しマルチ]", ticketTypeName: "三連単") == 18)
     }
 
-    @Test func `三 連単の軸 2 頭着順指定は軸の並び順どおりの着順に置く`() {
+    @Test func `三連単の軸 2 頭着順指定は軸の並び順どおりの着順に置く`() {
         // 2 番が 1 着、1 番が 3 着。相手 1 頭なら組は 2→3→1 の 1 点だけ
         #expect(Bet.combinationCount(selection: "2,1>3[1・3着流し]", ticketTypeName: "三連単") == 1)
     }
@@ -199,12 +196,12 @@ struct 流し買い目Test {
         #expect(labels == ["1着", "2着", "マルチ"])
     }
 
-    @Test func `三 連単軸 1 頭の着順の選択肢は 1 着から 3 着とマルチになる`() {
+    @Test func `三連単軸 1 頭の着順の選択肢は 1 着から 3 着とマルチになる`() {
         let labels = NagashiPlacement.options(horseCount: 3, axisCount: 1).map(\.label)
         #expect(labels == ["1着", "2着", "3着", "マルチ"])
     }
 
-    @Test func `三 連単軸 2 頭の着順の選択肢は 2 つの着順の組合せとマルチになる`() {
+    @Test func `三連単軸 2 頭の着順の選択肢は 2 つの着順の組合せとマルチになる`() {
         let labels = NagashiPlacement.options(horseCount: 3, axisCount: 2).map(\.label)
         #expect(labels == ["1・2着", "1・3着", "2・3着", "マルチ"])
     }

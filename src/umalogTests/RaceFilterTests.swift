@@ -75,43 +75,21 @@ struct RaceFilterTest {
 
     // MARK: - apply(to:) 区分フィルター
 
-    @Test func 区分中央フィルターで中央レースのみ返される() {
+    @Test(arguments: ["central", "local", "overseas"])
+    func 区分フィルターでその区分のレースだけが返される(category: String) {
         let ctx = container.mainContext
-        let central = Race(category: "central"); ctx.insert(central)
-        let local = Race(category: "local"); ctx.insert(local)
+        let races = ["central", "local", "overseas"].map { Race(category: $0) }
+        races.forEach { ctx.insert($0) }
         var f = RaceFilter()
-        f.category = "central"
-        let result = f.apply(to: [central, local])
+        f.category = category
+        let result = f.apply(to: races)
         #expect(result.count == 1)
-        #expect(result.first === central)
-    }
-
-    @Test func 区分地方フィルターで地方レースのみ返される() {
-        let ctx = container.mainContext
-        let central = Race(category: "central"); ctx.insert(central)
-        let local = Race(category: "local"); ctx.insert(local)
-        var f = RaceFilter()
-        f.category = "local"
-        let result = f.apply(to: [central, local])
-        #expect(result.count == 1)
-        #expect(result.first === local)
-    }
-
-    @Test func 区分海外フィルターで海外レースのみ返される() {
-        let ctx = container.mainContext
-        let central = Race(category: "central"); ctx.insert(central)
-        let local = Race(category: "local"); ctx.insert(local)
-        let overseas = Race(category: "overseas"); ctx.insert(overseas)
-        var f = RaceFilter()
-        f.category = "overseas"
-        let result = f.apply(to: [central, local, overseas])
-        #expect(result.count == 1)
-        #expect(result.first === overseas)
+        #expect(result.first?.category == category)
     }
 
     // MARK: - apply(to:) グレードフィルター
 
-    @Test func `グレードg 1 フィルターでg 1 レースのみ返される`() {
+    @Test func `グレード G1 のフィルターで G1 のレースだけが返される`() {
         let ctx = container.mainContext
         let g1 = Race(grade: "G1"); ctx.insert(g1)
         let g2 = Race(grade: "G2"); ctx.insert(g2)

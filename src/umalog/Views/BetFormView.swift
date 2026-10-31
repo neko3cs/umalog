@@ -336,14 +336,7 @@ struct BetSelectionDraftRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
-                if !draft.displayTicketTypeName.isEmpty {
-                    Text(draft.displayTicketTypeName)
-                        .font(.caption)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.accentColor.opacity(0.15))
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                }
+                TicketTypeBadge(name: draft.displayTicketTypeName)
                 Text(draft.selection.isEmpty ? "（買い目未入力）" : draft.selection)
                     .foregroundStyle(draft.selection.isEmpty ? .secondary : .primary)
                 Spacer()
