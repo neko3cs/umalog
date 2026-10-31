@@ -107,7 +107,8 @@ struct RaceImportData {
 // MARK: - Error
 
 /// 取り込みを中止した原因の 1 件。
-struct RaceImportIssue: Equatable {
+/// - Note: `RaceImportError` は `Error` として nonisolated なので、その `Equatable` から使えるよう `nonisolated` にしている。
+nonisolated struct RaceImportIssue: Equatable {
     /// 原因のフィールドのパス（例: `entries[2].mark`）。JSON 全体の問題は `(JSON)`。
     let path: String
     /// 原因の説明。

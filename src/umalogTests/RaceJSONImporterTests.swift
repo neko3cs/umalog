@@ -244,9 +244,9 @@ struct JSON取り込みTest {
     }
 
     @Test(arguments: [
-        ("date", "2026-10-26" as Any), ("venue", "京都" as Any), ("raceNumber", 10 as Any),
+        ("date", "2026-10-26" as any Sendable), ("venue", "京都" as any Sendable), ("raceNumber", 10 as any Sendable),
     ])
-    func 日付か競馬場かレース番号が違えば別のレースとして新規作成になる(key: String, value: Any) throws {
+    func 日付か競馬場かレース番号が違えば別のレースとして新規作成になる(key: String, value: any Sendable) throws {
         _ = try importInitialRace()
         #expect(try plan(Self.json(race: { $0[key] = value })).raceKind == .create)
     }
