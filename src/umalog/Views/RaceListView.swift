@@ -176,11 +176,11 @@ struct RaceRowView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Text(race.trackType == "turf" ? "芝" : "ダ")
+                Text(race.trackTypeValue.shortName)
                     .font(.caption2)
                     .padding(.horizontal, 5)
                     .padding(.vertical, 2)
-                    .background(race.trackType == "turf" ? Color.green.opacity(0.2) : Color.brown.opacity(0.2))
+                    .background(race.trackTypeValue == .turf ? Color.green.opacity(0.2) : Color.brown.opacity(0.2))
                     .clipShape(RoundedRectangle(cornerRadius: 4))
                 Text("\(race.distance)m")
                     .font(.caption)

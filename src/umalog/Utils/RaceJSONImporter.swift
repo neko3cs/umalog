@@ -220,7 +220,7 @@ enum RaceJSONImporter {
     /// 受け付けるスキーマのバージョン。
     static let schemaVersion = 1
     /// 受け付けるトラック種別。
-    static let trackTypes = ["turf", "dirt"]
+    static let trackTypes = TrackType.allCases.map(\.rawValue)
 
     /// `yyyy-MM-dd` の日付を端末のタイムゾーンで読み書きするフォーマッター。
     private static let dateFormatter: DateFormatter = {
@@ -533,7 +533,10 @@ enum RaceJSONImporter {
             RaceImportFieldChange(
                 label: "グレード", oldValue: RaceGrade(rawValue: race.grade)?.displayName ?? race.grade, newValue: data.grade.displayName,
             ),
-            RaceImportFieldChange(label: "トラック", oldValue: trackTypeName(race.trackType), newValue: trackTypeName(data.trackType)),
+            RaceImportFieldChange(
+                label: "トラック", oldValue: race.trackTypeValue.displayName,
+                newValue: (TrackType(rawValue: data.trackType) ?? .dirt).displayName,
+            ),
             RaceImportFieldChange(label: "距離", oldValue: "\(race.distance)m", newValue: "\(data.distance)m"),
             RaceImportFieldChange(label: "馬場状態", oldValue: race.trackCondition, newValue: data.trackCondition),
             RaceImportFieldChange(label: "1着", oldValue: placeName(race.firstPlaceHorseNumber), newValue: placeName(data.firstPlaceHorseNumber)),
@@ -554,13 +557,6 @@ enum RaceJSONImporter {
             RaceImportFieldChange(label: "調教師", oldValue: entry.trainerName, newValue: imported.trainerName),
             RaceImportFieldChange(label: "印", oldValue: entry.predictionMark ?? "なし", newValue: imported.mark?.rawValue ?? "なし"),
         ].filter(\.isChanged)
-    }
-
-    /// トラック種別の表示名を返す。
-    /// - Parameter trackType: "turf" / "dirt"。
-    /// - Returns: "芝" / "ダート"。
-    private static func trackTypeName(_ trackType: String) -> String {
-        trackType == "turf" ? "芝" : "ダート"
     }
 
     /// 着順の馬番の表示名を返す。

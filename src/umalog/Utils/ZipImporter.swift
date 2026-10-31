@@ -58,7 +58,7 @@ enum ZipImporter {
                 raceNumber: Int(row[2]) ?? 1,
                 raceName: row[3],
                 distance: Int(row[4]) ?? 1600,
-                trackType: row[5] == "芝" ? "turf" : "dirt",
+                trackType: (row[5] == TrackType.turf.displayName ? TrackType.turf : .dirt).rawValue,
                 trackCondition: row[6],
                 category: (RaceCategory.allCases.first { $0.shortName == row[7] } ?? .local).rawValue,
                 grade: grade,

@@ -43,7 +43,7 @@ enum CSVExporter {
                 "\(race.raceNumber)",
                 race.raceName,
                 "\(race.distance)",
-                race.trackType == "turf" ? "芝" : "ダート",
+                race.trackTypeValue.displayName,
                 race.trackCondition,
                 race.categoryValue.shortName,
                 race.grade,

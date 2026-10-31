@@ -62,7 +62,7 @@ struct RaceDetailView: View {
                     LabeledContent("グレード", value: gradeEnum.displayName)
                 }
                 LabeledContent("コース") {
-                    Text("\(race.trackType == "turf" ? "芝" : "ダート") \(race.distance)m \(race.trackCondition)")
+                    Text("\(race.trackTypeValue.displayName) \(race.distance)m \(race.trackCondition)")
                 }
                 LabeledContent("区分", value: race.categoryValue.displayName)
             }
