@@ -18,28 +18,53 @@ enum ZipImporter {
     static func importZip(from url: URL, context: ModelContext) throws {
         let archive = try Archive(url: url, accessMode: .read)
 
+        // 必須の CSV を先に読み、欠けていれば既存データを消す前に中止する
         let racesText = try readEntry(archive, path: "races.csv")
         let entriesText = try readEntry(archive, path: "entries.csv")
         let betsText = try readEntry(archive, path: "bets.csv")
         let hasBetSelections = archive["bet_selections.csv"] != nil
 
-        // 既存のレースデータを削除（競馬場・券種は保持）
-        let existingSelections = try context.fetch(FetchDescriptor<BetSelection>())
-        existingSelections.forEach { context.delete($0) }
-        let existingBets = try context.fetch(FetchDescriptor<Bet>())
-        existingBets.forEach { context.delete($0) }
-        let existingEntries = try context.fetch(FetchDescriptor<RaceEntry>())
-        existingEntries.forEach { context.delete($0) }
-        let existingRaces = try context.fetch(FetchDescriptor<Race>())
-        existingRaces.forEach { context.delete($0) }
+        try deleteAllRaceData(in: context)
 
         let venues = try context.fetch(FetchDescriptor<Venue>())
         let ticketTypes = try context.fetch(FetchDescriptor<TicketType>())
 
-        // レースを作成しキーでマップ
+        let (raceMap, memoNameMap) = importRaces(racesText, venues: venues, context: context)
+        importEntries(entriesText, raceMap: raceMap, context: context)
+        if hasBetSelections {
+            try importBetsNewFormat(
+                archive: archive, betsText: betsText, raceMap: raceMap, ticketTypes: ticketTypes, context: context,
+            )
+        } else {
+            importBetsLegacyFormat(betsText: betsText, raceMap: raceMap, ticketTypes: ticketTypes, context: context)
+        }
+        importMemos(from: archive, memoNameMap: memoNameMap)
+
+        try context.save()
+    }
+
+    /// 既存のレース・出走馬・馬券・買い目をすべて削除する。競馬場・券種マスターは残す。
+    /// - Parameter context: 削除対象の ModelContext。
+    private static func deleteAllRaceData(in context: ModelContext) throws {
+        try context.fetch(FetchDescriptor<BetSelection>()).forEach { context.delete($0) }
+        try context.fetch(FetchDescriptor<Bet>()).forEach { context.delete($0) }
+        try context.fetch(FetchDescriptor<RaceEntry>()).forEach { context.delete($0) }
+        try context.fetch(FetchDescriptor<Race>()).forEach { context.delete($0) }
+    }
+
+    /// races.csv からレースを復元する。グレード・着順の列が無い旧フォーマットにも対応する。
+    /// - Parameters:
+    ///   - racesText: races.csv の内容。
+    ///   - venues: 復元先の競馬場マスター。CSV の競馬場名と同名の競馬場に紐付ける。
+    ///   - context: 復元先の ModelContext。
+    /// - Returns: レースキー → レースのマップと、メモファイルのベース名（現行・旧形式の両方）→ レースのマップ。
+    private static func importRaces(
+        _ racesText: String,
+        venues: [Venue],
+        context: ModelContext,
+    ) -> (raceMap: [String: Race], memoNameMap: [String: Race]) {
         var raceMap: [String: Race] = [:]
-        // メモファイルのベース名（新旧両形式）→ レースのマップ。
-        // レースの venue が DB に存在しない場合でも復元できるよう、CSV 行の競馬場名から組み立てる。
+        // レースの venue が DB に存在しない場合でもメモを復元できるよう、ベース名は CSV 行の競馬場名から組み立てる
         var memoNameMap: [String: Race] = [:]
         let raceRows = parseCSV(racesText)
         let raceHeader = raceRows.first ?? []
@@ -82,8 +107,15 @@ enum ZipImporter {
                 memoNameMap[name] = race
             }
         }
+        return (raceMap, memoNameMap)
+    }
 
-        // 出走馬を作成
+    /// entries.csv から出走馬を復元する。対応するレースが無い行は読み飛ばす。
+    /// - Parameters:
+    ///   - entriesText: entries.csv の内容。
+    ///   - raceMap: レースキー → レースのマップ。
+    ///   - context: 復元先の ModelContext。
+    private static func importEntries(_ entriesText: String, raceMap: [String: Race], context: ModelContext) {
         for (idx, row) in parseCSV(entriesText).dropFirst().enumerated() {
             guard row.count >= 5,
                   let race = raceMap[key(date: row[0], venue: row[1], raceNumber: row[2])] else { continue }
@@ -97,16 +129,14 @@ enum ZipImporter {
                 sortIndex: idx,
             ))
         }
+    }
 
-        if hasBetSelections {
-            try importBetsNewFormat(
-                archive: archive, betsText: betsText, raceMap: raceMap, ticketTypes: ticketTypes, context: context,
-            )
-        } else {
-            importBetsLegacyFormat(betsText: betsText, raceMap: raceMap, ticketTypes: ticketTypes, context: context)
-        }
-
-        // メモファイルをレースに紐付け（現行形式・旧形式どちらのファイル名にも対応）
+    /// memo/ 以下の Markdown ファイルを、ファイル名（現行・旧形式）が一致するレースのメモに設定する。
+    /// 読めないファイル・空のファイル・一致するレースが無いファイルは無視する。
+    /// - Parameters:
+    ///   - archive: 読み込み中のアーカイブ。
+    ///   - memoNameMap: メモファイルのベース名 → レースのマップ。
+    private static func importMemos(from archive: Archive, memoNameMap: [String: Race]) {
         for entry in archive where entry.path.hasPrefix("memo/") && entry.path.hasSuffix(".md") {
             var data = Data()
             _ = try? archive.extract(entry) { data.append($0) }
@@ -114,8 +144,6 @@ enum ZipImporter {
             let filename = String(entry.path.dropFirst("memo/".count).dropLast(".md".count))
             memoNameMap[filename]?.memo = memo
         }
-
-        try context.save()
     }
 
     /// 現行フォーマット（bets.csv + bet_selections.csv）の馬券・買い目を復元する。
