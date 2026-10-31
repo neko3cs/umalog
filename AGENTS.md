@@ -56,6 +56,13 @@ xcrun xccov view --report --only-targets src/TestResults.xcresult
 # --only-targets takes no argument; `--only-targets umalogTests` fails with
 # "unrecognized file format". Line coverage only — xccov has no branch coverage.
 
+# Combined coverage — target ≥ 85% for umalog.app (owner-agreed 2026-10-31, #43).
+# Run both test commands above with -enableCodeCoverage YES and their own
+# -resultBundlePath, then merge. A UI run can record umalog.app as 0/0 while all
+# tests pass (seen once on 2026-10-31) — rerun it rather than trusting the drop.
+xcrun xcresulttool merge unit.xcresult ui.xcresult --output-path merged.xcresult
+xcrun xccov view --report --only-targets merged.xcresult
+
 # Mutation tests — skip; Muter crashes (SIGBUS exit 138) on Xcode 26
 ```
 
@@ -116,6 +123,11 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 - **Long text in UI tests: paste it, don't `typeText` it**: typing a multi-line string into a `TextEditor` / vertical `TextField` inside a `Form` grows its row past `.frame(height:)` / `lineLimit` and pushes later rows off-screen; pasting the same text does not (found 2026-10-28 from the xcresult screen recording). Set `UIPasteboard.general.string` in the test and tap `app.buttons["Paste"]` (see `JSON取り込みTest.test長いJSONを貼って確認してもエラーが画面内に表示される`).
 - **Manual Simulator checks: launch with `--UITesting`**: `xcrun simctl launch <udid> net.neko3cs.umalog --UITesting` uses the in-memory store. A plain launch (or tapping the home-screen icon) opens the owner's real data on the shared `iPhone 18 Pro` simulator — never save anything there.
 - **Non-ASCII text can't be pushed to the Simulator clipboard from the agent**: `xcrun simctl pbcopy` fails on Japanese text (`NSCocoaErrorDomain 261`), and so does the iOS Simulator control tool's `text` action (it goes through the clipboard). `pbpaste` from the agent shell also returned empty. Use ASCII-only payloads, or ask the owner to `pbcopy` a file (the Simulator syncs the Mac clipboard).
+- **XCUITest element quirks on iOS 27.0 (found in #43)**: a compact `DatePicker` in a `Form` row has no label — assert on the row title (`app.staticTexts["開始日"]`). In export mode, `UIDocumentPickerViewController`'s Cancel is an `Other` element, not a button — query `descendants(matching: .any)`. The top of a sheet's `TextEditor` sits under the nav bar: tap lower (`dy: 0.3`) and retry until `app.keyboards` appears. `swipeDown()` on a sheet that isn't scrolled dismisses the sheet.
+- **Swipe-to-delete on plain `List` rows**: `swipeLeft()` starts at the element's centre, so on a narrow `StaticText` it barely moves; dragging to the left edge full-swipes and deletes without showing the button. Drag from x≈360 to x≈220 (see `swipeToDelete(rowLabeled:)` in `DetailScenarioTests.swift`).
+- **Shake-to-undo can't be driven from XCUITest** (there is no shake API): the undo closures in `RaceDetailView` and `ContentView`'s undo alert stay uncovered by design — don't chase them for coverage.
+- **swiftformat rewrites ASCII acronyms in Japanese test names**: `…永続IDも写し取る` came back as a backticked `…永続idも…`. Write them in Japanese (`識別子`) instead.
+- **A failure inside a shared UI-test helper reports the helper's file and line**: a `tapWhenReady` timeout shows `ScenarioTests.swift:38`, not the calling test. Check `sourceLocation.filePath` in `xcresulttool get test-results test-details` before matching line numbers.
 
 ---
 
