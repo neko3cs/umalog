@@ -344,14 +344,7 @@ struct BetRowView: View {
     /// - Returns: 買い目行のビュー。
     private func selectionRow(_ sel: BetSelection) -> some View {
         HStack(spacing: 6) {
-            if !sel.displayTicketTypeName.isEmpty {
-                Text(sel.displayTicketTypeName)
-                    .font(.caption)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.accentColor.opacity(0.15))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-            }
+            TicketTypeBadge(name: sel.displayTicketTypeName)
             Text(sel.selection)
             Spacer()
             if sel.combinationCount > 1 {
@@ -369,14 +362,7 @@ struct BetRowView: View {
     /// 買い目レコードを持たない旧形式馬券のための行。レガシーフィールドから表示する。
     private var legacySelectionRow: some View {
         HStack(spacing: 6) {
-            if !bet.displayTicketTypeName.isEmpty {
-                Text(bet.displayTicketTypeName)
-                    .font(.caption)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.accentColor.opacity(0.15))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-            }
+            TicketTypeBadge(name: bet.displayTicketTypeName)
             Text(bet.selection)
             Spacer()
         }
@@ -395,6 +381,23 @@ struct BetRowView: View {
                 .font(.caption)
                 .foregroundStyle(bet.payoutAmount > 0 ? .green : .red)
             Spacer()
+        }
+    }
+}
+
+/// 券種名のバッジ。券種名が空なら何も表示しない。
+struct TicketTypeBadge: View {
+    /// 表示する券種名。
+    let name: String
+
+    var body: some View {
+        if !name.isEmpty {
+            Text(name)
+                .font(.caption)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Color.accentColor.opacity(0.15))
+                .clipShape(RoundedRectangle(cornerRadius: 4))
         }
     }
 }
