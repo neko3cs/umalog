@@ -56,7 +56,23 @@ xcrun xccov view --report --only-targets src/TestResults.xcresult
 # --only-targets takes no argument; `--only-targets umalogTests` fails with
 # "unrecognized file format". Line coverage only — xccov has no branch coverage.
 
-# Mutation tests — skip; Muter crashes (SIGBUS exit 138) on Xcode 26
+# Combined coverage — target ≥ 85% for umalog.app (owner-agreed 2026-10-31, #43).
+# Run both test commands above with -enableCodeCoverage YES and their own
+# -resultBundlePath, then merge. A UI run can record umalog.app as 0/0 while all
+# tests pass (seen once on 2026-10-31) — rerun it rather than trusting the drop.
+xcrun xcresulttool merge unit.xcresult ui.xcresult --output-path merged.xcresult
+xcrun xccov view --report --only-targets merged.xcresult
+
+# Mutation tests — skip; Muter crashes (SIGBUS exit 138) on Xcode 26 and, per the
+# owner, doesn't support current Xcode (not re-run on 27.1).
+# PBT — skip; SwiftCheck isn't adopted until it supports the current Swift
+# (owner decision 2026-10-31). Don't add it as a dependency during a quality gate.
+# CodeQL — skip; it supports Swift 5.4–6.3 and this project needs Swift 6.4
+# (Xcode 27.1, iOS 27 SDK; checked 2026-10-31). Tracing still fails with Rosetta 2
+# installed (SwiftPM's sandbox-exec "Bad CPU type", then clang spawn ENOENT).
+# Re-run once CodeQL supports Swift 6.4.
+# Sanitizers — the ASan runtime links into umalog.app/umalog.debug.dylib, not the
+# `umalog` stub; check that file with `otool -L` to confirm instrumentation.
 ```
 
 For Claude Code: use the `/test-ios-project` skill to run the full sequence above, but override its default destination (`iPhone 16,OS=latest`) with the one above — no `iPhone 16` exists under the iOS 27.0 runtime.
@@ -68,7 +84,7 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 - **No git worktrees in this repo** — this overrides the global "work in a worktree" default. Branch in the main working directory (`git checkout -b`) instead. Reason: the owner reviews changes in Xcode, which is open on this checkout; a separate worktree path puts the code where they can't see it. Branch + PR still apply — don't commit to `main`.
 - **DocC comments** (`///`) required on all types, properties, and functions. Use `- Returns:`, `- Parameter:`, `- Note:` keywords for Xcode Quick Help.
 - **Inline `//`** only for logic a reader would likely misread — never narrate obvious code.
-- **Commits**: must not commit until the owner explicitly confirms behavior ("コミットして" or equivalent).
+- **Commits**: on a feature branch, commit and push freely — no confirmation needed, including for `AGENTS.md` edits (owner, 2026-10-31; this overrides the global doctrine's "confirm before overwriting AGENTS.md"). Never commit, push, or merge to `main` directly — that goes through a PR the owner merges.
 
 ---
 
@@ -99,7 +115,7 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 - **`Toggle` with a custom `Binding(get:set:)` inside `Form`/`List` rows can silently fail to register taps**: confirmed via real mouse clicks in the Simulator (not an XCUITest artifact) — a sibling `Picker` bound directly to `$filter.category` in the same sheet worked fine. Prefer a `Button` + checkmark row over `Toggle` for per-item multi-select rows in a `Form`/`List`.
 - **Japanese day-count strings in UI test assertions must be anchored, not bare-`contains`**: `label.contains("1日間")` false-matches `"21日間"`/`"31日間"` since digits aren't word-bounded. Anchor with surrounding punctuation (e.g. `"(1日間)"`) or use exact string equality.
 - **ZIP backup memo filenames**: current format is `<yyyyMMdd>_<venue>_R<n>_<raceName>.md` (venue + race number added 2026-07-04 to stop same-named races at different venues from overwriting each other's memo). `ZipImporter` must keep the legacy `<yyyyMMdd>_<raceName>` fallback — users' existing backups depend on it.
-- **`xcodebuild -resultBundlePath` fails if the bundle already exists**: `rm -rf src/TestResults.xcresult` first. A failure "Early unexpected exit, operation never finished bootstrapping" usually means the destination simulator isn't booted — `xcrun simctl boot` it and retry. On the iOS 27.0 runtime an unbooted destination can instead hang `xcodebuild` silently for 10+ min (0% CPU, no output) — boot it first (`xcrun simctl boot <udid> && xcrun simctl bootstatus <udid> -b`). Separately, `xcodebuild` can stay alive at 0% CPU after printing `** TEST SUCCEEDED **`, or stop mid-run (simulator shut down / `** BUILD INTERRUPTED **`) under Xcode 27.1 — judge the run by the log's `** TEST … **` line and `xcresulttool get test-results summary`, then kill it and rerun if needed; no failing test is involved.
+- **`xcodebuild -resultBundlePath` fails if the bundle already exists**: `rm -rf src/TestResults.xcresult` first. A failure "Early unexpected exit, operation never finished bootstrapping" usually means the destination simulator isn't booted — `xcrun simctl boot` it and retry. On the iOS 27.0 runtime an unbooted destination can instead hang `xcodebuild` silently for 10+ min (0% CPU, no output) — boot it first (`xcrun simctl boot <udid> && xcrun simctl bootstatus <udid> -b`). Separately, `xcodebuild` can stay alive at 0% CPU after printing `** TEST SUCCEEDED **`, or stop mid-run (simulator shut down / `** BUILD INTERRUPTED **`) under Xcode 27.1 — judge the run by the log's `** TEST … **` line and `xcresulttool get test-results summary`, then kill it and rerun if needed; no failing test is involved. If a run fails at install with `The iOS 27.0 simulator runtime is not available` while `xcrun simctl runtime list` still shows the image as Ready (it's gone from `simctl list runtimes`), CoreSimulator lost the mount — `killall -9 com.apple.CoreSimulator.CoreSimulatorService`, boot the device, rerun (2026-10-31).
 - **Test destination is `iPhone 18 Pro` / `OS=27.0`, matching `IPHONEOS_DEPLOYMENT_TARGET = 27.0`** (owner's choice, 2026-09-27). This machine still has the `18.6` and `26.5` simulator runtimes installed, but both are below the deployment target — don't pick them as a destination (`iPhone 16` exists only under `18.6`).
 - **iOS 27.0 parallel UI tests: "Lost connection to the application" is a simulator-clone flake, not an app bug**: seen 2026-09-27 on Xcode 27.0 (1/27 failed with that message plus one `xctrunner` launch-denied error on a clone); the same test passed 3/3 when rerun alone with `-parallel-testing-enabled NO`. Rerun the single test before investigating app code.
 - **Project Format bumps must go through Xcode's GUI picker, never a hand-typed `objectVersion`**: there is no documented version→integer mapping, and a wrong guess can silently break the project. Picking "Xcode 26.3" in the Project Document inspector wrote `objectVersion = 100` (from `77` — nowhere near a linear guess). Xcode also drops now-default keys (`buildActionMask`, `runOnlyForDeploymentPostprocessing`, empty `dependencies` arrays, …) during the bump — that's normalization, not data loss.
@@ -116,6 +132,12 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 - **Long text in UI tests: paste it, don't `typeText` it**: typing a multi-line string into a `TextEditor` / vertical `TextField` inside a `Form` grows its row past `.frame(height:)` / `lineLimit` and pushes later rows off-screen; pasting the same text does not (found 2026-10-28 from the xcresult screen recording). Set `UIPasteboard.general.string` in the test and tap `app.buttons["Paste"]` (see `JSON取り込みTest.test長いJSONを貼って確認してもエラーが画面内に表示される`).
 - **Manual Simulator checks: launch with `--UITesting`**: `xcrun simctl launch <udid> net.neko3cs.umalog --UITesting` uses the in-memory store. A plain launch (or tapping the home-screen icon) opens the owner's real data on the shared `iPhone 18 Pro` simulator — never save anything there.
 - **Non-ASCII text can't be pushed to the Simulator clipboard from the agent**: `xcrun simctl pbcopy` fails on Japanese text (`NSCocoaErrorDomain 261`), and so does the iOS Simulator control tool's `text` action (it goes through the clipboard). `pbpaste` from the agent shell also returned empty. Use ASCII-only payloads, or ask the owner to `pbcopy` a file (the Simulator syncs the Mac clipboard).
+- **XCUITest element quirks on iOS 27.0 (found in #43)**: a compact `DatePicker` in a `Form` row has no label — assert on the row title (`app.staticTexts["開始日"]`). In export mode, `UIDocumentPickerViewController`'s Cancel is an `Other` element, not a button — query `descendants(matching: .any)`. The top of a sheet's `TextEditor` sits under the nav bar: tap lower (`dy: 0.3`) and retry until `app.keyboards` appears. `swipeDown()` on a sheet that isn't scrolled dismisses the sheet.
+- **Swipe-to-delete on plain `List` rows**: `swipeLeft()` starts at the element's centre, so on a narrow `StaticText` it barely moves; dragging to the left edge full-swipes and deletes without showing the button. Drag from x≈360 to x≈220 (see `swipeToDelete(rowLabeled:)` in `DetailScenarioTests.swift`).
+- **Shake-to-undo can't be driven from XCUITest** (there is no shake API): the undo closures in `RaceDetailView` and `ContentView`'s undo alert stay uncovered by design — don't chase them for coverage.
+- **swiftformat rewrites ASCII acronyms in Japanese test names** (`ID`, `URL` → backticked `id`, `url`) and once split `一時` into `一 時`. Write names without acronyms (`識別子`, `場所`) and re-check the `func` lines after formatting.
+- **A failure inside a shared UI-test helper reports the helper's file and line**: a `tapWhenReady` timeout shows `ScenarioTests.swift:38`, not the calling test. Check `sourceLocation.filePath` in `xcresulttool get test-results test-details` before matching line numbers.
+- **The system document picker can't be driven end-to-end from UI tests**: on the parallel-run simulator clones, taps on a file cell in the import picker are ignored (a round-trip test passed alone but failed 5/5 with 5 workers, #43); saving onto an existing same-named file fails silently (spinner, then back to the picker); and the picker opens in the last-used folder — the owner's `このiPhone内/Backup` on the shared simulator. With `-parallel-testing-worker-count 1` no clone is used, so exported files land in the owner's Files. Test the round trip with `--UITestingSkipDocumentPicker` (`ZIP往復Test`) and the post-pick code in `DocumentPickerCoordinatorTests.swift`; keep picker UI tests to open-and-cancel.
 
 ---
 
@@ -123,7 +145,7 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 
 | Date | What went wrong | Prevention |
 | :--- | :--- | :--- |
-| 2026-06-30 | Committed and pushed before owner confirmed behavior | Never `git commit` / `git push` without explicit owner instruction |
+| 2026-06-30 | Committed and pushed before owner confirmed behavior | Never `git commit` / `git push` to `main`; feature-branch commits are free since 2026-10-31 (see Development Rules) |
 | 2026-07-01 | PR #21 shipped with venue/grade filter rows completely unresponsive to taps despite 27 passing unit tests | Unit tests on a value type (`RaceFilter`) don't verify View wiring — add an interaction-level UI test or manual Simulator click-through for every new tappable control before merging |
 | 2026-07-03 | New UI test asserted `title.contains("1日間")`, which would have silently passed for `"31日間"`/`"21日間"` too — caught locally before merge | Anchor Japanese day-count substring checks with surrounding punctuation or exact match, not bare digit-suffix `contains` |
 | 2026-07-10 | `git reset --soft` / `git stash pop` were blocked by the Claude Code auto-mode permission classifier as irreversible-history operations, even after the owner approved via a clarifying question | For git history-rewriting ops during a stash-and-park workflow, have the owner run the command directly in their terminal rather than retrying through the agent |
@@ -134,3 +156,4 @@ For Claude Code: use the `/test-ios-project` skill to run the full sequence abov
 | 2026-10-26 | Adding `save()` after record inserts crashed the app: seeded masters were still unsaved and changed ID inside a `Picker` | When adding an explicit save, check what else is pending in the context (seeded or master inserts) and save it at its own insert site |
 | 2026-10-28 | JSON import UI tests used one-line JSON, so an error rendered below a tall input field (off-screen; "確認が反応しない") still passed — the owner found it in the Simulator | Test long input the way users enter it (multi-line paste) and assert the result `isHittable`, not just that it exists |
 | 2026-10-28 | Deleted the UI test xcresult in the same command that ran the suite, so 2 failures under parallel load could only be re-run, not inspected | Keep each run's `-resultBundlePath` until its failures are examined; delete it afterwards |
+| 2026-10-31 | A new ZIP round-trip UI test passed when run alone but failed 5/5 under 5 parallel workers (system document picker on simulator clones) — caught before commit | Run every new UI test with `-test-iterations 5 -parallel-testing-worker-count 5` before trusting a single pass |

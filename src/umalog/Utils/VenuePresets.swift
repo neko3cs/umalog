@@ -82,7 +82,8 @@ let venuePresets: [VenuePresetData] = [
 
 /// アプリが扱う券種の一覧。買い目入力で選べるのはこの券種だけ。
 /// - Note: 既存ユーザーには起動時に足りない券種だけを末尾へ追加するため、既存の並び順を変えないよう新しい券種は末尾に足す。
-let defaultTicketTypeNames: [(name: String, sortIndex: Int)] = [
+///   `@Test(arguments:)` は MainActor の外で評価されるため、そこから参照できるよう `nonisolated` にしている。
+nonisolated let defaultTicketTypeNames: [(name: String, sortIndex: Int)] = [
     ("単勝", 0), ("複勝", 1), ("枠連", 2), ("馬連", 3),
     ("ワイド", 4), ("馬単", 5), ("三連複", 6), ("三連単", 7),
     ("枠単", 8), ("応援馬券", 9),

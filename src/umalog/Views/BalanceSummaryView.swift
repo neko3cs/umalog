@@ -188,11 +188,6 @@ struct BalanceSummaryView: View {
     /// 期間計算ロジック。
     private let calc = BalanceSummaryPeriodCalc()
 
-    /// 期間モードの開始日・終了日が正しい順序かどうか。
-    private var isRangeValid: Bool {
-        period != .range || fromDate <= toDate
-    }
-
     /// 現在の集計期間に開催日が含まれるレース。
     private var filteredRaces: [Race] {
         if period == .range {
