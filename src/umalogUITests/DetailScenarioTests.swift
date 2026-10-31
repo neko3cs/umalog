@@ -340,3 +340,79 @@ final class ZIPバックアップ復元Test: UIテストケース {
         XCTAssertFalse(app.alerts["データを復元"].exists)
     }
 }
+
+/// システムのファイル選択画面を飛ばして起動し、ZIP の書き出しから復元までの流れを確かめる。
+/// - Note: ファイル選択画面を実際に操作するテストは、並列実行用のシミュレーター複製ではファイルのタップが効かず安定しなかった（#43）。
+///   ファイル選択画面そのものは `ZIPバックアップ復元Test` の開閉テストと、コーディネーターのユニットテストで確かめる。
+final class ZIP往復Test: UIテストケース {
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchArguments = ["--UITesting", "--UITestingSkipDocumentPicker"]
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+    }
+
+    /// レース名を入力してレースを1件追加する。
+    /// - Parameter name: 追加するレースの名前。
+    private func addRace(name: String) {
+        openAddRaceForm()
+        let raceNameField = app.textFields["レース名（任意）"]
+        tapWhenReady(raceNameField)
+        raceNameField.typeText(name)
+        app.buttons["追加"].tap()
+        XCTAssertTrue(app.staticTexts[name].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testZIPに書き出したバックアップから復元するとバックアップ時点のレースに戻る() {
+        addRace(name: "バックアップ前レース")
+
+        app.tabBars.firstMatch.buttons["設定"].tap()
+        tapWhenReady(app.buttons["ZIPバックアップ"])
+        let savedAlert = app.alerts["バックアップ完了"]
+        XCTAssertTrue(savedAlert.waitForExistence(timeout: 10))
+        savedAlert.buttons["OK"].tap()
+
+        app.tabBars.firstMatch.buttons["レース"].tap()
+        addRace(name: "バックアップ後レース")
+
+        app.tabBars.firstMatch.buttons["設定"].tap()
+        tapWhenReady(app.buttons["ZIPから復元"])
+        let confirmAlert = app.alerts["データを復元"]
+        XCTAssertTrue(confirmAlert.waitForExistence(timeout: 10))
+        confirmAlert.buttons["復元"].tap()
+        let restoredAlert = app.alerts["復元完了"]
+        XCTAssertTrue(restoredAlert.waitForExistence(timeout: 10))
+        restoredAlert.buttons["OK"].tap()
+
+        app.tabBars.firstMatch.buttons["レース"].tap()
+        XCTAssertTrue(app.staticTexts["バックアップ前レース"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["バックアップ後レース"].exists)
+    }
+
+    @MainActor
+    func test復元の確認でキャンセルするとレースはそのまま残る() {
+        addRace(name: "残るレース")
+
+        app.tabBars.firstMatch.buttons["設定"].tap()
+        tapWhenReady(app.buttons["ZIPバックアップ"])
+        let savedAlert = app.alerts["バックアップ完了"]
+        XCTAssertTrue(savedAlert.waitForExistence(timeout: 10))
+        savedAlert.buttons["OK"].tap()
+
+        app.tabBars.firstMatch.buttons["レース"].tap()
+        addRace(name: "追加したレース")
+
+        app.tabBars.firstMatch.buttons["設定"].tap()
+        tapWhenReady(app.buttons["ZIPから復元"])
+        let confirmAlert = app.alerts["データを復元"]
+        XCTAssertTrue(confirmAlert.waitForExistence(timeout: 10))
+        confirmAlert.buttons["キャンセル"].tap()
+
+        app.tabBars.firstMatch.buttons["レース"].tap()
+        XCTAssertTrue(app.staticTexts["残るレース"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["追加したレース"].exists)
+    }
+}
