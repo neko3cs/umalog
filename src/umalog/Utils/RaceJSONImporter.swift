@@ -535,7 +535,7 @@ enum RaceJSONImporter {
             ),
             RaceImportFieldChange(
                 label: "トラック", oldValue: race.trackTypeValue.displayName,
-                newValue: (TrackType(rawValue: data.trackType) ?? .dirt).displayName,
+                newValue: TrackType(storedValue: data.trackType).displayName,
             ),
             RaceImportFieldChange(label: "距離", oldValue: "\(race.distance)m", newValue: "\(data.distance)m"),
             RaceImportFieldChange(label: "馬場状態", oldValue: race.trackCondition, newValue: data.trackCondition),
