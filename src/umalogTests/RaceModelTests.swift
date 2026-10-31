@@ -69,7 +69,7 @@ struct レースモデルTest {
         #expect(race.totalPayout == 0)
     }
 
-    @Test func `一 部精算済みの場合に払戻合計が精算済み馬券の払戻額の合計になる`() {
+    @Test func `一部精算済みの場合に払戻合計が精算済み馬券の払戻額の合計になる`() {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet1 = Bet(race: race, purchaseAmount: 1000, payoutAmount: 2500); ctx.insert(bet1)
@@ -101,28 +101,13 @@ struct レースモデルTest {
         #expect(race.balance == 0)
     }
 
-    @Test func 払戻が購入より多い場合に収支がプラスになる() {
+    @Test(arguments: [(1000, 3000, 2000), (1000, 0, -1000), (1000, 1000, 0)])
+    func `馬券が 1 枚のレースの収支がその馬券の払戻額から購入額を引いた値になる`(purchase: Int, payout: Int, balance: Int) {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
-        let bet = Bet(race: race, purchaseAmount: 1000, payoutAmount: 3000); ctx.insert(bet)
+        let bet = Bet(race: race, purchaseAmount: purchase, payoutAmount: payout); ctx.insert(bet)
         race.bets = [bet]
-        #expect(race.balance == 2000)
-    }
-
-    @Test func 払戻がゼロの場合に収支がマイナスになる() {
-        let ctx = container.mainContext
-        let race = Race(); ctx.insert(race)
-        let bet = Bet(race: race, purchaseAmount: 1000, payoutAmount: 0); ctx.insert(bet)
-        race.bets = [bet]
-        #expect(race.balance == -1000)
-    }
-
-    @Test func 払戻と購入が同額の場合に収支がゼロになる() {
-        let ctx = container.mainContext
-        let race = Race(); ctx.insert(race)
-        let bet = Bet(race: race, purchaseAmount: 1000, payoutAmount: 1000); ctx.insert(bet)
-        race.bets = [bet]
-        #expect(race.balance == 0)
+        #expect(race.balance == balance)
     }
 
     @Test func 収支が払戻合計から購入合計を引いた値に等しい() {
@@ -178,54 +163,19 @@ struct レースモデルTest {
 
     // MARK: - finishPosition
 
-    @Test func `着順が未設定のとき有効な馬番でfinish positionがnilになる`() {
-        let race = Race()
-        container.mainContext.insert(race)
-        #expect(race.finishPosition(forHorseNumber: 1) == nil)
-        #expect(race.finishPosition(forHorseNumber: 18) == nil)
-    }
-
-    @Test func `馬番が 1 着馬の場合に着順が 1 になる`() {
-        let race = Race(firstPlaceHorseNumber: 5, secondPlaceHorseNumber: 3, thirdPlaceHorseNumber: 8)
-        container.mainContext.insert(race)
-        #expect(race.finishPosition(forHorseNumber: 5) == 1)
-    }
-
-    @Test func `馬番が 2 着馬の場合に着順が 2 になる`() {
-        let race = Race(firstPlaceHorseNumber: 5, secondPlaceHorseNumber: 3, thirdPlaceHorseNumber: 8)
-        container.mainContext.insert(race)
-        #expect(race.finishPosition(forHorseNumber: 3) == 2)
-    }
-
-    @Test func `馬番が 3 着馬の場合に着順が 3 になる`() {
-        let race = Race(firstPlaceHorseNumber: 5, secondPlaceHorseNumber: 3, thirdPlaceHorseNumber: 8)
-        container.mainContext.insert(race)
-        #expect(race.finishPosition(forHorseNumber: 8) == 3)
-    }
-
-    @Test func 馬番が入賞外の場合に着順がnilになる() {
-        let race = Race(firstPlaceHorseNumber: 5, secondPlaceHorseNumber: 3, thirdPlaceHorseNumber: 8)
-        container.mainContext.insert(race)
-        #expect(race.finishPosition(forHorseNumber: 1) == nil)
-    }
-
-    @Test func `馬番 0 は着順が未設定でもnilになる`() {
+    @Test(arguments: [1, 18, 0, -1])
+    func 着順が未入力のレースではどの馬番にも着順が無い(horseNumber: Int) {
         // 着順欄の 0 は「未入力」を意味するため、馬番 0 と誤って一致してはならない
         let race = Race()
         container.mainContext.insert(race)
-        #expect(race.finishPosition(forHorseNumber: 0) == nil)
+        #expect(race.finishPosition(forHorseNumber: horseNumber) == nil)
     }
 
-    @Test func `馬番 0 は着順が設定済みでもnilになる`() {
+    @Test(arguments: [(5, 1), (3, 2), (8, 3), (1, nil), (0, nil)] as [(Int, Int?)])
+    func `着順が入力済みのレースでは 3 着以内の馬番だけに着順が付く`(horseNumber: Int, position: Int?) {
         let race = Race(firstPlaceHorseNumber: 5, secondPlaceHorseNumber: 3, thirdPlaceHorseNumber: 8)
         container.mainContext.insert(race)
-        #expect(race.finishPosition(forHorseNumber: 0) == nil)
-    }
-
-    @Test func 負の馬番では常にnilになる() {
-        let race = Race()
-        container.mainContext.insert(race)
-        #expect(race.finishPosition(forHorseNumber: -1) == nil)
+        #expect(race.finishPosition(forHorseNumber: horseNumber) == position)
     }
 
     // MARK: - Property-Based Tests
@@ -282,7 +232,7 @@ struct レースモデルTest {
 
     // MARK: - @Relationship inverse（逆参照自動更新）
 
-    @Test func `馬券挿入時にrace betsが自動更新される`() throws {
+    @Test func `馬券を挿入するとレースの馬券一覧に加わる`() throws {
         let ctx = container.mainContext
         let race = Race(); ctx.insert(race)
         let bet = Bet(race: race, purchaseAmount: 1000, payoutAmount: 3000)
@@ -323,12 +273,12 @@ struct レースモデルTest {
 
     // MARK: - RaceGrade
 
-    @Test func `全 race gradeケースのraw valueが重複しない`() {
+    @Test func グレードの保存値がグレードどうしで重複しない() {
         let rawValues = RaceGrade.allCases.map(\.rawValue)
         #expect(Set(rawValues).count == rawValues.count)
     }
 
-    @Test func `gradeのraw valueから race gradeが生成できる`() {
+    @Test func 保存値からグレードが読み取れる() {
         #expect(RaceGrade(rawValue: "") == .unspecified)
         #expect(RaceGrade(rawValue: "G1") == .g1)
         #expect(RaceGrade(rawValue: "G2") == .g2)
@@ -338,7 +288,7 @@ struct レースモデルTest {
         #expect(RaceGrade(rawValue: "General") == .general)
     }
 
-    @Test func `各 race gradeの表示名が正しい`() {
+    @Test func グレードごとに表示名が決まっている() {
         #expect(RaceGrade.unspecified.displayName == "未選択")
         #expect(RaceGrade.g1.displayName == "G1")
         #expect(RaceGrade.g2.displayName == "G2")
@@ -348,7 +298,7 @@ struct レースモデルTest {
         #expect(RaceGrade.general.displayName == "一般")
     }
 
-    @Test func `不正なraw valueからの race grade生成はnilになる`() {
+    @Test func グレードの保存値でない文字列からはグレードが作られない() {
         #expect(RaceGrade(rawValue: "unknown") == nil)
         #expect(RaceGrade(rawValue: "g1") == nil)
     }

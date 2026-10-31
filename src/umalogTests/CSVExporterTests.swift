@@ -287,7 +287,7 @@ struct CSVエクスポーターTest {
 
     // MARK: - ZipExporter / ZipImporter
 
-    @Test func `zipエクスポートで 一 時ディレクトリにzipファイルが生成される`() throws {
+    @Test func `zipエクスポートで一時ディレクトリにzipファイルが生成される`() throws {
         let ctx = container.mainContext
         let race = Race(raceNumber: 7); ctx.insert(race)
         let url = try ZipExporter.export(races: [race])

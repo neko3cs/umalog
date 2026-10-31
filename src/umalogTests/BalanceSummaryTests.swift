@@ -196,7 +196,7 @@ struct 収支集計期間計算Test {
         #expect(calc.rangeInterval(from: from, to: to) == nil)
     }
 
-    @Test func `同 一 日の期間指定でその日が含まれ翌日が含まれない`() throws {
+    @Test func `同一日の期間指定でその日が含まれ翌日が含まれない`() throws {
         let date = makeDate(2026, 6, 15)
         let interval = try #require(calc.rangeInterval(from: date, to: date))
         #expect(interval.contains(makeDate(2026, 6, 15)))

@@ -374,7 +374,7 @@ struct JSON取り込みTest {
         #expect(prompt.contains(RaceJSONImporter.exampleJSON))
     }
 
-    @Test func `JSON schemaの選択肢がアプリの定義と 一 致する`() throws {
+    @Test func `JSON Schema の選択肢がアプリの定義と一致する`() throws {
         let race = try object(schemaObject(), "properties", "race", "properties")
         #expect(try object(race, "venue")["enum"] as? [String] == venuePresets.map(\.name))
         #expect(try object(race, "trackCondition")["enum"] as? [String] == Race.trackConditions)
@@ -384,7 +384,7 @@ struct JSON取り込みTest {
         #expect(try object(schemaObject(), "properties", "schemaVersion")["const"] as? Int == 1)
     }
 
-    @Test func `JSON schemaの必須フィールドが出力例のフィールドと 一 致する`() throws {
+    @Test func `JSON Schema の必須フィールドが出力例のフィールドと一致する`() throws {
         let example = try #require(try JSONSerialization.jsonObject(with: Data(RaceJSONImporter.exampleJSON.utf8)) as? [String: Any])
         let exampleRace = try #require(example["race"] as? [String: Any])
         let exampleEntry = try #require((example["entries"] as? [[String: Any]])?.first)
