@@ -109,6 +109,22 @@ final class レース追加Test: UIテストケース {
         XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["テストレース"].waitForExistence(timeout: 5))
     }
+
+    @MainActor
+    func test数字キーボードの完了ボタンでキーボードが閉じる() {
+        openAddRaceForm()
+        XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
+
+        tapWhenReady(app.textFields["距離"])
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        let doneButton = findElement("keyboard-done")
+        tapWhenReady(doneButton)
+
+        let keyboardGone = NSPredicate(format: "exists == false")
+        let expectation = XCTNSPredicateExpectation(predicate: keyboardGone, object: app.keyboards.firstMatch)
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 5), .completed)
+        XCTAssertFalse(doneButton.exists)
+    }
 }
 
 // MARK: - Scenario 3: レース詳細・出走馬追加
