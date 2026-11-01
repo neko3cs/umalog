@@ -169,21 +169,10 @@ struct RaceEntryFormView: View {
                     }
                     .disabled(horseName.isEmpty)
                 }
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("完了") { dismissKeyboard() }
-                }
             }
+            .keyboardDoneBar()
             .onAppear { loadIfEditing() }
         }
-    }
-
-    /// 表示中のキーボードを閉じる。
-    private func dismissKeyboard() {
-        UIApplication.shared.sendAction(
-            #selector(UIResponder.resignFirstResponder),
-            to: nil, from: nil, for: nil,
-        )
     }
 
     /// 編集モードなら編集対象の値を、新規モードなら既存出走馬の最大馬番 + 1 を入力フィールドに設定する。
