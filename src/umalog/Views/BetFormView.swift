@@ -152,6 +152,7 @@ struct BetFormView: View {
             .navigationTitle(isEditing ? "馬券を編集" : "馬券を追加")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbarContent }
+            .keyboardDoneBar()
             .sheet(item: $selectionFormTarget) { target in
                 selectionFormSheet(for: target)
             }
@@ -208,15 +209,6 @@ struct BetFormView: View {
                 dismiss()
             }
             .disabled(draftSelections.isEmpty || totalPurchase <= 0)
-        }
-        ToolbarItemGroup(placement: .keyboard) {
-            Spacer()
-            Button("完了") {
-                UIApplication.shared.sendAction(
-                    #selector(UIResponder.resignFirstResponder),
-                    to: nil, from: nil, for: nil,
-                )
-            }
         }
     }
 

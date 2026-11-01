@@ -191,6 +191,7 @@ struct SelectionFormView: View {
             .navigationTitle(isEditing ? "買い目を編集" : "買い目を追加")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbarContent }
+            .keyboardDoneBar()
             .onAppear { setupInitialState() }
             .onChange(of: selectedTicketType) { _, _ in resetIfUserChange(resetStyle: true) }
             .onChange(of: betStyle) { _, _ in resetIfUserChange(resetStyle: false) }
@@ -298,15 +299,6 @@ struct SelectionFormView: View {
                 save()
             }
             .disabled(selection.isEmpty || unitPrice <= 0)
-        }
-        ToolbarItemGroup(placement: .keyboard) {
-            Spacer()
-            Button("完了") {
-                UIApplication.shared.sendAction(
-                    #selector(UIResponder.resignFirstResponder),
-                    to: nil, from: nil, for: nil,
-                )
-            }
         }
     }
 
