@@ -163,7 +163,9 @@ enum CSVExporter {
         return formatter.string(from: date)
     }
 
-    /// 0 を未入力として空文字に変換するヘルパー
+    /// 馬番を CSV の値に変換する。0 は未入力（着順未確定など）として空欄にする。
+    /// - Parameter number: 馬番。0 は未入力。
+    /// - Returns: 馬番の文字列。0 以下なら空文字。
     static func horseNumberString(_ number: Int) -> String {
         number > 0 ? "\(number)" : ""
     }
