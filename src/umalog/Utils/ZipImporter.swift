@@ -214,6 +214,7 @@ enum ZipImporter {
                   let race = raceMap[key(date: row[0], venue: row[1], raceNumber: row[2])] else { continue }
             let ticketTypeName = row[3]
             let selection = row[4]
+            let combinationCount = Bet.combinationCount(selection: selection, ticketTypeName: ticketTypeName)
             let unitPrice: Int
             let purchaseAmount: Int
             let payoutAmount: Int
@@ -224,10 +225,8 @@ enum ZipImporter {
             } else {
                 purchaseAmount = Int(row[5]) ?? 0
                 payoutAmount = row.count > 6 ? Int(row[6]) ?? 0 : 0
-                let count = Bet.combinationCount(selection: selection, ticketTypeName: ticketTypeName)
-                unitPrice = count > 0 ? purchaseAmount / count : 100
+                unitPrice = combinationCount > 0 ? purchaseAmount / combinationCount : 100
             }
-            let count = max(1, Bet.combinationCount(selection: selection, ticketTypeName: ticketTypeName))
             let newBet = Bet(
                 race: race, ticketTypeName: ticketTypeName, selection: selection,
                 unitPrice: unitPrice, purchaseAmount: purchaseAmount,
@@ -240,7 +239,7 @@ enum ZipImporter {
                 ticketTypeName: ticketTypeName,
                 selection: selection,
                 unitPrice: unitPrice,
-                combinationCount: count,
+                combinationCount: max(1, combinationCount),
                 sortIndex: 0,
             ))
         }
