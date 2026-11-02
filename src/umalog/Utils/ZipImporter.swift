@@ -263,7 +263,7 @@ enum ZipImporter {
     ///   - betSortIndex: CSV の bet_sort_index 列の値。
     /// - Returns: 馬券キー文字列。
     private static func betKey(date: String, venue: String, raceNumber: String, betSortIndex: String) -> String {
-        "\(date)|\(venue)|\(raceNumber)|\(betSortIndex)"
+        "\(key(date: date, venue: venue, raceNumber: raceNumber))|\(betSortIndex)"
     }
 
     /// アーカイブ内の指定パスのエントリを UTF-8 テキストとして読み出す。
