@@ -320,9 +320,7 @@ enum ZipImporter {
                     fallthrough
                 case "\n":
                     row.append(field); field = ""
-                    if !row.isEmpty {
-                        result.append(row)
-                    }
+                    result.append(row)
                     row = []
                 default: field.append(char)
                 }
