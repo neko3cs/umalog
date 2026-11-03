@@ -76,12 +76,11 @@ For Claude Code: use the `/test-code` skill to run the full sequence above, but 
 
 - **No git worktrees in this repo** — this overrides the global "work in a worktree" default. Branch in the main working directory (`git checkout -b`) instead. Reason: the owner reviews changes in Xcode, which is open on this checkout; a separate worktree path puts the code where they can't see it. Branch + PR still apply — don't commit to `main`.
 - **Commits**: on a feature branch, commit and push freely — no confirmation needed, including for `AGENTS.md` edits (owner, 2026-10-31; this overrides the global doctrine's "confirm before overwriting AGENTS.md"). Never commit, push, or merge to `main` directly — that goes through a PR the owner merges.
-- **History-rewriting git ops** (`git reset --soft`, `git stash pop`, …): the agent's permission classifier blocks them even after the owner approves in chat. Ask the owner to run them in their own terminal instead of retrying.
 - **No `PLAN.md`** (owner, 2026-11-04): hand-off state goes in a comment on the working Issue or in the PR body. Never point this file at an untracked path — anything not committed goes in an Issue.
 - **DocC comments** (`///`) required on all types, properties, and functions. Use `- Returns:`, `- Parameter:`, `- Note:` keywords for Xcode Quick Help.
 - **Inline `//`** only for logic a reader would likely misread — never narrate obvious code.
+- **ADR numbers in `docs/architecture.md` follow the order the decisions were made**, not topic. Check commit/PR history for the decision date before assigning a number.
 - **UIKit only where SwiftUI has no API**: shake-to-undo (`ShakeWindow`, wired through `AppDelegate` / `SceneDelegate`).
-- **`identifier_name` is disabled in SwiftLint**: test functions are Japanese specification sentences (e.g. `払戻が購入より多い場合に収支がプラスになる()`); SwiftLint can't suppress non-ASCII violations any other way (v0.63.3).
 - **Every new tappable control needs an interaction-level UI test or a Simulator click-through**: unit tests on a value type (e.g. `RaceFilter`) don't verify the View wiring.
 - **UI-test an edit flow from a persisted record opened fresh** (save → reopen from race detail → tap the row), not from an in-session draft — a draft hid #46.
 - **Run every new UI test with `-test-iterations 5 -parallel-testing-worker-count 5`** before trusting a single pass.
@@ -90,7 +89,7 @@ For Claude Code: use the `/test-code` skill to run the full sequence above, but 
 
 ## Tacit Knowledge
 
-### Swift / SwiftData
+### Swift / SwiftUI / SwiftData
 
 - **`RaceGrade.unspecified`, not `.none`**: Swift resolves `.none` as `Optional<RaceGrade>.none` (nil) in `#expect` — the empty/default enum case must be named `.unspecified`.
 - **`@MainActor` extension inheritance**: `extension AlreadyMainActorStruct { }` inherits `@MainActor` automatically — re-annotating causes SIGBUS crash in Swift 6.2.
@@ -99,22 +98,22 @@ For Claude Code: use the `/test-code` skill to run the full sequence above, but 
 - **Save explicitly right after inserting a record that is shown at once — and only then**: a just-inserted SwiftData model has a temporary ID until autosave (observed 5–11 s later, or on backgrounding) swaps it for a permanent one. At the swap, `ForEach` rows keyed by that ID are rebuilt (UI tests fail with "Activation point invalid", #55); a model passed straight to `.sheet(item:)` rebuilds the sheet and wipes its `@State` (#53, hence `EditTarget`); a master used as a `Picker` option changes hash and crashes with `KEY_TYPE_OF_DICTIONARY_VIOLATES_HASHABLE_REQUIREMENTS`. In-place edits keep their IDs — leave those to autosave. When adding a save, check what else is pending in the context (seeded or master inserts) and save it at its own insert site. Every explicit save carries a comment saying why it can't wait.
 - **`.sheet(isPresented:)` + a separate `@State` for the edit target reads a stale value on first presentation** (#46). Drive edit sheets with `.sheet(item:)` and pass the target in (see `SelectionFormTarget` in `BetFormView.swift`).
 - **`Toggle` with a custom `Binding(get:set:)` inside `Form`/`List` rows can silently fail to register taps** — real Simulator clicks, not an XCUITest artifact. Use a `Button` + checkmark row for per-item multi-select rows.
-- **Toolbar buttons must have `.accessibilityIdentifier`**: with several `ToolbarItem(.navigationBarTrailing)` items, `app.navigationBars["X"].buttons["Add"]` races SwiftData's re-render. Use `findElement("id")` / `tapWhenReady` in UI tests.
 
 ### Data & backups
 
 - **ZIP backup memo filenames**: `<yyyyMMdd>_<venue>_R<n>_<raceName>.md` (venue + race number stop same-named races at different venues from overwriting each other's memo). `ZipImporter` must keep the legacy `<yyyyMMdd>_<raceName>` fallback — users' existing backups depend on it.
 - **ZIP backups carry no master data**: `TicketType` / `Venue` are not exported; `ZipImporter` re-links records to the target device's masters by name. An unlinked selection opens as the old custom ticket type on edit (#48). Owner decision (2026-10-20): enforce this only at ZIP import — no launch-time scans or save-time integrity checks. Already-imported unlinked data is fixed by exporting and re-importing.
-- **ZIPFoundation 0.9.20 deprecation warning** (`'v4' is deprecated: watchOS 9.0 ...`) comes from its `Package@swift-5.9.swift`, not our code. Fixed upstream in `676ffa3` but unreleased; owner chose to wait for the next release — don't pin to `main`.
 
 ### Tooling
 
 - **SwiftLint `type_body_length` in tests**: 400-line limit per declaration. Move overflow tests into a bare `extension MyTest { }` — SwiftLint counts each body separately. No `@MainActor` on the extension (see above).
 - **SwiftLint `file_length` (700) / `type_body_length` in views**: split the view into its own file and move helpers into an `extension` in that same file — a same-file extension can still reach the type's `private` members (see `SelectionFormView.swift`).
+- **`identifier_name` is disabled in SwiftLint**: test functions are Japanese specification sentences (e.g. `払戻が購入より多い場合に収支がプラスになる()`); SwiftLint can't suppress non-ASCII violations any other way (v0.63.3).
 - **swiftformat rewrites ASCII acronyms in Japanese test names** (`ID`, `URL` → backticked `id`, `url`) and once split `一時` into `一 時`. Write names without acronyms (`識別子`, `場所`) and re-check the `func` lines after formatting.
 - **Project Format bumps go through Xcode's GUI picker, never a hand-typed `objectVersion`**: there is no documented version→integer mapping ("Xcode 26.3" wrote `100`, from `77`). Xcode also drops now-default keys (`buildActionMask`, empty `dependencies`, …) during the bump — that's normalization, not data loss.
-- **ADR numbers in `docs/architecture.md` follow the order the decisions were made**, not topic. Check commit/PR history for the decision date before assigning a number.
+- **ZIPFoundation 0.9.20 deprecation warning** (`'v4' is deprecated: watchOS 9.0 ...`) comes from its `Package@swift-5.9.swift`, not our code. Fixed upstream in `676ffa3` but unreleased; owner chose to wait for the next release — don't pin to `main`.
 - **Agent sandbox and git/gh** (seen in Claude Code, 2026-11-04, git 2.54.0): the sandbox denies writes to `.git/config`, so `git push -u` pushes but can't record the upstream — push without `-u`. `error: fsmonitor_ipc__send_query ...` on every git command is harmless noise. `gh` fails TLS verification (`x509: OSStatus -26276`) even with `api.github.com` allowed — run `gh` outside the sandbox.
+- **History-rewriting git ops** (`git reset --soft`, `git stash pop`, …): the agent's permission classifier blocks them even after the owner approves in chat. Ask the owner to run them in their own terminal instead of retrying.
 
 ### Running tests
 
@@ -134,6 +133,7 @@ For Claude Code: use the `/test-code` skill to run the full sequence above, but 
 - **Long text in UI tests: paste it, don't `typeText` it**: typing a multi-line string into a `TextEditor` / vertical `TextField` in a `Form` grows the row and pushes later rows off-screen. Set `UIPasteboard.general.string` and tap `app.buttons["Paste"]`, then assert the result `isHittable`, not just that it exists (see `JSON取り込みTest.test長いJSONを貼って確認してもエラーが画面内に表示される`).
 - **Japanese day-count strings in assertions must be anchored**: `label.contains("1日間")` also matches `"21日間"`. Use `"(1日間)"` or exact equality.
 - **XCUITest sees a `LabeledContent` row as one element labelled `"<label>, <value>"`**: query `app.staticTexts["買い目, 1>2,3[流し]"]` (see `流し馬券追加Test.sheetValue`). Rows scrolled out of a `Form` aren't in the accessibility tree — `swipeUp()` first. A sheet over the race detail leaves the same `StaticText` behind it — filter by `isHittable`.
+- **Toolbar buttons must have `.accessibilityIdentifier`**: with several `ToolbarItem(.navigationBarTrailing)` items, `app.navigationBars["X"].buttons["Add"]` races SwiftData's re-render. Use `findElement("id")` / `tapWhenReady` in UI tests.
 - **XCUITest element quirks on iOS 27.0**: a compact `DatePicker` in a `Form` row has no label — assert on the row title (`app.staticTexts["開始日"]`). In export mode, `UIDocumentPickerViewController`'s Cancel is an `Other` element — query `descendants(matching: .any)`. The top of a sheet's `TextEditor` sits under the nav bar: tap lower (`dy: 0.3`) and retry until `app.keyboards` appears. `swipeDown()` on an unscrolled sheet dismisses it.
 - **`swipeLeft()` on a `List` row wrapping a `NavigationLink` can fail or reveal-then-collapse the delete action** (iOS 26 simulator; not an app bug). Retry the swipe (see `レース削除Test.testレースをスワイプして削除できる()`).
 - **Swipe-to-delete on plain `List` rows**: `swipeLeft()` starts at the element's centre, so on a narrow `StaticText` it barely moves; dragging to the left edge full-swipes and deletes without showing the button. Drag from x≈360 to x≈220 (see `swipeToDelete(rowLabeled:)` in `DetailScenarioTests.swift`).
