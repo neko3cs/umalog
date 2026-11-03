@@ -91,8 +91,9 @@ struct RaceFormView: View {
 
                 Section("コース") {
                     Picker("トラック", selection: $trackType) {
-                        Text("芝").tag("turf")
-                        Text("ダート").tag("dirt")
+                        ForEach(TrackType.allCases, id: \.self) { type in
+                            Text(type.displayName).tag(type.rawValue)
+                        }
                     }
                     .pickerStyle(.segmented)
 

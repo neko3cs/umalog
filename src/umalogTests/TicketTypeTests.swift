@@ -62,6 +62,14 @@ struct 券種Test {
         return try container.mainContext.fetch(descriptor).map { ($0.name, $0.sortIndex) }
     }
 
+    // MARK: - 初期値
+
+    @Test func 券種のデフォルトソート順がゼロである() {
+        let ticketType = TicketType(name: "単勝")
+        container.mainContext.insert(ticketType)
+        #expect(ticketType.sortIndex == 0)
+    }
+
     // MARK: - プリセットの投入
 
     @Test func 券種マスターが空なら全券種がプリセットの順に追加される() throws {
