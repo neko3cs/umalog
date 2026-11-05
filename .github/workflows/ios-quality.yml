@@ -2,6 +2,12 @@ name: iOS 品質チェック
 
 on:
   workflow_dispatch:
+    inputs:
+      artifact_probe:
+        type: boolean
+        default: false
+
+run-name: ${{ inputs.artifact_probe && '成果物の部分再実行検証' || 'iOS 品質チェック' }}
 
 permissions:
   contents: read
@@ -32,6 +38,7 @@ env:
 
 jobs:
   checks:
+    if: ${{ !inputs.artifact_probe }}
     name: 整形・Lint
     runs-on: xcode-27
     timeout-minutes: 10
@@ -95,7 +102,8 @@ jobs:
   tests:
     name: ${{ matrix.suite }}
     needs: checks
-    runs-on: xcode-27
+    if: ${{ !cancelled() && (needs.checks.result == 'success' || inputs.artifact_probe) }}
+    runs-on: ${{ inputs.artifact_probe && 'ubuntu-latest' || 'xcode-27' }}
     timeout-minutes: 75
     strategy:
       fail-fast: false
@@ -105,12 +113,24 @@ jobs:
       SUITE: ${{ matrix.suite }}
       RESULTS: quality-results/${{ matrix.suite }}
     steps:
+      - name: 成果物検証用データを作成
+        if: ${{ inputs.artifact_probe }}
+        env:
+          ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          mkdir -p "$RESULTS"
+          jq -n --arg suite "$SUITE" --argjson attempt "$ATTEMPT" \
+            '{result:"Passed",totalTestCount:1,failedTests:0,skippedTests:0,suite:$suite,attempt:$attempt}' \
+            > "$RESULTS/summary.json"
+
       - name: ソースコードを取得
+        if: ${{ !inputs.artifact_probe }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
       - name: Simulatorを起動
+        if: ${{ !inputs.artifact_probe }}
         timeout-minutes: 10
         run: |
           mkdir -p "$RESULTS"
@@ -128,6 +148,7 @@ jobs:
           xcrun simctl bootstatus "$device_id" -b 2>&1 | tee "$RESULTS/simulator.log"
 
       - name: テスト（ビルドを含む）
+        if: ${{ !inputs.artifact_probe }}
         timeout-minutes: 60
         run: |
           if [ "$SUITE" = unit ]; then
@@ -154,7 +175,7 @@ jobs:
             2>&1 | tee "$RESULTS/tests.log"
 
       - name: テスト結果を抽出
-        if: ${{ always() && !cancelled() }}
+        if: ${{ always() && !cancelled() && !inputs.artifact_probe }}
         run: |
           if [ -d "$RESULTS/tests.xcresult" ]; then
             xcrun xcresulttool get test-results summary \
@@ -169,29 +190,32 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: test-results-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.suite }}
+          name: test-results-${{ github.run_id }}-${{ matrix.suite }}
           path: quality-results
+          overwrite: true
           retention-days: 7
           if-no-files-found: warn
 
   coverage:
     name: 合算カバレッジ
     needs: [checks, tests]
-    if: ${{ always() && !cancelled() && needs.checks.result == 'success' }}
-    runs-on: xcode-27
+    if: ${{ always() && !cancelled() && (needs.checks.result == 'success' || inputs.artifact_probe) }}
+    runs-on: ${{ inputs.artifact_probe && 'ubuntu-latest' || 'xcode-27' }}
     timeout-minutes: 15
     env:
       RESULTS: quality-results
+      TEST_RESULT: ${{ needs.tests.result }}
     steps:
       - name: 各テスト結果を取得
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          pattern: test-results-${{ github.run_id }}-${{ github.run_attempt }}-*
+          pattern: test-results-${{ github.run_id }}-*
           path: ${{ env.RESULTS }}
           merge-multiple: true
 
       - name: 全グループの成功を確認
         run: |
+          test "$TEST_RESULT" = success
           jq -es 'length == 3 and all(.[];
             .result == "Passed" and .totalTestCount > 0
             and .failedTests == 0 and .skippedTests == 0)
@@ -199,6 +223,7 @@ jobs:
             "$RESULTS/ui-b/summary.json" > /dev/null
 
       - name: 合算行カバレッジを判定
+        if: ${{ !inputs.artifact_probe }}
         run: |
           xcrun xcresulttool merge "$RESULTS/unit/tests.xcresult" \
             "$RESULTS/ui-a/tests.xcresult" "$RESULTS/ui-b/tests.xcresult" \
@@ -223,8 +248,14 @@ jobs:
             "$RESULTS/ui-b/coverage.json" \
             "$RESULTS/merged-coverage.json" 2>&1 | tee "$RESULTS/coverage-check.txt"
 
+      - name: 取得した実行回数を確認
+        if: ${{ inputs.artifact_probe }}
+        run: |
+          jq -cs 'map({suite,attempt})' "$RESULTS/unit/summary.json" \
+            "$RESULTS/ui-a/summary.json" "$RESULTS/ui-b/summary.json"
+
       - name: 合算レポートを保存
-        if: ${{ always() }}
+        if: ${{ always() && !inputs.artifact_probe }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: coverage-results-${{ github.run_id }}-${{ github.run_attempt }}
