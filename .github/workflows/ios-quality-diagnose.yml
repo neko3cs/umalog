@@ -28,7 +28,8 @@ jobs:
             --test-id 'JSON取り込みTest/testレース一覧から取り込むとプレビューが出て保存するとレースと出走馬が登録される()' \
             > diagnosis/failure-activities.json
           xcrun xcresulttool export attachments --path results/ui.xcresult \
-            --output-path diagnosis/attachments --only-failures
+            --output-path diagnosis/attachments \
+            --test-id 'JSON取り込みTest/testレース一覧から取り込むとプレビューが出て保存するとレースと出走馬が登録される()'
       - name: 計測済みカバレッジを抽出
         if: ${{ always() }}
         run: |
