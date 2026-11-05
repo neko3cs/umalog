@@ -40,6 +40,7 @@ jobs:
             uname -m
             xcodebuild -version
             swift --version
+            jq --version
             xcrun simctl list devices available
             df -h
           } 2>&1 | tee "$RESULTS/environment.log"
@@ -77,9 +78,6 @@ jobs:
         run: |
           swiftformat src/umalog src/umalogTests --swiftversion 6.2 \
             --lint --reporter github-actions-log 2>&1 | tee "$RESULTS/format.log"
-
-      - name: カバレッジ判定スクリプトのテスト
-        run: python3 -B -m unittest discover -s .github/scripts -p 'test_*.py' -v
 
       - name: Lint
         run: |
@@ -139,7 +137,20 @@ jobs:
             > "$RESULTS/merged-coverage.json"
           xcrun xccov view --report --only-targets "$RESULTS/merged.xcresult" \
             > "$RESULTS/coverage.txt"
-          python3 .github/scripts/check_coverage.py \
+          jq -ers '
+            map([.targets[] | select(.name == "umalog.app")])
+            | if all(.[]; length == 1) then map(.[0])
+              else error("umalog.appの計測対象が欠落または重複しています") end
+            | if all(.[];
+                ([.coveredLines, .executableLines] | all(.[]; type == "number" and floor == .))
+                and .executableLines > 0 and .coveredLines >= 0
+                and .coveredLines <= .executableLines)
+              then .[-1]
+              else error("計測行数が不正または0です。結果を確認して再実行してください") end
+            | "umalog.app 合算行カバレッジ: \(.coveredLines)/\(.executableLines)行（\(.coveredLines / .executableLines * 100)%）、基準: 85%以上" as $summary
+            | if .coveredLines * 100 >= .executableLines * 85
+              then $summary + " — 合格" else error($summary + " — 基準未達") end
+          ' \
             "$RESULTS/unit-coverage.json" "$RESULTS/ui-coverage.json" \
             "$RESULTS/merged-coverage.json" 2>&1 | tee "$RESULTS/coverage-check.txt"
 
