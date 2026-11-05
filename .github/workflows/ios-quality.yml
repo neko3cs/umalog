@@ -115,23 +115,8 @@ jobs:
           if-no-files-found: warn
 
       - name: 全UIテスト
-        timeout-minutes: 40
+        timeout-minutes: 60
         run: |
-          # 切り分け中のみ採取し、ランナー停止時もログに負荷の証拠を残す。
-          (
-            while true; do
-              {
-                date -u
-                memory_pressure -Q
-                sysctl vm.swapusage
-                ps -axo pid,ppid,%cpu,rss,comm | sort -k4nr | sed -n '1,8p'
-                df -k "$RESULTS"
-              } 2>&1 | tee -a "$RESULTS/ui-resources.log"
-              sleep 60
-            done
-          ) &
-          monitor_pid=$!
-          trap 'kill "$monitor_pid" 2>/dev/null || true' EXIT
           xcodebuild test -quiet \
             -project src/umalog.xcodeproj -scheme umalog \
             -destination "$DESTINATION" \
