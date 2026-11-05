@@ -34,45 +34,30 @@ jobs:
         run: |
           mkdir -p "$RESULTS"
           {
-            date -u
-            git rev-parse HEAD
-            sw_vers
-            uname -m
             xcodebuild -version
             swift --version
-            jq --version
-            xcrun simctl list devices available
-            df -h
           } 2>&1 | tee "$RESULTS/environment.log"
-          {
-            echo "## 検証対象"
-            echo "Commit: $(git rev-parse HEAD)"
-            echo "Xcode 27.1 / iPhone 18 Pro / iOS 27.0 / UI 2並列"
-            echo "手動確認の結果はこのワークフローには含まれません。"
-          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: 固定版の整形・Lintツールを準備
         run: |
           tools="$RUNNER_TEMP/quality-tools"
           mkdir -p "$tools/format" "$tools/lint"
-          curl --fail --location --retry 3 \
+          curl --fail --silent --show-error --location --retry 3 \
             "https://github.com/nicklockwood/SwiftFormat/releases/download/$SWIFTFORMAT_VERSION/swiftformat.zip" \
             --output "$tools/swiftformat.zip"
-          curl --fail --location --retry 3 \
+          curl --fail --silent --show-error --location --retry 3 \
             "https://github.com/realm/SwiftLint/releases/download/$SWIFTLINT_VERSION/portable_swiftlint.zip" \
             --output "$tools/swiftlint.zip"
           printf '%s  %s\n' \
             bb42fbfb0b9d5f1b8b83db3147087220ea414916fce8c5cf71abaea5ad5a3175 "$tools/swiftformat.zip" \
             fb045e85e7cb3374f42a4840b6b85a0106302afa69035c0c6f29af4a44c810b6 "$tools/swiftlint.zip" \
-            | shasum -a 256 --check
+            | shasum -a 256 --check --quiet
           unzip -q "$tools/swiftformat.zip" -d "$tools/format"
           unzip -q "$tools/swiftlint.zip" -d "$tools/lint"
           chmod +x "$tools/format/swiftformat" "$tools/lint/swiftlint"
           test "$("$tools/format/swiftformat" --version)" = "$SWIFTFORMAT_VERSION"
           test "$("$tools/lint/swiftlint" version)" = "$SWIFTLINT_VERSION"
           printf '%s\n' "$tools/format" "$tools/lint" >> "$GITHUB_PATH"
-          printf 'SwiftFormat %s\nSwiftLint %s\n' \
-            "$SWIFTFORMAT_VERSION" "$SWIFTLINT_VERSION" | tee "$RESULTS/tools.log"
 
       - name: 整形チェック
         run: |
@@ -103,7 +88,7 @@ jobs:
       - name: 全ユニットテスト（ビルドを含む）
         timeout-minutes: 30
         run: |
-          /usr/bin/time -p xcodebuild test \
+          xcodebuild test -quiet \
             -project src/umalog.xcodeproj -scheme umalog \
             -destination "$DESTINATION" \
             -only-testing:umalogTests \
@@ -115,7 +100,7 @@ jobs:
       - name: 全UIテスト
         timeout-minutes: 40
         run: |
-          /usr/bin/time -p xcodebuild test \
+          xcodebuild test -quiet \
             -project src/umalog.xcodeproj -scheme umalog \
             -destination "$DESTINATION" \
             -only-testing:umalogUITests \
@@ -135,8 +120,6 @@ jobs:
             --output-path "$RESULTS/merged.xcresult"
           xcrun xccov view --report --json "$RESULTS/merged.xcresult" \
             > "$RESULTS/merged-coverage.json"
-          xcrun xccov view --report --only-targets "$RESULTS/merged.xcresult" \
-            > "$RESULTS/coverage.txt"
           jq -ers '
             map([.targets[] | select(.name == "umalog.app")])
             | if all(.[]; length == 1) then map(.[0])
@@ -154,7 +137,7 @@ jobs:
             "$RESULTS/unit-coverage.json" "$RESULTS/ui-coverage.json" \
             "$RESULTS/merged-coverage.json" 2>&1 | tee "$RESULTS/coverage-check.txt"
 
-      - name: テスト件数・結果・成果物容量を記録
+      - name: テスト件数・結果を保存
         if: ${{ always() && !cancelled() }}
         run: |
           for suite in unit ui; do
@@ -163,16 +146,6 @@ jobs:
                 --path "$RESULTS/$suite.xcresult" > "$RESULTS/$suite-summary.json"
             fi
           done
-          {
-            echo "## 合算行カバレッジ"
-            if [ -f "$RESULTS/coverage-check.txt" ]; then
-              cat "$RESULTS/coverage-check.txt"
-            else
-              echo "未確認：全テストとカバレッジ判定が完了していません。"
-            fi
-            echo "## 成果物容量（圧縮前）"
-            du -sh "$RESULTS"
-          } | tee "$RESULTS/summary.txt" >> "$GITHUB_STEP_SUMMARY"
 
       - name: 結果とログを保存
         if: ${{ always() }}
