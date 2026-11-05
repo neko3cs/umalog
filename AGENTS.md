@@ -70,7 +70,9 @@ xcrun xccov view --report --only-targets merged.xcresult
 
 ### GitHub Actions
 
-`.github/workflows/ios-quality.yml` (`iOS 品質チェック`) provides manual formatting, lint, build, full unit/UI tests, and an 85% combined app line-coverage gate. Allow about **60 minutes**: a hosted Xcode 27.1 run measured 59 minutes overall, including 49 minutes of nonparallel UI tests (2026-11-05). Consider this cost when choosing between hosted full-suite checks and local checks on the M5 Mac; do not launch it automatically for every change.
+`.github/workflows/ios-quality.yml` (`iOS 品質チェック`) provides manual formatting, lint, build, full unit/UI tests, and an 85% combined app line-coverage gate. A hosted run with unit tests and two UI groups on separate runners took **34 minutes** (Xcode 27.1, 2026-11-05; one measurement, not a guaranteed duration). Consider this cost when choosing between hosted full-suite checks and local checks on the M5 Mac; do not launch it automatically for every change.
+
+- **Hosted UI test distribution**: balance the groups by measured execution time at test-class granularity. When tests grow or timings drift, use per-class durations from xcresult to rebalance `UI_GROUP_A` so both UI jobs finish at similar times. Group B is the complement, so new classes enter B automatically; check its load after adding tests. Keep this tuning separate from local M5 parallelism.
 
 Manual dispatch requires the workflow to be present on `main`. Push the target branch first, then select it in Actions → iOS 品質チェック → Run workflow, or use:
 
