@@ -68,6 +68,20 @@ xcrun xccov view --report --only-targets merged.xcresult
 # `umalog` stub; check that file with `otool -L` to confirm instrumentation.
 ```
 
+### GitHub Actions
+
+`.github/workflows/ios-quality.yml` (`iOS 品質チェック`) provides manual formatting, lint, build, full unit/UI tests, and an 85% combined app line-coverage gate. Allow about **60 minutes**: a hosted Xcode 27.1 run measured 59 minutes overall, including 49 minutes of nonparallel UI tests (2026-11-05). Consider this cost when choosing between hosted full-suite checks and local checks on the M5 Mac; do not launch it automatically for every change.
+
+Manual dispatch requires the workflow to be present on `main`. Push the target branch first, then select it in Actions → iOS 品質チェック → Run workflow, or use:
+
+```bash
+gh workflow run ios-quality.yml -R neko3cs/umalog --ref <branch>
+gh run list -R neko3cs/umalog --workflow ios-quality.yml --branch <branch> --limit 5
+gh run watch <run-id> -R neko3cs/umalog --exit-status
+```
+
+Check the run's commit SHA and conclusion; download logs and `.xcresult` bundles from Artifacts (retained for 7 days). A completed run is not necessarily a successful run; investigate failures before treating the checks as passed.
+
 For Claude Code: use the `/test-code` skill to run the full sequence above, but override its iOS default destination (`iPhone 16,OS=latest`) with the one above. Use `iPhone 18 Pro` / `OS=27.0`, matching `IPHONEOS_DEPLOYMENT_TARGET = 27.0` (owner's choice, 2026-09-27); the `18.6` and `26.5` runtimes on this machine are below the deployment target, and `iPhone 16` exists only under `18.6`.
 
 ---
