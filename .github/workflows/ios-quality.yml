@@ -2,9 +2,6 @@ name: iOS 品質チェック
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - codex/issue-66-ios-quality
 
 permissions:
   contents: read
