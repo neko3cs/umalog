@@ -80,7 +80,7 @@ gh run list -R neko3cs/umalog --workflow ios-quality.yml --branch <branch> --lim
 gh run watch <run-id> -R neko3cs/umalog --exit-status
 ```
 
-Check the run's commit SHA and conclusion; download logs and `.xcresult` bundles from Artifacts (retained for 7 days). A completed run is not necessarily a successful run; investigate failures before treating the checks as passed.
+Check the run's commit SHA and conclusion; download logs and `.xcresult` bundles from Artifacts (retained for 7 days).
 
 For Claude Code: use the `/test-code` skill to run the full sequence above, but override its iOS default destination (`iPhone 16,OS=latest`) with the one above. Use `iPhone 18 Pro` / `OS=27.0`, matching `IPHONEOS_DEPLOYMENT_TARGET = 27.0` (owner's choice, 2026-09-27); the `18.6` and `26.5` runtimes on this machine are below the deployment target, and `iPhone 16` exists only under `18.6`.
 
@@ -120,6 +120,8 @@ For Claude Code: use the `/test-code` skill to run the full sequence above, but 
 
 ### Tooling
 
+- **Keep CI orchestration in YAML**: use jq for JSON processing rather than adding helper scripts solely for CI; the owner prioritizes fewer files and less code to read.
+- **CI output must serve a purpose**: retain results and actionable diagnostics; avoid precautionary prints, redundant summaries, and unnecessary progress output.
 - **SwiftLint `type_body_length` in tests**: 400-line limit per declaration. Move overflow tests into a bare `extension MyTest { }` — SwiftLint counts each body separately. No `@MainActor` on the extension (see above).
 - **SwiftLint `file_length` (700) / `type_body_length` in views**: split the view into its own file and move helpers into an `extension` in that same file — a same-file extension can still reach the type's `private` members (see `SelectionFormView.swift`).
 - **`identifier_name` is disabled in SwiftLint**: test functions are Japanese specification sentences (e.g. `払戻が購入より多い場合に収支がプラスになる()`); SwiftLint can't suppress non-ASCII violations any other way (v0.63.3).
