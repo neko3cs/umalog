@@ -2,6 +2,9 @@ name: iOS 品質チェック
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - codex/issue-66-ios-quality
 
 permissions:
   contents: read
@@ -97,15 +100,44 @@ jobs:
             -resultBundlePath "$RESULTS/unit.xcresult" \
             2>&1 | tee "$RESULTS/unit.log"
 
+      - name: ユニットテスト結果を先に保存
+        run: |
+          xcrun xcresulttool get test-results summary \
+            --path "$RESULTS/unit.xcresult" > "$RESULTS/unit-summary.json"
+
+      - name: ユニットテスト成果物を保存
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: unit-results-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.RESULTS }}
+          retention-days: 7
+          if-no-files-found: warn
+
       - name: 全UIテスト
         timeout-minutes: 40
         run: |
+          # 切り分け中のみ採取し、ランナー停止時もログに負荷の証拠を残す。
+          (
+            while true; do
+              {
+                date -u
+                memory_pressure -Q
+                sysctl vm.swapusage
+                ps -axo pid,ppid,%cpu,rss,comm | sort -k4nr | sed -n '1,8p'
+                df -k "$RESULTS"
+              } 2>&1 | tee -a "$RESULTS/ui-resources.log"
+              sleep 60
+            done
+          ) &
+          monitor_pid=$!
+          trap 'kill "$monitor_pid" 2>/dev/null || true' EXIT
           xcodebuild test -quiet \
             -project src/umalog.xcodeproj -scheme umalog \
             -destination "$DESTINATION" \
             -only-testing:umalogUITests \
             -onlyUsePackageVersionsFromResolvedFile \
-            -parallel-testing-worker-count 2 \
+            -parallel-testing-enabled NO \
             -enableCodeCoverage YES \
             -resultBundlePath "$RESULTS/ui.xcresult" \
             2>&1 | tee "$RESULTS/ui.log"
@@ -152,6 +184,8 @@ jobs:
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: ios-quality-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ env.RESULTS }}
+          path: |
+            ${{ env.RESULTS }}
+            !${{ env.RESULTS }}/unit.xcresult/**
           retention-days: 7
           if-no-files-found: warn
