@@ -49,9 +49,8 @@ struct SettingsView: View {
     /// UI テストでシステムのファイル選択画面を飛ばすか。
     /// - Note: ファイル選択画面は別プロセスで、並列実行用のシミュレーター複製ではタップが効かないことがあるため（#43）、
     ///   書き出しは保存できたものとし、復元は直前に書き出した ZIP を選んだものとして扱う。
+    ///   直前の書き出しは一時ディレクトリに残るので、アプリを起動し直しても復元できる（暦法を変えた往復テスト、#68）。
     private static let skipsDocumentPicker = CommandLine.arguments.contains("--UITestingSkipDocumentPicker")
-    /// ファイル選択画面を飛ばすときに、直前に書き出した ZIP の URL。
-    @State private var lastExportedURL: URL?
 
     var body: some View {
         NavigationStack {
@@ -72,8 +71,11 @@ struct SettingsView: View {
 
                     Button {
                         if Self.skipsDocumentPicker {
-                            pendingImportURL = lastExportedURL
-                            showingImportConfirm = lastExportedURL != nil
+                            let url = ZipExporter.outputURL
+                            if FileManager.default.fileExists(atPath: url.path) {
+                                pendingImportURL = url
+                                showingImportConfirm = true
+                            }
                         } else {
                             showingImportPicker = true
                         }
@@ -186,7 +188,6 @@ struct SettingsView: View {
                 let url = try ZipExporter.export(races: races)
                 isExporting = false
                 if Self.skipsDocumentPicker {
-                    lastExportedURL = url
                     showingExportSuccess = true
                 } else {
                     exportURL = ExportURL(url: url)

@@ -354,20 +354,9 @@ final class ZIP往復Test: UIテストケース {
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
     }
 
-    /// レース名を入力してレースを1件追加する。
-    /// - Parameter name: 追加するレースの名前。
-    private func addRace(name: String) {
-        openAddRaceForm()
-        let raceNameField = app.textFields["レース名（任意）"]
-        tapWhenReady(raceNameField)
-        raceNameField.typeText(name)
-        app.buttons["追加"].tap()
-        XCTAssertTrue(app.staticTexts[name].waitForExistence(timeout: 5))
-    }
-
     @MainActor
     func testZIPに書き出したバックアップから復元するとバックアップ時点のレースに戻る() {
-        addRace(name: "バックアップ前レース")
+        addTodayRace(name: "バックアップ前レース")
 
         app.tabBars.firstMatch.buttons["設定"].tap()
         tapWhenReady(app.buttons["ZIPバックアップ"])
@@ -376,7 +365,7 @@ final class ZIP往復Test: UIテストケース {
         savedAlert.buttons["OK"].tap()
 
         app.tabBars.firstMatch.buttons["レース"].tap()
-        addRace(name: "バックアップ後レース")
+        addTodayRace(name: "バックアップ後レース")
 
         app.tabBars.firstMatch.buttons["設定"].tap()
         tapWhenReady(app.buttons["ZIPから復元"])
@@ -394,7 +383,7 @@ final class ZIP往復Test: UIテストケース {
 
     @MainActor
     func test復元の確認でキャンセルするとレースはそのまま残る() {
-        addRace(name: "残るレース")
+        addTodayRace(name: "残るレース")
 
         app.tabBars.firstMatch.buttons["設定"].tap()
         tapWhenReady(app.buttons["ZIPバックアップ"])
@@ -403,7 +392,7 @@ final class ZIP往復Test: UIテストケース {
         savedAlert.buttons["OK"].tap()
 
         app.tabBars.firstMatch.buttons["レース"].tap()
-        addRace(name: "追加したレース")
+        addTodayRace(name: "追加したレース")
 
         app.tabBars.firstMatch.buttons["設定"].tap()
         tapWhenReady(app.buttons["ZIPから復元"])
@@ -414,5 +403,71 @@ final class ZIP往復Test: UIテストケース {
         app.tabBars.firstMatch.buttons["レース"].tap()
         XCTAssertTrue(app.staticTexts["残るレース"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["追加したレース"].exists)
+    }
+}
+
+/// 暦法の違う端末で ZIP を書き出して復元しても、レースの開催日が変わらないことを確かめる（#68）。
+/// - Note: 暦法はアプリの中から切り替えられないため、`-AppleLocale` を変えてアプリを起動し直す。
+///   ストアはメモリ上なので起動し直すと空になり、復元は一時ディレクトリに残った直前の書き出しを使う。
+///   期待する開催日は、復元する側の端末で今日のレースを追加して表示された日付見出しにする。
+final class 暦法の違うZIP往復Test: UIテストケース {
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+    }
+
+    /// 指定したロケールでアプリを起動し直す。
+    /// - Parameter locale: `-AppleLocale` に渡すロケール識別子（暦法を `@calendar=` で指定する）。
+    private func relaunch(locale: String) {
+        if app.state != .notRunning {
+            app.terminate()
+        }
+        app.launchArguments = ["--UITesting", "--UITestingSkipDocumentPicker", "-AppleLocale", locale]
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
+    }
+
+    /// `exportLocale` の端末で今日のレースを書き出し、`restoreLocale` の端末で復元して、開催日が今日のままか確かめる。
+    /// - Parameters:
+    ///   - exportLocale: 書き出す端末のロケール識別子。
+    ///   - restoreLocale: 復元する端末のロケール識別子。
+    private func assertRaceDateSurvives(exportLocale: String, restoreLocale: String) {
+        relaunch(locale: exportLocale)
+        addTodayRace(name: "書き出したレース")
+        app.tabBars.firstMatch.buttons["設定"].tap()
+        tapWhenReady(app.buttons["ZIPバックアップ"])
+        let savedAlert = app.alerts["バックアップ完了"]
+        XCTAssertTrue(savedAlert.waitForExistence(timeout: 10))
+        savedAlert.buttons["OK"].tap()
+
+        relaunch(locale: restoreLocale)
+        addTodayRace(name: "復元先で追加したレース")
+        let header = findElement("race-date-header")
+        XCTAssertTrue(header.waitForExistence(timeout: 5))
+        let today = header.label
+
+        app.tabBars.firstMatch.buttons["設定"].tap()
+        tapWhenReady(app.buttons["ZIPから復元"])
+        let confirmAlert = app.alerts["データを復元"]
+        XCTAssertTrue(confirmAlert.waitForExistence(timeout: 10))
+        confirmAlert.buttons["復元"].tap()
+        let restoredAlert = app.alerts["復元完了"]
+        XCTAssertTrue(restoredAlert.waitForExistence(timeout: 10))
+        restoredAlert.buttons["OK"].tap()
+
+        app.tabBars.firstMatch.buttons["レース"].tap()
+        XCTAssertTrue(app.staticTexts["書き出したレース"].waitForExistence(timeout: 5))
+        XCTAssertEqual(findElement("race-date-header").label, today)
+    }
+
+    @MainActor
+    func test条件1の2と条件2の3_和暦で書き出したZIPを仏暦の端末で復元しても開催日が変わらない() {
+        assertRaceDateSurvives(exportLocale: "ja_JP@calendar=japanese", restoreLocale: "ja_JP@calendar=buddhist")
+    }
+
+    @MainActor
+    func test条件1の3と条件2の2_仏暦で書き出したZIPを和暦の端末で復元しても開催日が変わらない() {
+        assertRaceDateSurvives(exportLocale: "ja_JP@calendar=buddhist", restoreLocale: "ja_JP@calendar=japanese")
     }
 }

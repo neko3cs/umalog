@@ -282,9 +282,7 @@ enum ZipImporter {
     /// - Parameter string: 変換対象の文字列。
     /// - Returns: 変換結果。形式が不正な場合は nil。
     private static func parseDate(_ string: String) -> Date? {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy/MM/dd"
-        return formatter.date(from: string)
+        CSVExporter.fileDateFormatter("yyyy/MM/dd").date(from: string)
     }
 
     /// CSV テキストを行×列の二次元配列にパースする。クォート・エスケープ・CRLF に対応する。
