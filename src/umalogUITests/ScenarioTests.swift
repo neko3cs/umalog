@@ -47,6 +47,17 @@ class UIテストケース: XCTestCase {
         tapWhenReady(findElement("add-race-button"))
         tapWhenReady(findElement("add-race-manual-button"))
     }
+
+    /// レース名を入力して、開催日が今日のレースを1件追加する。
+    /// - Parameter name: 追加するレースの名前。
+    func addTodayRace(name: String) {
+        openAddRaceForm()
+        let raceNameField = app.textFields["レース名（任意）"]
+        tapWhenReady(raceNameField)
+        raceNameField.typeText(name)
+        app.buttons["追加"].tap()
+        XCTAssertTrue(app.staticTexts[name].waitForExistence(timeout: 5))
+    }
 }
 
 // MARK: - Scenario 1: タブバーナビゲーション

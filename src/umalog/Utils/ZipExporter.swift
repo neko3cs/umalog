@@ -10,14 +10,18 @@ import ZIPFoundation
 
 /// レースデータをセクション別 CSV とメモ Markdown ファイルにまとめた ZIP バックアップを生成するユーティリティ。
 enum ZipExporter {
+    /// ZIP バックアップを生成する一時ディレクトリ内の場所。書き出すたびに上書きする。
+    static var outputURL: URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("umalog_backup.zip")
+    }
+
     /// レースデータを CSV 群とメモファイルにまとめた ZIP バックアップを一時ディレクトリに生成する。
     /// - Parameter races: エクスポート対象のレース配列。日付昇順に並べ替えて出力する。
-    /// - Returns: 生成した ZIP ファイルの URL。
+    /// - Returns: 生成した ZIP ファイルの URL（``outputURL``）。
     static func export(races: [Race]) throws -> URL {
         let sorted = races.sorted { $0.date < $1.date }
 
-        let filename = "umalog_backup.zip"
-        let zipURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+        let zipURL = outputURL
         try? FileManager.default.removeItem(at: zipURL)
 
         let archive = try Archive(url: zipURL, accessMode: .create)

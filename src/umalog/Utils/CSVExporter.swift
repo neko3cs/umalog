@@ -149,18 +149,28 @@ enum CSVExporter {
     /// - Parameter date: フォーマット対象の日付。
     /// - Returns: フォーマット済み文字列。
     static func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy/MM/dd"
-        return formatter.string(from: date)
+        fileDateFormatter("yyyy/MM/dd").string(from: date)
     }
 
     /// ファイル名に使う `yyyyMMdd` 形式で日付をフォーマットする。
     /// - Parameter date: フォーマット対象の日付。
     /// - Returns: フォーマット済み文字列。
     static func formatFilenameDate(_ date: Date) -> String {
+        fileDateFormatter("yyyyMMdd").string(from: date)
+    }
+
+    /// CSV・ZIP バックアップに書く日付のフォーマッターを作る。
+    /// - Note: 端末の暦法に従うと、和暦では元号の年（2026 年 → `0008`）が書かれ、暦法の違う端末で取り込むと日付が狂う（#68）。
+    ///   そのためグレゴリオ暦・`en_US_POSIX`・端末のタイムゾーンで読み書きする。
+    /// - Parameter format: `dateFormat` に設定する書式。
+    /// - Returns: 書式を設定したフォーマッター。
+    static func fileDateFormatter(_ format: String) -> DateFormatter {
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd"
-        return formatter.string(from: date)
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = format
+        return formatter
     }
 
     /// 馬番を CSV の値に変換する。0 は未入力（着順未確定など）として空欄にする。

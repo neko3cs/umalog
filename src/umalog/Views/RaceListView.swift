@@ -67,6 +67,7 @@ struct RaceListView: View {
                             }
                         } header: {
                             Text(date.japaneseShortDateString)
+                                .accessibilityIdentifier("race-date-header")
                         }
                     }
                 }

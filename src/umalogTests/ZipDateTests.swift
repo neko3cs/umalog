@@ -1,0 +1,99 @@
+//
+//  ZipDateTests.swift
+//  umalog
+//
+//  Created by neko3cs on 2026/11/06.
+//
+
+import Foundation
+import SwiftData
+import Testing
+@testable import umalog
+import ZIPFoundation
+
+/// CSV・ZIP バックアップの日付が西暦で読み書きされることを確かめる（#68 の受入条件）。
+/// - Note: ユニットテストはシミュレーターの暦法（西暦）で動き、アプリの中から暦法を切り替えられない。
+///   和暦・仏暦の行は UI テストの `暦法の違うZIP往復Test` が `-AppleLocale` を変えて確かめる。
+@MainActor
+struct ZIPの日付Test {
+    let container: ModelContainer
+
+    init() throws {
+        let schema = Schema([Race.self, Bet.self, BetSelection.self, RaceEntry.self, Venue.self, TicketType.self])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        container = try ModelContainer(for: schema, configurations: [config])
+    }
+
+    private static let gregorian = Calendar(identifier: .gregorian)
+
+    /// 指定した races.csv の日付とメモファイルを持つ ZIP を一時ディレクトリに作り、取り込む。
+    /// - Parameters:
+    ///   - date: races.csv の date 列の値。
+    ///   - memoFilename: `memo/` 以下に置くメモのファイル名。nil ならメモを置かない。
+    /// - Returns: 取り込んだレース。
+    private func importZip(date: String, memoFilename: String? = nil) throws -> Race {
+        let zipURL = FileManager.default.temporaryDirectory.appendingPathComponent("zip_date_\(UUID()).zip")
+        defer { try? FileManager.default.removeItem(at: zipURL) }
+        let archive = try Archive(url: zipURL, accessMode: .create)
+        var files = [
+            ("races.csv", """
+            date,venue,race_number,race_name,distance,track_type,track_condition,category
+            \(date),東京,11,天皇賞,2000,芝,良,中央
+            """),
+            ("entries.csv", "date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark"),
+            ("bets.csv", "date,venue,race_number,bet_sort_index,purchase_amount,payout_amount,balance"),
+        ]
+        if let memoFilename {
+            files.append(("memo/\(memoFilename)", "メモ"))
+        }
+        for (path, content) in files {
+            let data = Data(content.utf8)
+            try archive.addEntry(
+                with: path, type: .file, uncompressedSize: Int64(data.count),
+            ) { _, size in data.subdata(in: 0 ..< size) }
+        }
+        try ZipImporter.importZip(from: zipURL, context: container.mainContext)
+        return try #require(try container.mainContext.fetch(FetchDescriptor<Race>()).first)
+    }
+
+    // MARK: - 条件1: 書き出し
+
+    @Test(arguments: [
+        ("条件1-1", DateComponents(year: 2026, month: 10, day: 31), "2026/10/31", "20261031"),
+        ("条件1-4", DateComponents(year: 2019, month: 4, day: 30), "2019/04/30", "20190430"),
+    ])
+    func `書き出す日付の列とメモファイル名は西暦になる`(
+        condition: String, raceDate: DateComponents, dateColumn: String, filenameDate: String,
+    ) throws {
+        let date = try #require(Self.gregorian.date(from: raceDate))
+        #expect(CSVExporter.formatDate(date) == dateColumn, "\(condition)")
+        #expect(CSVExporter.formatFilenameDate(date) == filenameDate, "\(condition)")
+    }
+
+    // MARK: - 条件2: 取り込み
+
+    @Test(arguments: [
+        ("条件2-1", "2026/10/31", DateComponents(year: 2026, month: 10, day: 31)),
+        ("条件2-5", "0008/10/31", DateComponents(year: 8, month: 10, day: 31)),
+    ])
+    func `取り込んだ日付の列はファイルの通り西暦として読まれる`(
+        condition: String, dateColumn: String, raceDate: DateComponents,
+    ) throws {
+        let race = try importZip(date: dateColumn)
+        #expect(Self.gregorian.dateComponents([.year, .month, .day], from: race.date) == raceDate, "\(condition)")
+    }
+
+    // MARK: - 条件3: メモの紐付け
+
+    @Test(arguments: [
+        ("条件3-1", "2026/10/31", "20261031_東京_R11_天皇賞.md"),
+        ("条件3-2", "2026/10/31", "20261031_天皇賞.md"),
+        ("条件3-3", "0008/10/31", "00081031_東京_R11_天皇賞.md"),
+    ])
+    func `取り込んだレースに同じ日付のメモファイルが付く`(
+        condition: String, dateColumn: String, memoFilename: String,
+    ) throws {
+        let race = try importZip(date: dateColumn, memoFilename: memoFilename)
+        #expect(race.memo == "メモ", "\(condition)")
+    }
+}
