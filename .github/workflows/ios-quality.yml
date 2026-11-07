@@ -38,7 +38,11 @@ jobs:
   checks:
     name: 整形・Lint
     # tests and coverage need this job, so skipping it skips the whole run.
-    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
+    # Fork PRs are skipped so outside code never runs on the xcode-27 runners.
+    if: >-
+      ${{ github.event_name != 'pull_request'
+          || (!github.event.pull_request.draft
+              && github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: xcode-27
     timeout-minutes: 10
     env:
