@@ -314,13 +314,17 @@ final class ZIPバックアップ復元Test: UIテストケース {
             .firstMatch
     }
 
+    /// ドキュメントピッカーが開くまで待つ秒数。
+    /// - Note: GitHub Actions のランナーでは、ピッカーが白いシートのまま約19〜22秒止まってから表示されたことがある（#80）。
+    private let pickerTimeout: TimeInterval = 45
+
     @MainActor
     func testZIPバックアップをタップすると保存先の選択画面が開きキャンセルで戻る() {
         app.tabBars.firstMatch.buttons["設定"].tap()
         XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
 
         tapWhenReady(app.buttons["ZIPバックアップ"])
-        XCTAssertTrue(pickerCancelButton.waitForExistence(timeout: 15))
+        XCTAssertTrue(pickerCancelButton.waitForExistence(timeout: pickerTimeout))
         pickerCancelButton.tap()
 
         XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 10))
@@ -333,7 +337,7 @@ final class ZIPバックアップ復元Test: UIテストケース {
         XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 5))
 
         tapWhenReady(app.buttons["ZIPから復元"])
-        XCTAssertTrue(pickerCancelButton.waitForExistence(timeout: 15))
+        XCTAssertTrue(pickerCancelButton.waitForExistence(timeout: pickerTimeout))
         pickerCancelButton.tap()
 
         XCTAssertTrue(app.navigationBars["設定"].waitForExistence(timeout: 10))
