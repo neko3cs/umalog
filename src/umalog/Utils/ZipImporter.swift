@@ -16,12 +16,17 @@ enum ZipImportError: LocalizedError, Equatable {
     ///   - line: races.csv の行番号（ヘッダーが 1 行目）。
     ///   - value: 読めなかった値。
     case invalidDate(line: Int, value: String)
+    /// races.csv の行の列が、必須の 8 列（date〜category）に足りない。
+    /// - Parameter line: races.csv の行番号（ヘッダーが 1 行目）。
+    case missingColumns(line: Int)
 
     /// 利用者に示す説明。
     var errorDescription: String? {
         switch self {
         case let .invalidDate(line, value):
             "races.csv の \(line) 行目の日付「\(value)」を読めません（yyyy/MM/dd で書いてください）。データは変更していません。"
+        case let .missingColumns(line):
+            "races.csv の \(line) 行目の列が足りません（date から category までの 8 列が必要です）。データは変更していません。"
         }
     }
 }
@@ -41,7 +46,7 @@ enum ZipImporter {
         let betsText = try readEntry(archive, path: "bets.csv")
         let hasBetSelections = archive["bet_selections.csv"] != nil
         let raceRows = parseCSV(racesText)
-        try validateDates(raceRows)
+        try validateRaceRows(raceRows)
 
         try deleteAllRaceData(in: context)
 
@@ -71,18 +76,20 @@ enum ZipImporter {
         try context.fetch(FetchDescriptor<Race>()).forEach { context.delete($0) }
     }
 
-    /// races.csv の date 列がすべて読めるか確かめる。既存データを消す前に呼ぶ。
-    /// - Parameter raceRows: ヘッダー行を含む races.csv の行。
-    /// - Throws: 読めない日付があれば、最初の 1 件を示す `ZipImportError.invalidDate`。
-    private static func validateDates(_ raceRows: [[String]]) throws {
-        for (idx, row) in raceRows.enumerated().dropFirst() where row.count >= 8 && parseDate(row[0]) == nil {
-            throw ZipImportError.invalidDate(line: idx + 1, value: row[0])
+    /// races.csv の行がすべて取り込めるか確かめる。既存データを消してから行を飛ばすと記録が欠けるので、消す前に呼ぶ。
+    /// - Parameter raceRows: ヘッダー行を含む races.csv の行。空行は飛ばす。
+    /// - Throws: 列が足りない行があれば `ZipImportError.missingColumns`、読めない日付があれば `ZipImportError.invalidDate`。
+    ///   どちらも最初の 1 件を示す。
+    private static func validateRaceRows(_ raceRows: [[String]]) throws {
+        for (idx, row) in raceRows.enumerated().dropFirst() where row != [""] {
+            guard row.count >= 8 else { throw ZipImportError.missingColumns(line: idx + 1) }
+            guard parseDate(row[0]) != nil else { throw ZipImportError.invalidDate(line: idx + 1, value: row[0]) }
         }
     }
 
     /// races.csv からレースを復元する。グレード・着順の列が無い旧フォーマットにも対応する。
     /// - Parameters:
-    ///   - raceRows: ヘッダー行を含む races.csv の行。日付は `validateDates` で確かめておく。
+    ///   - raceRows: ヘッダー行を含む races.csv の行。`validateRaceRows` で確かめておく。
     ///   - venues: 復元先の競馬場マスター。CSV の競馬場名と同名の競馬場に紐付ける。
     ///   - context: 復元先の ModelContext。
     /// - Returns: レースキー → レースのマップと、メモファイルのベース名（現行・旧形式の両方）→ レースのマップ。

@@ -35,13 +35,22 @@ struct ZIPの日付Test {
     ///   - memoFilename: `memo/` 以下に置くメモのファイル名。nil ならメモを置かない。
     /// - Returns: 取り込んだレース。
     private func importZip(date: String, memoFilename: String? = nil) throws -> Race {
+        try importZip(raceRows: "\(date),東京,11,天皇賞,2000,芝,良,中央", memoFilename: memoFilename)
+        return try #require(try container.mainContext.fetch(FetchDescriptor<Race>()).first)
+    }
+
+    /// races.csv のデータ行を指定した ZIP を一時ディレクトリに作り、取り込む。
+    /// - Parameters:
+    ///   - raceRows: races.csv のヘッダーより後ろの内容。
+    ///   - memoFilename: `memo/` 以下に置くメモのファイル名。nil ならメモを置かない。
+    private func importZip(raceRows: String, memoFilename: String? = nil) throws {
         let zipURL = FileManager.default.temporaryDirectory.appendingPathComponent("zip_date_\(UUID()).zip")
         defer { try? FileManager.default.removeItem(at: zipURL) }
         let archive = try Archive(url: zipURL, accessMode: .create)
         var files = [
             ("races.csv", """
             date,venue,race_number,race_name,distance,track_type,track_condition,category
-            \(date),東京,11,天皇賞,2000,芝,良,中央
+            \(raceRows)
             """),
             ("entries.csv", "date,venue,race_number,horse_number,horse_name,jockey_name,trainer_name,prediction_mark"),
             ("bets.csv", "date,venue,race_number,bet_sort_index,purchase_amount,payout_amount,balance"),
@@ -56,7 +65,6 @@ struct ZIPの日付Test {
             ) { _, size in data.subdata(in: 0 ..< size) }
         }
         try ZipImporter.importZip(from: zipURL, context: container.mainContext)
-        return try #require(try container.mainContext.fetch(FetchDescriptor<Race>()).first)
     }
 
     // MARK: - 条件1: 書き出し
@@ -111,15 +119,25 @@ struct ZIPの日付Test {
 
     // MARK: - 読めない日付
 
-    @Test func 日付を読めない行があれば取り込みを中止し既存のレースを残す() throws {
-        let existing = Race(raceNumber: 1, raceName: "既存レース")
-        container.mainContext.insert(existing)
+    @Test(arguments: [
+        ("2026-10-31,東京,11,天皇賞,2000,芝,良,中央", ZipImportError.invalidDate(line: 2, value: "2026-10-31")),
+        ("2026/1/5,東京,11,天皇賞,2000,芝,良,中央", ZipImportError.invalidDate(line: 2, value: "2026/1/5")),
+        ("2026/10/31,東京,11,天皇賞,2000,芝,良,中央\n2026/11/01,東京,11", ZipImportError.missingColumns(line: 3)),
+    ])
+    func 取り込めない行があれば既存のレースを消さずに中止する(raceRows: String, error: ZipImportError) throws {
+        container.mainContext.insert(Race(raceNumber: 1, raceName: "既存レース"))
         try container.mainContext.save()
 
-        #expect(throws: ZipImportError.invalidDate(line: 2, value: "2026-10-31")) {
-            _ = try importZip(date: "2026-10-31")
+        #expect(throws: error) {
+            try importZip(raceRows: raceRows)
         }
         let races = try container.mainContext.fetch(FetchDescriptor<Race>())
         #expect(races.map(\.raceName) == ["既存レース"])
+    }
+
+    @Test func `races.csv の空行は飛ばして取り込む`() throws {
+        try importZip(raceRows: "2026/10/31,東京,11,天皇賞,2000,芝,良,中央\n\n")
+        let races = try container.mainContext.fetch(FetchDescriptor<Race>())
+        #expect(races.map(\.raceName) == ["天皇賞"])
     }
 }
