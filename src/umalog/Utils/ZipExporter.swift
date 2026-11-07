@@ -10,32 +10,42 @@ import ZIPFoundation
 
 /// レースデータをセクション別 CSV とメモ Markdown ファイルにまとめた ZIP バックアップを生成するユーティリティ。
 enum ZipExporter {
+    /// ZIP バックアップを生成する一時ディレクトリ内の場所。書き出すたびに上書きする。
+    static var outputURL: URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("umalog_backup.zip")
+    }
+
     /// レースデータを CSV 群とメモファイルにまとめた ZIP バックアップを一時ディレクトリに生成する。
     /// - Parameter races: エクスポート対象のレース配列。日付昇順に並べ替えて出力する。
-    /// - Returns: 生成した ZIP ファイルの URL。
+    /// - Returns: 生成した ZIP ファイルの URL（``outputURL``）。
     static func export(races: [Race]) throws -> URL {
         let sorted = races.sorted { $0.date < $1.date }
 
-        let filename = "umalog_backup.zip"
-        let zipURL = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+        let zipURL = outputURL
         try? FileManager.default.removeItem(at: zipURL)
 
-        let archive = try Archive(url: zipURL, accessMode: .create)
+        do {
+            let archive = try Archive(url: zipURL, accessMode: .create)
 
-        try addEntry(archive, name: "races.csv", content: CSVExporter.racesCSV(sorted, includeMemo: false))
-        try addEntry(archive, name: "entries.csv", content: CSVExporter.entriesCSV(sorted))
-        try addEntry(archive, name: "bets.csv", content: CSVExporter.betsCSV(sorted))
-        try addEntry(archive, name: "bet_selections.csv", content: CSVExporter.betSelectionsCSV(sorted))
+            try addEntry(archive, name: "races.csv", content: CSVExporter.racesCSV(sorted, includeMemo: false))
+            try addEntry(archive, name: "entries.csv", content: CSVExporter.entriesCSV(sorted))
+            try addEntry(archive, name: "bets.csv", content: CSVExporter.betsCSV(sorted))
+            try addEntry(archive, name: "bet_selections.csv", content: CSVExporter.betSelectionsCSV(sorted))
 
-        for race in sorted {
-            guard !race.memo.isEmpty else { continue }
-            let baseName = memoBaseName(
-                date: race.date,
-                venueName: race.venue?.name ?? "",
-                raceNumber: race.raceNumber,
-                raceName: race.raceName,
-            )
-            try addEntry(archive, name: "memo/\(baseName).md", content: race.memo)
+            for race in sorted {
+                guard !race.memo.isEmpty else { continue }
+                let baseName = memoBaseName(
+                    date: race.date,
+                    venueName: race.venue?.name ?? "",
+                    raceNumber: race.raceNumber,
+                    raceName: race.raceName,
+                )
+                try addEntry(archive, name: "memo/\(baseName).md", content: race.memo)
+            }
+        } catch {
+            // 書きかけの ZIP を残すと、ファイル選択画面を飛ばす UI テストの復元がそれを読んでしまう
+            try? FileManager.default.removeItem(at: zipURL)
+            throw error
         }
 
         return zipURL

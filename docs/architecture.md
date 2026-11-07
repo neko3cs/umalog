@@ -199,6 +199,7 @@ flowchart TB
 | 並び順 | `sortIndex: Int = 0` で表現する |
 | 列挙型の既定値 | 空・未選択を表す case は `.unspecified` と命名する。`.none` は `Optional.none` と衝突する |
 | 日付の扱い | 収支集計は `Calendar.current` の日境界で判定する |
+| ファイルに書く日付 | CSV・ZIP バックアップ・メモファイル名・取り込む JSON の日付は、`FileDate` のフォーマッター（`Calendar(identifier: .gregorian)`・`Locale(identifier: "en_US_POSIX")`・端末のタイムゾーン）で読み書きする。新しい書式が要るときも `FileDate` に足す。端末の暦法（和暦・仏暦など）で年の表記が変わると、別の端末で正しく戻せない（#68） |
 | Xcode プロジェクトファイル | `.pbxproj` を手で編集しない。`src/umalog` などはファイルシステムと同期するグループのため、新規ファイルはフォルダに置けばビルド対象に入る |
 | 画面上の操作要素 | ツールバーボタンには `accessibilityIdentifier` を設定する（UI テストからの参照に必要） |
 | 利用者への知らせ | コピー完了などは OK ダイアログ（`.alert`）で出す。画面内に文言を差し込まない（オーナー決定、#44） |

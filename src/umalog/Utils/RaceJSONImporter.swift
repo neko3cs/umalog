@@ -223,15 +223,7 @@ enum RaceJSONImporter {
     static let trackTypes = TrackType.allCases.map(\.rawValue)
 
     /// `yyyy-MM-dd` の日付を端末のタイムゾーンで読み書きするフォーマッター。
-    private static let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = .current
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.isLenient = false
-        return formatter
-    }()
+    private static let dateFormatter = FileDate.hyphenated
 
     // MARK: Parse
 

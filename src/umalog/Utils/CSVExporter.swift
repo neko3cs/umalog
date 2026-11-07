@@ -149,18 +149,14 @@ enum CSVExporter {
     /// - Parameter date: フォーマット対象の日付。
     /// - Returns: フォーマット済み文字列。
     static func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy/MM/dd"
-        return formatter.string(from: date)
+        FileDate.slashed.string(from: date)
     }
 
     /// ファイル名に使う `yyyyMMdd` 形式で日付をフォーマットする。
     /// - Parameter date: フォーマット対象の日付。
     /// - Returns: フォーマット済み文字列。
     static func formatFilenameDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd"
-        return formatter.string(from: date)
+        FileDate.compact.string(from: date)
     }
 
     /// 馬番を CSV の値に変換する。0 は未入力（着順未確定など）として空欄にする。
