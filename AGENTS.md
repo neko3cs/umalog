@@ -70,7 +70,9 @@ xcrun xccov view --report --only-targets merged.xcresult
 
 ### GitHub Actions
 
-`.github/workflows/ios-quality.yml` (`iOS 品質チェック`) provides manual formatting, lint, build, full unit/UI tests, and an 85% combined app line-coverage gate. A hosted run with unit tests and two UI groups on separate runners took **34 minutes** (Xcode 27.1, 2026-11-05; one measurement, not a guaranteed duration). Consider this cost when choosing between hosted full-suite checks and local checks on the M5 Mac; do not launch it automatically for every change.
+`.github/workflows/ios-quality.yml` (`iOS 品質チェック`) provides formatting, lint, build, full unit/UI tests, and an 85% combined app line-coverage gate. A hosted run with unit tests and two UI groups on separate runners took **34 minutes** (Xcode 27.1, 2026-11-05; one measurement, not a guaranteed duration). Consider this cost when choosing between hosted full-suite checks and local checks on the M5 Mac.
+
+- **Automatic runs (#78)**: it runs on a non-draft PR — when it is opened ready, marked Ready for review, or pushed to while ready. Every push to a ready PR costs a full run, so batch review fixes into one push. Draft PRs only get runs whose jobs are all skipped. A new run on the same PR, or converting the PR back to draft, cancels the one in progress (`concurrency` is keyed on `refs/pull/<n>/merge`). PR runs test the merge commit with `main`, not the branch tip; GitHub starts none while the PR has merge conflicts. A manual run on the same branch is a separate concurrency group and is not cancelled.
 
 - **Hosted UI test distribution**: balance the groups by measured execution time at test-class granularity. When tests grow or timings drift, use per-class durations from xcresult to rebalance `UI_GROUP_A` so both UI jobs finish at similar times. Group B is the complement, so new classes enter B automatically; check its load after adding tests. Keep this tuning separate from local M5 parallelism.
 
