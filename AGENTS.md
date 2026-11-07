@@ -131,6 +131,7 @@ For Claude Code: use the `/test-code` skill to run the full sequence above, but 
 - **Project Format bumps go through Xcode's GUI picker, never a hand-typed `objectVersion`**: there is no documented version→integer mapping ("Xcode 26.3" wrote `100`, from `77`). Xcode also drops now-default keys (`buildActionMask`, empty `dependencies`, …) during the bump — that's normalization, not data loss.
 - **ZIPFoundation 0.9.20 deprecation warning** (`'v4' is deprecated: watchOS 9.0 ...`) comes from its `Package@swift-5.9.swift`, not our code. Fixed upstream in `676ffa3` but unreleased; owner chose to wait for the next release — don't pin to `main`.
 - **Agent sandbox and git/gh** (seen in Claude Code, 2026-11-04, git 2.54.0): the sandbox denies writes to `.git/config`, so `git push -u` pushes but can't record the upstream — push without `-u`. `error: fsmonitor_ipc__send_query ...` on every git command is harmless noise. `gh` fails TLS verification (`x509: OSStatus -26276`) even with `api.github.com` allowed — run `gh` outside the sandbox.
+- **`gh issue view <n> --comments` prints nothing when piped** (gh 2.103.3, 2026-11-08): exit 0, zero bytes — it looks like an empty Issue. Use `gh issue view <n> --json title,body,comments` instead.
 - **History-rewriting git ops** (`git reset --soft`, `git stash pop`, …): the agent's permission classifier blocks them even after the owner approves in chat. Ask the owner to run them in their own terminal instead of retrying.
 
 ### Running tests
