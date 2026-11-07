@@ -13,7 +13,9 @@ import ZIPFoundation
 
 /// CSV・ZIP バックアップの日付が西暦で読み書きされることを確かめる（#68 の受入条件）。
 /// - Note: ユニットテストはシミュレーターの暦法（西暦）で動き、アプリの中から暦法を切り替えられない。
-///   和暦・仏暦の行は UI テストの `暦法の違うZIP往復Test` が `-AppleLocale` を変えて確かめる。
+///   和暦・仏暦の行（1-2・1-3・2-2・2-3）は UI テストの `暦法の違うZIP往復Test` が `-AppleLocale` を変えて確かめる。
+///   和暦の端末でのメモの紐付け（3-1・3-2）と 2-4 は、フォーマッターが端末の暦法を読まないこと（`FileDate` の設定）と、
+///   同じ入力を西暦の端末で確かめることの 2 つで担保する。
 @MainActor
 struct ZIPの日付Test {
     let container: ModelContainer
@@ -24,6 +26,7 @@ struct ZIPの日付Test {
         container = try ModelContainer(for: schema, configurations: [config])
     }
 
+    /// 期待する開催日を組み立てる・読み出すためのグレゴリオ暦。
     private static let gregorian = Calendar(identifier: .gregorian)
 
     /// 指定した races.csv の日付とメモファイルを持つ ZIP を一時ディレクトリに作り、取り込む。
@@ -86,8 +89,8 @@ struct ZIPの日付Test {
     // MARK: - 条件3: メモの紐付け
 
     @Test(arguments: [
-        ("条件3-1", "2026/10/31", "20261031_東京_R11_天皇賞.md"),
-        ("条件3-2", "2026/10/31", "20261031_天皇賞.md"),
+        ("条件3-1（端末は西暦）", "2026/10/31", "20261031_東京_R11_天皇賞.md"),
+        ("条件3-2（端末は西暦）", "2026/10/31", "20261031_天皇賞.md"),
         ("条件3-3", "0008/10/31", "00081031_東京_R11_天皇賞.md"),
     ])
     func `取り込んだレースに同じ日付のメモファイルが付く`(
@@ -95,5 +98,28 @@ struct ZIPの日付Test {
     ) throws {
         let race = try importZip(date: dateColumn, memoFilename: memoFilename)
         #expect(race.memo == "メモ", "\(condition)")
+    }
+
+    // MARK: - 端末の暦法を読まないこと
+
+    @Test func `ファイルの日付のフォーマッターは端末の設定によらずグレゴリオ暦と en_US_POSIX を使う`() {
+        for formatter in [FileDate.slashed, FileDate.compact, FileDate.hyphenated] {
+            #expect(formatter.calendar.identifier == .gregorian, "\(formatter.dateFormat ?? "")")
+            #expect(formatter.locale.identifier == "en_US_POSIX", "\(formatter.dateFormat ?? "")")
+        }
+    }
+
+    // MARK: - 読めない日付
+
+    @Test func 日付を読めない行があれば取り込みを中止し既存のレースを残す() throws {
+        let existing = Race(raceNumber: 1, raceName: "既存レース")
+        container.mainContext.insert(existing)
+        try container.mainContext.save()
+
+        #expect(throws: ZipImportError.invalidDate(line: 2, value: "2026-10-31")) {
+            _ = try importZip(date: "2026-10-31")
+        }
+        let races = try container.mainContext.fetch(FetchDescriptor<Race>())
+        #expect(races.map(\.raceName) == ["既存レース"])
     }
 }

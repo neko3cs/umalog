@@ -50,13 +50,43 @@ class UIテストケース: XCTestCase {
 
     /// レース名を入力して、開催日が今日のレースを1件追加する。
     /// - Parameter name: 追加するレースの名前。
-    func addTodayRace(name: String) {
+    func addRace(name: String) {
         openAddRaceForm()
         let raceNameField = app.textFields["レース名（任意）"]
         tapWhenReady(raceNameField)
         raceNameField.typeText(name)
         app.buttons["追加"].tap()
         XCTAssertTrue(app.staticTexts[name].waitForExistence(timeout: 5))
+    }
+
+    /// 設定タブから ZIP バックアップを書き出し、完了のダイアログを閉じる。
+    /// - Note: `--UITestingSkipDocumentPicker` で起動していること。
+    func exportZipBackup() {
+        app.tabBars.firstMatch.buttons["設定"].tap()
+        tapWhenReady(app.buttons["ZIPバックアップ"])
+        let savedAlert = app.alerts["バックアップ完了"]
+        XCTAssertTrue(savedAlert.waitForExistence(timeout: 10))
+        savedAlert.buttons["OK"].tap()
+    }
+
+    /// 設定タブで「ZIPから復元」をタップし、復元の確認ダイアログを返す。
+    /// - Note: `--UITestingSkipDocumentPicker` で起動していること。
+    /// - Returns: 表示された「データを復元」ダイアログ。
+    func openRestoreConfirm() -> XCUIElement {
+        app.tabBars.firstMatch.buttons["設定"].tap()
+        tapWhenReady(app.buttons["ZIPから復元"])
+        let confirmAlert = app.alerts["データを復元"]
+        XCTAssertTrue(confirmAlert.waitForExistence(timeout: 10))
+        return confirmAlert
+    }
+
+    /// 直前に書き出した ZIP バックアップから復元し、完了のダイアログを閉じる。
+    /// - Note: `--UITestingSkipDocumentPicker` で起動していること。
+    func restoreLastBackup() {
+        openRestoreConfirm().buttons["復元"].tap()
+        let restoredAlert = app.alerts["復元完了"]
+        XCTAssertTrue(restoredAlert.waitForExistence(timeout: 10))
+        restoredAlert.buttons["OK"].tap()
     }
 }
 
@@ -141,26 +171,16 @@ final class レース追加Test: UIテストケース {
 // MARK: - Scenario 3: レース詳細・出走馬追加
 
 final class レース詳細Test: UIテストケース {
-    private func addRace(name: String = "シナリオレース") {
-        openAddRaceForm()
-        XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
-        let raceNameField = app.textFields["レース名（任意）"]
-        tapWhenReady(raceNameField)
-        raceNameField.typeText(name)
-        app.buttons["追加"].tap()
-        XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
-    }
-
     @MainActor
     func testレースセルをタップすると詳細画面に遷移する() {
-        addRace()
+        addRace(name: "シナリオレース")
         tapWhenReady(app.staticTexts["シナリオレース"])
         XCTAssertTrue(app.navigationBars["シナリオレース"].waitForExistence(timeout: 5))
     }
 
     @MainActor
     func test詳細画面に出走馬追加ボタンが表示される() {
-        addRace()
+        addRace(name: "シナリオレース")
         tapWhenReady(app.staticTexts["シナリオレース"])
         XCTAssertTrue(app.navigationBars["シナリオレース"].waitForExistence(timeout: 5))
 
@@ -170,7 +190,7 @@ final class レース詳細Test: UIテストケース {
 
     @MainActor
     func test出走馬を追加すると詳細画面に表示される() {
-        addRace()
+        addRace(name: "シナリオレース")
         tapWhenReady(app.staticTexts["シナリオレース"])
         XCTAssertTrue(app.navigationBars["シナリオレース"].waitForExistence(timeout: 5))
 
@@ -188,7 +208,7 @@ final class レース詳細Test: UIテストケース {
 
     @MainActor
     func test出走馬に予想印を付けると詳細画面に印が表示される() {
-        addRace()
+        addRace(name: "シナリオレース")
         tapWhenReady(app.staticTexts["シナリオレース"])
         XCTAssertTrue(app.navigationBars["シナリオレース"].waitForExistence(timeout: 5))
 
@@ -211,7 +231,7 @@ final class レース詳細Test: UIテストケース {
 
     @MainActor
     func test詳細画面に馬券追加ボタンが表示される() {
-        addRace()
+        addRace(name: "シナリオレース")
         tapWhenReady(app.staticTexts["シナリオレース"])
         XCTAssertTrue(app.navigationBars["シナリオレース"].waitForExistence(timeout: 5))
 
@@ -650,16 +670,6 @@ final class 競馬場選択Test: UIテストケース {
 // MARK: - Scenario 5: レース削除
 
 final class レース削除Test: UIテストケース {
-    private func addRace(name: String) {
-        openAddRaceForm()
-        XCTAssertTrue(app.navigationBars["レースを追加"].waitForExistence(timeout: 5))
-        let raceNameField = app.textFields["レース名（任意）"]
-        tapWhenReady(raceNameField)
-        raceNameField.typeText(name)
-        app.buttons["追加"].tap()
-        XCTAssertTrue(app.navigationBars["Umalog"].waitForExistence(timeout: 5))
-    }
-
     @MainActor
     func testレースをスワイプして削除できる() {
         addRace(name: "削除対象レース")

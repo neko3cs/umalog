@@ -9,6 +9,23 @@ import Foundation
 import SwiftData
 import ZIPFoundation
 
+/// ZIP バックアップを取り込めないときのエラー。
+enum ZipImportError: LocalizedError, Equatable {
+    /// races.csv の date 列が `yyyy/MM/dd` として読めない。
+    /// - Parameters:
+    ///   - line: races.csv の行番号（ヘッダーが 1 行目）。
+    ///   - value: 読めなかった値。
+    case invalidDate(line: Int, value: String)
+
+    /// 利用者に示す説明。
+    var errorDescription: String? {
+        switch self {
+        case let .invalidDate(line, value):
+            "races.csv の \(line) 行目の日付「\(value)」を読めません（yyyy/MM/dd で書いてください）。データは変更していません。"
+        }
+    }
+}
+
 /// ZIP バックアップからレースデータを復元するユーティリティ。旧フォーマットのバックアップにも対応する。
 enum ZipImporter {
     /// ZIP バックアップを読み込み、既存のレースデータをすべて置き換えて復元する。競馬場・券種マスターは保持する。
@@ -23,13 +40,15 @@ enum ZipImporter {
         let entriesText = try readEntry(archive, path: "entries.csv")
         let betsText = try readEntry(archive, path: "bets.csv")
         let hasBetSelections = archive["bet_selections.csv"] != nil
+        let raceRows = parseCSV(racesText)
+        try validateDates(raceRows)
 
         try deleteAllRaceData(in: context)
 
         let venues = try context.fetch(FetchDescriptor<Venue>())
         let ticketTypes = try context.fetch(FetchDescriptor<TicketType>())
 
-        let (raceMap, memoNameMap) = importRaces(racesText, venues: venues, context: context)
+        let (raceMap, memoNameMap) = importRaces(raceRows, venues: venues, context: context)
         importEntries(entriesText, raceMap: raceMap, context: context)
         if hasBetSelections {
             try importBetsNewFormat(
@@ -52,33 +71,41 @@ enum ZipImporter {
         try context.fetch(FetchDescriptor<Race>()).forEach { context.delete($0) }
     }
 
+    /// races.csv の date 列がすべて読めるか確かめる。既存データを消す前に呼ぶ。
+    /// - Parameter raceRows: ヘッダー行を含む races.csv の行。
+    /// - Throws: 読めない日付があれば、最初の 1 件を示す `ZipImportError.invalidDate`。
+    private static func validateDates(_ raceRows: [[String]]) throws {
+        for (idx, row) in raceRows.enumerated().dropFirst() where row.count >= 8 && parseDate(row[0]) == nil {
+            throw ZipImportError.invalidDate(line: idx + 1, value: row[0])
+        }
+    }
+
     /// races.csv からレースを復元する。グレード・着順の列が無い旧フォーマットにも対応する。
     /// - Parameters:
-    ///   - racesText: races.csv の内容。
+    ///   - raceRows: ヘッダー行を含む races.csv の行。日付は `validateDates` で確かめておく。
     ///   - venues: 復元先の競馬場マスター。CSV の競馬場名と同名の競馬場に紐付ける。
     ///   - context: 復元先の ModelContext。
     /// - Returns: レースキー → レースのマップと、メモファイルのベース名（現行・旧形式の両方）→ レースのマップ。
     private static func importRaces(
-        _ racesText: String,
+        _ raceRows: [[String]],
         venues: [Venue],
         context: ModelContext,
     ) -> (raceMap: [String: Race], memoNameMap: [String: Race]) {
         var raceMap: [String: Race] = [:]
         // レースの venue が DB に存在しない場合でもメモを復元できるよう、ベース名は CSV 行の競馬場名から組み立てる
         var memoNameMap: [String: Race] = [:]
-        let raceRows = parseCSV(racesText)
         let raceHeader = raceRows.first ?? []
         let hasFinishPlaces = raceHeader.contains("first_place_horse")
         let hasGrade = raceHeader.contains("grade")
         for (idx, row) in raceRows.dropFirst().enumerated() {
-            guard row.count >= 8 else { continue }
+            guard row.count >= 8, let date = parseDate(row[0]) else { continue }
             let grade = hasGrade && row.count > 8 ? row[8] : ""
             let placeOffset = hasGrade ? 9 : 8
             let firstPlace = hasFinishPlaces && row.count > placeOffset ? Int(row[placeOffset]) ?? 0 : 0
             let secondPlace = hasFinishPlaces && row.count > placeOffset + 1 ? Int(row[placeOffset + 1]) ?? 0 : 0
             let thirdPlace = hasFinishPlaces && row.count > placeOffset + 2 ? Int(row[placeOffset + 2]) ?? 0 : 0
             let race = Race(
-                date: parseDate(row[0]) ?? Date(),
+                date: date,
                 venue: venues.first { $0.name == row[1] },
                 raceNumber: Int(row[2]) ?? 1,
                 raceName: row[3],
@@ -282,7 +309,9 @@ enum ZipImporter {
     /// - Parameter string: 変換対象の文字列。
     /// - Returns: 変換結果。形式が不正な場合は nil。
     private static func parseDate(_ string: String) -> Date? {
-        CSVExporter.fileDateFormatter("yyyy/MM/dd").date(from: string)
+        let date = FileDate.slashed.date(from: string)
+        // isLenient = false でも "2026-10-31" や "2026/1/5" を受け付けるため、書き戻して一致を確かめる
+        return date.map(FileDate.slashed.string(from:)) == string ? date : nil
     }
 
     /// CSV テキストを行×列の二次元配列にパースする。クォート・エスケープ・CRLF に対応する。

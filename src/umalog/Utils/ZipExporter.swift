@@ -24,22 +24,28 @@ enum ZipExporter {
         let zipURL = outputURL
         try? FileManager.default.removeItem(at: zipURL)
 
-        let archive = try Archive(url: zipURL, accessMode: .create)
+        do {
+            let archive = try Archive(url: zipURL, accessMode: .create)
 
-        try addEntry(archive, name: "races.csv", content: CSVExporter.racesCSV(sorted, includeMemo: false))
-        try addEntry(archive, name: "entries.csv", content: CSVExporter.entriesCSV(sorted))
-        try addEntry(archive, name: "bets.csv", content: CSVExporter.betsCSV(sorted))
-        try addEntry(archive, name: "bet_selections.csv", content: CSVExporter.betSelectionsCSV(sorted))
+            try addEntry(archive, name: "races.csv", content: CSVExporter.racesCSV(sorted, includeMemo: false))
+            try addEntry(archive, name: "entries.csv", content: CSVExporter.entriesCSV(sorted))
+            try addEntry(archive, name: "bets.csv", content: CSVExporter.betsCSV(sorted))
+            try addEntry(archive, name: "bet_selections.csv", content: CSVExporter.betSelectionsCSV(sorted))
 
-        for race in sorted {
-            guard !race.memo.isEmpty else { continue }
-            let baseName = memoBaseName(
-                date: race.date,
-                venueName: race.venue?.name ?? "",
-                raceNumber: race.raceNumber,
-                raceName: race.raceName,
-            )
-            try addEntry(archive, name: "memo/\(baseName).md", content: race.memo)
+            for race in sorted {
+                guard !race.memo.isEmpty else { continue }
+                let baseName = memoBaseName(
+                    date: race.date,
+                    venueName: race.venue?.name ?? "",
+                    raceNumber: race.raceNumber,
+                    raceName: race.raceName,
+                )
+                try addEntry(archive, name: "memo/\(baseName).md", content: race.memo)
+            }
+        } catch {
+            // 書きかけの ZIP を残すと、ファイル選択画面を飛ばす UI テストの復元がそれを読んでしまう
+            try? FileManager.default.removeItem(at: zipURL)
+            throw error
         }
 
         return zipURL

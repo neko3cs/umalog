@@ -49,7 +49,7 @@ struct SettingsView: View {
     /// UI テストでシステムのファイル選択画面を飛ばすか。
     /// - Note: ファイル選択画面は別プロセスで、並列実行用のシミュレーター複製ではタップが効かないことがあるため（#43）、
     ///   書き出しは保存できたものとし、復元は直前に書き出した ZIP を選んだものとして扱う。
-    ///   直前の書き出しは一時ディレクトリに残るので、アプリを起動し直しても復元できる（暦法を変えた往復テスト、#68）。
+    ///   直前の書き出しは一時ディレクトリに残るので、`--UITestingKeepBackup` を付けて起動し直せば復元できる（暦法を変えた往復テスト、#68）。
     private static let skipsDocumentPicker = CommandLine.arguments.contains("--UITestingSkipDocumentPicker")
 
     var body: some View {

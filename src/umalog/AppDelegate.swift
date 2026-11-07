@@ -37,11 +37,16 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     /// 生成と同時に共有インスタンスを登録する。
     /// UIテスト実行時は List のアニメーションが途中のフレームを XCUITest が参照し
     /// "Invalid frame dimension" 警告が出るため、アニメーションを無効化する。
+    /// - Note: UI テストでは、前のテストが一時ディレクトリに残した ZIP バックアップも消す。ファイル選択画面を飛ばす復元が
+    ///   それを読まないようにするため。起動し直して復元するテストだけは `--UITestingKeepBackup` で残す（#68）。
     override init() {
         super.init()
         AppDelegate.shared = self
         if CommandLine.arguments.contains("--UITesting") {
             UIView.setAnimationsEnabled(false)
+            if !CommandLine.arguments.contains("--UITestingKeepBackup") {
+                try? FileManager.default.removeItem(at: ZipExporter.outputURL)
+            }
         }
     }
 
