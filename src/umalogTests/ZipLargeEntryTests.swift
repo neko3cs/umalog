@@ -11,7 +11,9 @@ import Testing
 @testable import umalog
 import ZIPFoundation
 
-/// ZIPFoundation の書き込み単位（16 KiB）を超えるファイルが、ZIP バックアップに壊れずに書かれることを確かめる（#72 の受入条件）。
+/// ZIPFoundation の書き込み単位（16 KiB）を超えるファイルが、ZIP バックアップに壊れずに書かれることを確かめる。
+/// - Note: ZIPFoundation はエントリの中身を 16 KiB ごとに、読み出し位置を進めながら受け取る。
+///   位置を無視すると 16 KiB を超えた部分が先頭の繰り返しになるため、境界の前後と、境界をまたぐ多バイト文字を確かめる。
 @MainActor
 struct ZIPの大きなファイルTest {
     let container: ModelContainer
@@ -63,25 +65,25 @@ struct ZIPの大きなファイルTest {
         return (url, "memo/\(baseName).md")
     }
 
-    // MARK: - 条件1: エントリの中身が書き出す前のバイト列と一致する
+    // MARK: - エントリの中身が書き出す前のバイト列と一致する
 
     @Test(arguments: [
-        ("条件1-1", 16383),
-        ("条件1-2", 16384),
-        ("条件1-3", 16385),
-        ("条件1-4", 40000),
+        ("書き込み単位より 1 バイト小さい", 16383),
+        ("書き込み単位ちょうど", 16384),
+        ("書き込み単位より 1 バイト大きい", 16385),
+        ("書き込み単位 2 つと端数", 40000),
     ])
     func `書き出したメモのバイト列が書き出す前のテキストの UTF-8 と一致する`(
-        condition: String, byteCount: Int,
+        boundary: String, byteCount: Int,
     ) throws {
         let memo = String((0 ..< byteCount).map { Character(String($0 % 10)) })
         let (url, memoPath) = try exportRace(memo: memo)
         defer { try? FileManager.default.removeItem(at: url) }
 
-        #expect(try entryData(in: url, path: memoPath) == Data(memo.utf8), "\(condition)")
+        #expect(try entryData(in: url, path: memoPath) == Data(memo.utf8), "\(boundary)")
     }
 
-    @Test func `条件1-5 書き込み単位の境界をまたぐ日本語のメモが書き出しても取り込んでも元と一致する`() throws {
+    @Test func `書き込み単位の境界をまたぐ日本語のメモが書き出しても取り込んでも元と一致する`() throws {
         // 「あ」は UTF-8 で 3 バイト。先頭の「あ」が 16,383〜16,385 バイト目（0 始まり）を占め、境界をまたぐ
         let memo = String(repeating: "a", count: Self.chunkSize - 1) + String(repeating: "あいう", count: 100)
         let (url, memoPath) = try exportRace(memo: memo)
@@ -95,9 +97,9 @@ struct ZIPの大きなファイルTest {
         #expect(restored.map(\.memo) == [memo])
     }
 
-    // MARK: - 条件2: 16 KiB を超えるデータを書き出して取り込むと元に戻る
+    // MARK: - 16 KiB を超えるデータを書き出して取り込むと元に戻る
 
-    @Test func `条件2-1 races.csv が 16 KiB を超える件数のレースを書き出して取り込むと元のレースに戻る`() throws {
+    @Test func `races.csv が 16 KiB を超える件数のレースを書き出して取り込むと元のレースに戻る`() throws {
         let ctx = container.mainContext
         let venue = Venue(name: "東京"); ctx.insert(venue)
         let races = (0 ..< 400).map { index in
@@ -129,7 +131,7 @@ struct ZIPの大きなファイルTest {
         #expect(restored == races.map(key).sorted())
     }
 
-    @Test func `条件2-2 bets.csv と bet_selections.csv が 16 KiB を超える件数の馬券を書き出して取り込むと元の馬券に戻る`() throws {
+    @Test func `bets.csv と bet_selections.csv が 16 KiB を超える件数の馬券を書き出して取り込むと元の馬券に戻る`() throws {
         let ctx = container.mainContext
         let race = Race(date: Self.raceDate, raceNumber: 11, raceName: "馬券の多いレース")
         ctx.insert(race)
@@ -169,7 +171,7 @@ struct ZIPの大きなファイルTest {
         #expect(try importContainer.mainContext.fetchCount(FetchDescriptor<BetSelection>()) == bets.count)
     }
 
-    @Test func `条件2-3 16 KiB を超えるメモを書き出して取り込むと元のメモに戻る`() throws {
+    @Test func `16 KiB を超えるメモを書き出して取り込むと元のメモに戻る`() throws {
         let line = "1コーナーで外に膨れた。次走は内枠なら買い。\n"
         let memo = String(repeating: line, count: Self.chunkSize / line.utf8.count + 50)
         try #require(memo.utf8.count > Self.chunkSize)
