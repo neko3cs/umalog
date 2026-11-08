@@ -92,6 +92,8 @@ enum ZipExporter {
     }
 
     /// アーカイブへ UTF-8 テキストのファイルエントリを追加する。
+    /// - Note: ZIPFoundation は provider を書き込み単位（16 KiB）ごとに、読み出し位置を進めながら繰り返し呼ぶ。
+    ///   位置を無視して先頭から返すと、16 KiB を超えるファイルが先頭部分の繰り返しになる。
     /// - Parameters:
     ///   - archive: 追加先のアーカイブ。
     ///   - name: アーカイブ内のパス。
@@ -100,6 +102,9 @@ enum ZipExporter {
         let data = Data(content.utf8)
         try archive.addEntry(
             with: name, type: .file, uncompressedSize: Int64(data.count),
-        ) { _, size in data.subdata(in: 0 ..< size) }
+        ) { position, size in
+            let start = Int(position)
+            return data.subdata(in: start ..< start + size)
+        }
     }
 }
