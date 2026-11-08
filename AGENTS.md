@@ -98,6 +98,7 @@ For Claude Code: use the `/test-code` skill to run the full sequence above, but 
 - **DocC comments** (`///`) required on all types, properties, and functions. Use `- Returns:`, `- Parameter:`, `- Note:` keywords for Xcode Quick Help.
 - **Inline `//`** only for logic a reader would likely misread — never narrate obvious code.
 - **ADR numbers in `docs/architecture.md` follow the order the decisions were made**, not topic. Check commit/PR history for the decision date before assigning a number.
+- **Design docs state the current spec and its reasons — no Issue/PR numbers or change history** (owner, 2026-11-08). They exist so an AI implements correctly and a human grasps the spec without reading code; a number sends the reader into an Issue's discussion, and history is already reachable via `git blame` → commit → PR. If a reason lives only in an Issue, write the reason into the doc. Keep "（オーナー決定）" markers — they tell an agent not to relitigate. A bug where the code strays from a correct design changes no design doc ("trust the code" covers stale docs, not bugs).
 - **UIKit only where SwiftUI has no API**: shake-to-undo (`ShakeWindow`, wired through `AppDelegate` / `SceneDelegate`).
 - **Every new tappable control needs an interaction-level UI test or a Simulator click-through**: unit tests on a value type (e.g. `RaceFilter`) don't verify the View wiring.
 - **UI-test an edit flow from a persisted record opened fresh** (save → reopen from race detail → tap the row), not from an in-session draft — a draft hid #46.
