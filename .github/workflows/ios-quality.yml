@@ -2,6 +2,10 @@ name: iOS 品質チェック
 
 on:
   workflow_dispatch:
+  # converted_to_draft and closed start a run whose jobs are all skipped; they
+  # exist only so that run's concurrency group cancels the one already in progress.
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft, closed]
 
 permissions:
   contents: read
@@ -33,6 +37,13 @@ env:
 jobs:
   checks:
     name: 整形・Lint
+    # tests and coverage need this job, so skipping it skips the whole run.
+    # Fork PRs are skipped so outside code never runs on the xcode-27 runners.
+    if: >-
+      ${{ github.event_name != 'pull_request'
+          || (github.event.action != 'closed'
+              && !github.event.pull_request.draft
+              && github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: xcode-27
     timeout-minutes: 10
     env:
