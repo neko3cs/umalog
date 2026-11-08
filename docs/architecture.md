@@ -230,7 +230,7 @@ flowchart TB
 
 #### GitHub Actions による全件検証
 
-ローカルの M5 Mac ではビルド・変更に関連するテスト・Simulator による操作確認を進め、GitHub Actions は独立した環境での全件検証に用いる。全件検証の待ち時間と重複実行を抑えるため、Draft PR の間は実行しない。PR が Ready for review の状態にあるときだけ自動で起動し（Ready for review にしたとき、最初から Ready for review で作ったとき、Ready for review の PR に push したとき）、オーナーがレビューを始める時点で、最新の内容に対する結果が揃うようにする。同じ PR で新しい実行が始まったときや、PR を Draft に戻したときは、実行中のものを取り消す。それ以外の確認（部分再実行、PR を作る前の確認）は手動で起動する。
+ローカルの M5 Mac ではビルド・変更に関連するテスト・Simulator による操作確認を進め、GitHub Actions は独立した環境での全件検証に用いる。全件検証の待ち時間と重複実行を抑えるため、Draft PR の間は実行しない。PR が Ready for review の状態にあるときだけ自動で起動し（Ready for review にしたとき、最初から Ready for review で作ったとき、Ready for review の PR を開き直したとき、Ready for review の PR に push したとき）、オーナーがレビューを始める時点で、最新の内容に対する結果が揃うようにする。同じ PR で新しい実行が始まったとき、PR を Draft に戻したとき、PR を閉じた（マージした）ときは、実行中のものを取り消す。それ以外の確認（部分再実行、PR を作る前の確認）は手動で起動する。
 
 整形・Lint が成功してから、ユニットテストと2グループの UI テストを別々のランナーで並列実行する。各ランナーでビルドを行い、UI テストはランナー内では非並列とする。ローカルのワーカー数とは独立した設定として扱う。
 
