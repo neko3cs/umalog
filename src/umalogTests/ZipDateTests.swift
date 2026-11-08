@@ -11,11 +11,11 @@ import Testing
 @testable import umalog
 import ZIPFoundation
 
-/// CSV・ZIP バックアップの日付が西暦で読み書きされることを確かめる（#68 の受入条件）。
+/// CSV・ZIP バックアップの日付が、端末の暦法によらず西暦で読み書きされることを確かめる。
 /// - Note: ユニットテストはシミュレーターの暦法（西暦）で動き、アプリの中から暦法を切り替えられない。
-///   和暦・仏暦の行（1-2・1-3・2-2・2-3）は UI テストの `暦法の違うZIP往復Test` が `-AppleLocale` を変えて確かめる。
-///   和暦の端末でのメモの紐付け（3-1・3-2）と 2-4 は、フォーマッターが端末の暦法を読まないこと（`FileDate` の設定）と、
-///   同じ入力を西暦の端末で確かめることの 2 つで担保する。
+///   和暦・仏暦の端末での書き出しと取り込みは、UI テストの `暦法の違うZIP往復Test` が `-AppleLocale` を変えて確かめる。
+///   和暦の端末でのメモの紐付けと、元号の年（`0008` など）で書かれた既存バックアップの取り込みは、
+///   フォーマッターが端末の暦法を読まないこと（`FileDate` の設定）と、同じ入力を西暦の端末で確かめることの 2 つで担保する。
 @MainActor
 struct ZIPの日付Test {
     let container: ModelContainer
@@ -67,45 +67,45 @@ struct ZIPの日付Test {
         try ZipImporter.importZip(from: zipURL, context: container.mainContext)
     }
 
-    // MARK: - 条件1: 書き出し
+    // MARK: - 書き出し
 
     @Test(arguments: [
-        ("条件1-1", DateComponents(year: 2026, month: 10, day: 31), "2026/10/31", "20261031"),
-        ("条件1-4", DateComponents(year: 2019, month: 4, day: 30), "2019/04/30", "20190430"),
+        ("令和の日付", DateComponents(year: 2026, month: 10, day: 31), "2026/10/31", "20261031"),
+        ("平成最後の日", DateComponents(year: 2019, month: 4, day: 30), "2019/04/30", "20190430"),
     ])
     func `書き出す日付の列とメモファイル名は西暦になる`(
-        condition: String, raceDate: DateComponents, dateColumn: String, filenameDate: String,
+        era: String, raceDate: DateComponents, dateColumn: String, filenameDate: String,
     ) throws {
         let date = try #require(Self.gregorian.date(from: raceDate))
-        #expect(CSVExporter.formatDate(date) == dateColumn, "\(condition)")
-        #expect(CSVExporter.formatFilenameDate(date) == filenameDate, "\(condition)")
+        #expect(CSVExporter.formatDate(date) == dateColumn, "\(era)")
+        #expect(CSVExporter.formatFilenameDate(date) == filenameDate, "\(era)")
     }
 
-    // MARK: - 条件2: 取り込み
+    // MARK: - 取り込み
 
     @Test(arguments: [
-        ("条件2-1", "2026/10/31", DateComponents(year: 2026, month: 10, day: 31)),
-        ("条件2-5", "0008/10/31", DateComponents(year: 8, month: 10, day: 31)),
+        ("西暦の年", "2026/10/31", DateComponents(year: 2026, month: 10, day: 31)),
+        ("元号の年で書かれた 4 桁未満の年", "0008/10/31", DateComponents(year: 8, month: 10, day: 31)),
     ])
     func `取り込んだ日付の列はファイルの通り西暦として読まれる`(
-        condition: String, dateColumn: String, raceDate: DateComponents,
+        year: String, dateColumn: String, raceDate: DateComponents,
     ) throws {
         let race = try importZip(date: dateColumn)
-        #expect(Self.gregorian.dateComponents([.year, .month, .day], from: race.date) == raceDate, "\(condition)")
+        #expect(Self.gregorian.dateComponents([.year, .month, .day], from: race.date) == raceDate, "\(year)")
     }
 
-    // MARK: - 条件3: メモの紐付け
+    // MARK: - メモの紐付け
 
     @Test(arguments: [
-        ("条件3-1（端末は西暦）", "2026/10/31", "20261031_東京_R11_天皇賞.md"),
-        ("条件3-2（端末は西暦）", "2026/10/31", "20261031_天皇賞.md"),
-        ("条件3-3", "0008/10/31", "00081031_東京_R11_天皇賞.md"),
+        ("現行形式のファイル名", "2026/10/31", "20261031_東京_R11_天皇賞.md"),
+        ("旧形式のファイル名", "2026/10/31", "20261031_天皇賞.md"),
+        ("元号の年で書かれた日付とファイル名", "0008/10/31", "00081031_東京_R11_天皇賞.md"),
     ])
     func `取り込んだレースに同じ日付のメモファイルが付く`(
-        condition: String, dateColumn: String, memoFilename: String,
+        filenameKind: String, dateColumn: String, memoFilename: String,
     ) throws {
         let race = try importZip(date: dateColumn, memoFilename: memoFilename)
-        #expect(race.memo == "メモ", "\(condition)")
+        #expect(race.memo == "メモ", "\(filenameKind)")
     }
 
     // MARK: - 端末の暦法を読まないこと
