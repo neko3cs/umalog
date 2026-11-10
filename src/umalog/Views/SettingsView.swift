@@ -14,6 +14,8 @@ import UniformTypeIdentifiers
 struct SettingsView: View {
     /// SwiftData のモデルコンテキスト。
     @Environment(\.modelContext) private var modelContext
+    /// シェイクで取り消す削除の履歴。ZIP からの復元に成功したら消す。
+    @Environment(\.undoManager) private var undoManager
     /// SwiftData から取得した全レース。バックアップ対象。
     @Query private var races: [Race]
 
@@ -208,7 +210,7 @@ struct SettingsView: View {
             await Task.yield()
             defer { isImporting = false }
             do {
-                try ZipImporter.importZip(from: url, context: modelContext)
+                try ZipImporter.importZip(from: url, context: modelContext, undoManager: undoManager)
                 showingImportSuccess = true
             } catch {
                 importError = error.localizedDescription
