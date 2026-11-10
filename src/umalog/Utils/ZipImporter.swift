@@ -19,6 +19,9 @@ enum ZipImportError: LocalizedError, Equatable {
     /// races.csv の行の列が、必須の 8 列（date〜category）に足りない。
     /// - Parameter line: races.csv の行番号（ヘッダーが 1 行目）。
     case missingColumns(line: Int)
+    /// CSV が UTF-8 として読めない（UTF-8 以外の文字コードで保存された、中身が壊れている など）。
+    /// - Parameter path: 読めなかったファイルのアーカイブ内のパス。
+    case unreadableText(path: String)
 
     /// 利用者に示す説明。
     var errorDescription: String? {
@@ -27,44 +30,106 @@ enum ZipImportError: LocalizedError, Equatable {
             "races.csv の \(line) 行目の日付「\(value)」を読めません（yyyy/MM/dd で書いてください）。データは変更していません。"
         case let .missingColumns(line):
             "races.csv の \(line) 行目の列が足りません（date から category までの 8 列が必要です）。データは変更していません。"
+        case let .unreadableText(path):
+            // 中身が壊れている場合は保存し直しても直らないので、「UTF-8 で保存し直して」とは書かない
+            "\(path) を読めません（文字コードが UTF-8 でないか、ファイルが壊れています）。データは変更していません。"
         }
     }
 }
 
+/// ZIP バックアップから読み込み、検証まで済ませた内容。既存データを消す前に、取り込むファイルをすべてここへ読む。
+struct ZipBackupContents {
+    /// ヘッダー行を含む races.csv の行。`ZipImporter.validateRaceRows` で確かめてある。
+    let raceRows: [[String]]
+    /// entries.csv の内容。
+    let entriesText: String
+    /// bets.csv の内容。
+    let betsText: String
+    /// bet_selections.csv の内容。nil なら旧フォーマット（bets.csv に券種・買い目を直接持つ形式）。
+    let betSelectionsText: String?
+    /// メモファイルのベース名（`memo/` と `.md` を除いたもの）→ メモ。読めないファイル・空のファイルは含まない。
+    let memos: [String: String]
+}
+
 /// ZIP バックアップからレースデータを復元するユーティリティ。旧フォーマットのバックアップにも対応する。
+/// - Note: 読み込み・検証の段階（`readBackup`）と削除・復元の段階（`restore`）を分け、削除のあとでファイルを読まない。
+///   読めないファイルに気づいた時点で既存データが消えていると、何も復元できないため。
 enum ZipImporter {
     /// ZIP バックアップを読み込み、既存のレースデータをすべて置き換えて復元する。競馬場・券種マスターは保持する。
     /// - Parameters:
     ///   - url: 読み込む ZIP ファイルの URL。
     ///   - context: 復元先の ModelContext。
-    static func importZip(from url: URL, context: ModelContext) throws {
+    ///   - undoManager: 成功したら履歴を消す UndoManager。取り込みは記録をすべて置き換えるので、
+    ///     古い削除を取り消すと、置き換えたデータに取り込み前の記録が混ざるため。
+    /// - Throws: 取り込めないときのエラー。どの段階で失敗しても、既存のデータは取り込み前のまま残る。
+    static func importZip(from url: URL, context: ModelContext, undoManager: UndoManager? = nil) throws {
+        let contents = try readBackup(from: url)
+        try restore(contents, context: context)
+        undoManager?.removeAllActions()
+    }
+
+    /// ZIP バックアップの取り込むファイルをすべて読み、races.csv の行を検証する。ModelContext には触れない。
+    /// - Parameter url: 読み込む ZIP ファイルの URL。
+    /// - Returns: 読み込んだ内容。
+    /// - Throws: 必須の CSV が無い・展開できない・UTF-8 として読めない、races.csv に取り込めない行がある、のいずれか。
+    private static func readBackup(from url: URL) throws -> ZipBackupContents {
         let archive = try Archive(url: url, accessMode: .read)
-
-        // 必須の CSV を先に読み、欠けていれば既存データを消す前に中止する
-        let racesText = try readEntry(archive, path: "races.csv")
-        let entriesText = try readEntry(archive, path: "entries.csv")
-        let betsText = try readEntry(archive, path: "bets.csv")
-        let hasBetSelections = archive["bet_selections.csv"] != nil
-        let raceRows = parseCSV(racesText)
+        let raceRows = try parseCSV(readEntry(archive, path: "races.csv"))
         try validateRaceRows(raceRows)
+        return try ZipBackupContents(
+            raceRows: raceRows,
+            entriesText: readEntry(archive, path: "entries.csv"),
+            betsText: readEntry(archive, path: "bets.csv"),
+            betSelectionsText: archive["bet_selections.csv"] == nil
+                ? nil : readEntry(archive, path: "bet_selections.csv"),
+            memos: readMemos(from: archive),
+        )
+    }
 
-        try deleteAllRaceData(in: context)
-
+    /// 読み込んだ内容で、既存のレースデータをすべて置き換える。
+    /// - Parameters:
+    ///   - contents: `readBackup` で読み込んだ内容。
+    ///   - context: 復元先の ModelContext。
+    private static func restore(_ contents: ZipBackupContents, context: ModelContext) throws {
         let venues = try context.fetch(FetchDescriptor<Venue>())
         let ticketTypes = try context.fetch(FetchDescriptor<TicketType>())
-
-        let (raceMap, memoNameMap) = importRaces(raceRows, venues: venues, context: context)
-        importEntries(entriesText, raceMap: raceMap, context: context)
-        if hasBetSelections {
-            try importBetsNewFormat(
-                archive: archive, betsText: betsText, raceMap: raceMap, ticketTypes: ticketTypes, context: context,
-            )
-        } else {
-            importBetsLegacyFormat(betsText: betsText, raceMap: raceMap, ticketTypes: ticketTypes, context: context)
+        try replaceAllRaceData(in: context) {
+            let (raceMap, memoNameMap) = importRaces(contents.raceRows, venues: venues, context: context)
+            importEntries(contents.entriesText, raceMap: raceMap, context: context)
+            if let betSelectionsText = contents.betSelectionsText {
+                importBetsNewFormat(
+                    betsText: contents.betsText, betSelectionsText: betSelectionsText,
+                    raceMap: raceMap, ticketTypes: ticketTypes, context: context,
+                )
+            } else {
+                importBetsLegacyFormat(
+                    betsText: contents.betsText, raceMap: raceMap, ticketTypes: ticketTypes, context: context,
+                )
+            }
+            for (name, memo) in contents.memos {
+                memoNameMap[name]?.memo = memo
+            }
         }
-        importMemos(from: archive, memoNameMap: memoNameMap)
+    }
 
+    /// 既存のレースデータを消して `insertRecords` で作り直し、保存する。途中で失敗したら既存のデータに戻す。
+    /// - Parameters:
+    ///   - context: 対象の ModelContext。
+    ///   - insertRecords: 消したあとに記録を挿入する処理。
+    /// - Throws: 保存待ちの変更の保存、削除、`insertRecords`、最後の保存のいずれかのエラー。
+    /// - Note: 消す直前に保存待ちの変更（自動保存前のスワイプ削除や編集）を保存しておく。
+    ///   そうしないと、失敗時の `rollback()` が取り込みと関係ない変更まで戻し、削除の Undo とも食い違う
+    ///   （戻ったレースを Undo でもう一度復元すると 2 件になる）。
+    static func replaceAllRaceData(in context: ModelContext, insertRecords: () throws -> Void) throws {
         try context.save()
+        do {
+            try deleteAllRaceData(in: context)
+            try insertRecords()
+            try context.save()
+        } catch {
+            context.rollback()
+            throw error
+        }
     }
 
     /// 既存のレース・出走馬・馬券・買い目をすべて削除する。競馬場・券種マスターは残す。
@@ -165,36 +230,34 @@ enum ZipImporter {
         }
     }
 
-    /// memo/ 以下の Markdown ファイルを、ファイル名（現行・旧形式）が一致するレースのメモに設定する。
-    /// 読めないファイル・空のファイル・一致するレースが無いファイルは無視する。
-    /// - Parameters:
-    ///   - archive: 読み込み中のアーカイブ。
-    ///   - memoNameMap: メモファイルのベース名 → レースのマップ。
-    private static func importMemos(from archive: Archive, memoNameMap: [String: Race]) {
+    /// memo/ 以下の Markdown ファイルを読む。メモは任意なので、読めないファイル・空のファイルは飛ばし、取り込みを止めない。
+    /// - Parameter archive: 読み込み中のアーカイブ。
+    /// - Returns: メモファイルのベース名（`memo/` と `.md` を除いたもの）→ メモ。
+    private static func readMemos(from archive: Archive) -> [String: String] {
+        var memos: [String: String] = [:]
         for entry in archive where entry.path.hasPrefix("memo/") && entry.path.hasSuffix(".md") {
             var data = Data()
             _ = try? archive.extract(entry) { data.append($0) }
             guard let memo = String(data: data, encoding: .utf8), !memo.isEmpty else { continue }
-            let filename = String(entry.path.dropFirst("memo/".count).dropLast(".md".count))
-            memoNameMap[filename]?.memo = memo
+            memos[String(entry.path.dropFirst("memo/".count).dropLast(".md".count))] = memo
         }
+        return memos
     }
 
     /// 現行フォーマット（bets.csv + bet_selections.csv）の馬券・買い目を復元する。
     /// - Parameters:
-    ///   - archive: 読み込み中のアーカイブ。
     ///   - betsText: bets.csv の内容。
+    ///   - betSelectionsText: bet_selections.csv の内容。
     ///   - raceMap: レースキー → レースのマップ。
     ///   - ticketTypes: 復元先の券種マスター。買い目の券種名と同名の券種に紐付ける。
     ///   - context: 復元先の ModelContext。
     private static func importBetsNewFormat(
-        archive: Archive,
         betsText: String,
+        betSelectionsText: String,
         raceMap: [String: Race],
         ticketTypes: [TicketType],
         context: ModelContext,
-    ) throws {
-        let betSelectionsText = try readEntry(archive, path: "bet_selections.csv")
+    ) {
         var betMap: [String: Bet] = [:]
         for (idx, row) in parseCSV(betsText).dropFirst().enumerated() {
             guard row.count >= 5,
@@ -304,12 +367,19 @@ enum ZipImporter {
     /// - Parameters:
     ///   - archive: 読み込み対象のアーカイブ。
     ///   - path: アーカイブ内のパス。
-    /// - Returns: エントリの内容。存在しない場合は `CocoaError(.fileNoSuchFile)` を投げる。
+    /// - Returns: エントリの内容。
+    /// - Throws: 存在しなければ `CocoaError(.fileNoSuchFile)`、展開できなければ ZIPFoundation のエラー、
+    ///   中身が CRC と合わなければ `Archive.ArchiveError.invalidCRC32`、
+    ///   UTF-8 として読めなければ `ZipImportError.unreadableText`。
     private static func readEntry(_ archive: Archive, path: String) throws -> String {
         guard let entry = archive[path] else { throw CocoaError(.fileNoSuchFile) }
         var data = Data()
-        _ = try archive.extract(entry) { data.append($0) }
-        return String(data: data, encoding: .utf8) ?? ""
+        // extract(_:consumer:) は CRC を計算して返すだけで照合しない。書き出しは無圧縮なので、
+        // 照合しないと、UTF-8 として読めるまま壊れた中身を黙って取り込んでしまう
+        let checksum = try archive.extract(entry) { data.append($0) }
+        guard checksum == entry.checksum else { throw Archive.ArchiveError.invalidCRC32 }
+        guard let text = String(data: data, encoding: .utf8) else { throw ZipImportError.unreadableText(path: path) }
+        return text
     }
 
     /// CSV の date 列の値（`yyyy/MM/dd`）を Date に変換する。
