@@ -151,6 +151,27 @@ struct ZIP取り込みの失敗Test {
         try expectExistingDataRemains()
     }
 
+    @Test(arguments: ["races.csv", "bet_selections.csv"])
+    func `圧縮していない CSV の中身が UTF-8 として読めるまま壊れていれば CRC のエラーにして既存のデータを残す`(
+        path: String,
+    ) throws {
+        try insertExistingRace()
+        let url = try makeZip(files())
+        defer { try? FileManager.default.removeItem(at: url) }
+        // 圧縮していないので、中身のバイト列がそのまま ZIP に入っている。数字を 1 文字変えると CRC だけが合わなくなる
+        var zipData = try Data(contentsOf: url)
+        let content = Data((Self.validFiles[path] ?? "").utf8)
+        let contentRange = try #require(zipData.range(of: content))
+        let digitIndex = try #require(zipData[contentRange].lastIndex(of: UInt8(ascii: "0")))
+        zipData[digitIndex] = UInt8(ascii: "1")
+        try zipData.write(to: url)
+
+        #expect(throws: Archive.ArchiveError.invalidCRC32, "\(path)") {
+            try ZipImporter.importZip(from: url, context: container.mainContext)
+        }
+        try expectExistingDataRemains(path)
+    }
+
     // MARK: - 取り込めるもの
 
     @Test func `bet_selections.csv が無い旧形式の bets.csv は旧形式として取り込む`() throws {

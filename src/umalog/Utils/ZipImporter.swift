@@ -369,11 +369,15 @@ enum ZipImporter {
     ///   - path: アーカイブ内のパス。
     /// - Returns: エントリの内容。
     /// - Throws: 存在しなければ `CocoaError(.fileNoSuchFile)`、展開できなければ ZIPFoundation のエラー、
+    ///   中身が CRC と合わなければ `Archive.ArchiveError.invalidCRC32`、
     ///   UTF-8 として読めなければ `ZipImportError.unreadableText`。
     private static func readEntry(_ archive: Archive, path: String) throws -> String {
         guard let entry = archive[path] else { throw CocoaError(.fileNoSuchFile) }
         var data = Data()
-        _ = try archive.extract(entry) { data.append($0) }
+        // extract(_:consumer:) は CRC を計算して返すだけで照合しない。書き出しは無圧縮なので、
+        // 照合しないと、UTF-8 として読めるまま壊れた中身を黙って取り込んでしまう
+        let checksum = try archive.extract(entry) { data.append($0) }
+        guard checksum == entry.checksum else { throw Archive.ArchiveError.invalidCRC32 }
         guard let text = String(data: data, encoding: .utf8) else { throw ZipImportError.unreadableText(path: path) }
         return text
     }
