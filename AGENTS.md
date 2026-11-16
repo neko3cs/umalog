@@ -1,6 +1,10 @@
 # Umalog — AGENTS.md
 
-Design docs live in `docs/`: `requirements.md` (why/for whom), `specification.md` (what to build), `architecture.md` (how — policy, ADRs, invariants), `design.md` (how — per-feature detail). Read `architecture.md`'s invariants (CloudKit-compatible models, balance by race date, the 8 prediction marks) before touching a model. When a doc conflicts with the code, trust the code.
+Design docs live in `docs/`: `requirements.md` (why/for whom), `specification.md` (what to build), `architecture.md` (how — structure, ADRs, invariants, and the reasons).
+
+- **The docs are authoritative** (owner, 2026-11-17): when a doc and the code disagree, don't quietly follow either or edit one to match — file an Issue so the owner decides which side to fix.
+- Read `architecture.md`'s invariants (CloudKit-compatible models, balance by race date, the 8 prediction marks) before touching a model.
+- There is no per-feature design doc: the docs don't track class lists or call order, so explain current internals from the code when asked instead of adding them to a doc.
 
 ---
 
@@ -98,7 +102,7 @@ For Claude Code: use the `/test-code` skill to run the full sequence above, but 
 - **DocC comments** (`///`) required on all types, properties, and functions. Use `- Returns:`, `- Parameter:`, `- Note:` keywords for Xcode Quick Help.
 - **Inline `//`** only for logic a reader would likely misread — never narrate obvious code.
 - **ADR numbers in `docs/architecture.md` follow the order the decisions were made**, not topic. Check commit/PR history for the decision date before assigning a number.
-- **Design docs state the current spec and its reasons — no Issue/PR numbers or change history** (owner, 2026-11-08). They exist so an AI implements correctly and a human grasps the spec without reading code; a number sends the reader into an Issue's discussion, and history is already reachable via `git blame` → commit → PR. If a reason lives only in an Issue, write the reason into the doc. Keep "（オーナー決定）" markers — they tell an agent not to relitigate. A bug where the code strays from a correct design changes no design doc ("trust the code" covers stale docs, not bugs).
+- **Design docs state the current spec and its reasons — no Issue/PR numbers or change history** (owner, 2026-11-08). They exist so an AI implements correctly and a human grasps the spec without reading code; a number sends the reader into an Issue's discussion, and history is already reachable via `git blame` → commit → PR. If a reason lives only in an Issue, write the reason into the doc. Keep "（オーナー決定）" markers — they tell an agent not to relitigate. A bug where the code strays from a correct design changes no design doc.
 - **Tests carry no Issue numbers or acceptance-condition numbers** — not in test names, argument labels, `// MARK:` lines, or doc comments (owner, 2026-11-08; this overrides the `resolve-issue` skill's "put the condition number in the test name or description"). A test must say what it checks on its own: a bare `条件2-1` means nothing without opening the Issue, and two Issues' `条件2-1` collide in one test list. Name the behaviour or the boundary instead (e.g. `"書き込み単位より 1 バイト大きい"`); map tests to conditions in the PR body.
 - **UIKit only where SwiftUI has no API**: shake-to-undo (`ShakeWindow`, wired through `AppDelegate` / `SceneDelegate`).
 - **Every new tappable control needs an interaction-level UI test or a Simulator click-through**: unit tests on a value type (e.g. `RaceFilter`) don't verify the View wiring.
