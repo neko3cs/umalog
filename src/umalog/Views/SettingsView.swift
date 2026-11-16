@@ -14,7 +14,7 @@ import UniformTypeIdentifiers
 struct SettingsView: View {
     /// SwiftData のモデルコンテキスト。
     @Environment(\.modelContext) private var modelContext
-    /// シェイクで取り消す削除の履歴。ZIP からの復元に成功したら消す。
+    /// シェイクで取り消す削除の履歴。ZIP からの復元やデータの初期化に成功したら消す。
     @Environment(\.undoManager) private var undoManager
     /// SwiftData から取得した全レース。バックアップ対象。
     @Query private var races: [Race]
@@ -172,11 +172,9 @@ struct SettingsView: View {
         }
     }
 
-    /// レースデータをすべて削除する（子の出走馬・馬券はカスケード削除）。競馬場・券種マスターは保持する。
+    /// レースデータをすべて削除し、完了を知らせる。競馬場・券種マスターは保持する。
     private func resetAllData() {
-        let races = (try? modelContext.fetch(FetchDescriptor<Race>())) ?? []
-        races.forEach { modelContext.delete($0) }
-        try? modelContext.save()
+        try? DataReset.deleteAllRaces(in: modelContext, undoManager: undoManager)
         showingDataResetSuccess = true
     }
 
