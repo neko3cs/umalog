@@ -1,6 +1,10 @@
 # Umalog — AGENTS.md
 
-Design docs live in `docs/`: `requirements.md` (why/for whom), `specification.md` (what to build), `architecture.md` (how — structure, ADRs, invariants, and the reasons). There is no per-feature design doc: the docs don't track class lists or call order, so explain current internals from the code when asked instead of adding them to a doc. Read `architecture.md`'s invariants (CloudKit-compatible models, balance by race date, the 8 prediction marks) before touching a model. The docs are authoritative (owner, 2026-11-17): when a doc and the code disagree, don't quietly follow either or edit one to match — file an Issue so the owner decides which side to fix.
+Design docs live in `docs/`: `requirements.md` (why/for whom), `specification.md` (what to build), `architecture.md` (how — structure, ADRs, invariants, and the reasons).
+
+- **The docs are authoritative** (owner, 2026-11-17): when a doc and the code disagree, don't quietly follow either or edit one to match — file an Issue so the owner decides which side to fix.
+- Read `architecture.md`'s invariants (CloudKit-compatible models, balance by race date, the 8 prediction marks) before touching a model.
+- There is no per-feature design doc: the docs don't track class lists or call order, so explain current internals from the code when asked instead of adding them to a doc.
 
 ---
 
